@@ -1,0 +1,46 @@
+-- Customer Master: extend the customers table + addresses sub-table.
+
+ALTER TABLE `customers`
+  ADD COLUMN `code` VARCHAR(40) NULL,
+  ADD COLUMN `legalName` VARCHAR(200) NULL,
+  ADD COLUMN `type` VARCHAR(40) NULL,
+  ADD COLUMN `category` VARCHAR(40) NULL,
+  ADD COLUMN `regDate` VARCHAR(20) NULL,
+  ADD COLUMN `since` VARCHAR(20) NULL,
+  ADD COLUMN `altMobile` VARCHAR(20) NULL,
+  ADD COLUMN `whatsapp` VARCHAR(20) NULL,
+  ADD COLUMN `contact2Name` VARCHAR(120) NULL,
+  ADD COLUMN `contact2Mobile` VARCHAR(20) NULL,
+  ADD COLUMN `contact2Email` VARCHAR(150) NULL,
+  ADD COLUMN `pan` VARCHAR(20) NULL,
+  ADD COLUMN `tan` VARCHAR(20) NULL,
+  ADD COLUMN `businessName` VARCHAR(200) NULL,
+  ADD COLUMN `stateCode` VARCHAR(10) NULL,
+  ADD COLUMN `creditAllowed` BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN `creditLimit` DECIMAL(18, 2) NOT NULL DEFAULT 0,
+  ADD COLUMN `creditPeriod` INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN `ledgerAccount` VARCHAR(120) NULL,
+  ADD COLUMN `advanceAccount` VARCHAR(120) NULL,
+  ADD COLUMN `openingReceivable` DECIMAL(18, 2) NOT NULL DEFAULT 0,
+  ADD COLUMN `openingAdvance` DECIMAL(18, 2) NOT NULL DEFAULT 0,
+  ADD COLUMN `approvalStatus` VARCHAR(20) NOT NULL DEFAULT 'draft',
+  ADD COLUMN `notes` VARCHAR(1000) NULL;
+
+CREATE TABLE `customer_addresses` (
+  `id` INTEGER NOT NULL AUTO_INCREMENT,
+  `tenantId` INTEGER NOT NULL,
+  `customerId` INTEGER NOT NULL,
+  `label` VARCHAR(20) NOT NULL DEFAULT 'Other',
+  `line1` VARCHAR(200) NULL,
+  `line2` VARCHAR(200) NULL,
+  `city` VARCHAR(80) NULL,
+  `district` VARCHAR(80) NULL,
+  `state` VARCHAR(80) NULL,
+  `country` VARCHAR(80) NULL,
+  `pincode` VARCHAR(12) NULL,
+  `isDefault` BOOLEAN NOT NULL DEFAULT false,
+  `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  INDEX `customer_addresses_customerId_idx`(`customerId`),
+  PRIMARY KEY (`id`),
+  CONSTRAINT `customer_addresses_customerId_fkey` FOREIGN KEY (`customerId`) REFERENCES `customers`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

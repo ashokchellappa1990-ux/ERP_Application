@@ -1,0 +1,327 @@
+/* =============================================================================
+   OASYS ERP — DESIGN TOKENS & THEME ENGINE
+   -----------------------------------------------------------------------------
+   Single source of truth for color, typography, spacing, radius, elevation.
+   Themes are activated by setting `data-theme="<id>"` on <html>.
+   Runtime customization (color/font/logo) injects inline overrides on the same
+   element, so a user-chosen brand color simply re-points these variables.
+   ========================================================================== */
+
+:root {
+  /* ---- Non-color primitives (shared across all themes) ---- */
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", monospace;
+
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow: 0 2px 6px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 6px 16px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 12px 28px rgba(15, 23, 42, 0.12), 0 4px 10px rgba(15, 23, 42, 0.06);
+  --shadow-xl: 0 24px 48px rgba(15, 23, 42, 0.18);
+
+  /* ---- Layout primitives ---- */
+  --sidebar-width: 264px;
+  --sidebar-collapsed-width: 72px;
+  --topbar-height: 60px;
+}
+
+/* =============================================================================
+   THEME 1 — INDIGO MODERN  (default — indigo #4338CA + cyan #06B6D4, LIGHT sidebar)
+   Premium modern-SaaS look. Industry-neutral.
+   ========================================================================== */
+:root,
+[data-theme="corporate"] {
+  --color-primary: #4338ca;
+  --color-primary-hover: #3730a3;
+  --color-primary-subtle: #ecebfb;
+  --color-primary-foreground: #ffffff;
+  --color-primary-ring: rgba(67, 56, 202, 0.28);
+
+  --color-secondary: #06b6d4;
+  --color-secondary-hover: #0891b2;
+  --color-secondary-subtle: #def7fb;
+  --color-secondary-foreground: #ffffff;
+
+  --color-accent: #f59e0b;
+  --color-accent-foreground: #3a2600;
+
+  --color-success: #10b981;
+  --color-success-subtle: #e3f7ee;
+  --color-warning: #f59e0b;
+  --color-warning-subtle: #fdf0db;
+  --color-danger: #ef4444;
+  --color-danger-subtle: #fdeaea;
+  --color-info: #06b6d4;
+  --color-info-subtle: #def7fb;
+
+  --color-background: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-2: #f1f5f9;
+  --color-card: #ffffff;
+  --app-bg: #ffffff;
+
+  /* Brand gradient: indigo -> cyan (buttons, active nav, logo) */
+  --gradient-brand: linear-gradient(135deg, #4338ca 0%, #06b6d4 100%);
+
+  /* Light sidebar */
+  --color-menu: #f8fafc;
+  --color-menu-hover: #eef2f7;
+  --color-menu-active: #4338ca;
+  --color-menu-foreground: #475569;
+  --color-menu-muted: #94a3b8;
+  --color-menu-border: #e2e8f0;
+
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+  --color-text-subtle: #94a3b8;
+}
+
+/* =============================================================================
+   THEME — OASYS (brand blue + lime green)
+   ========================================================================== */
+[data-theme="oasys"] {
+  --color-primary: #1b75bc;
+  --color-primary-hover: #155e96;
+  --color-primary-subtle: #e7f1fa;
+  --color-primary-foreground: #ffffff;
+  --color-primary-ring: rgba(27, 117, 188, 0.28);
+
+  --color-secondary: #7ab317;
+  --color-secondary-hover: #659512;
+  --color-secondary-subtle: #eef7df;
+  --color-secondary-foreground: #ffffff;
+
+  --color-accent: #f5a623;
+  --color-accent-foreground: #3a2600;
+
+  --color-success: #2fa84f;
+  --color-success-subtle: #e3f6e8;
+  --color-warning: #f5a623;
+  --color-warning-subtle: #fdf0db;
+  --color-danger: #ef4444;
+  --color-danger-subtle: #fdeaea;
+  --color-info: #1b75bc;
+  --color-info-subtle: #e7f1fa;
+
+  --color-background: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-2: #f1f6fb;
+  --color-card: #ffffff;
+  --app-bg: #ffffff;
+
+  /* Brand gradient: OASYS blue -> green */
+  --gradient-brand: linear-gradient(135deg, #1b75bc 0%, #7ab317 100%);
+
+  --color-menu: #f7fafd;
+  --color-menu-hover: #eaf2fa;
+  --color-menu-active: #1b75bc;
+  --color-menu-foreground: #475569;
+  --color-menu-muted: #94a3b8;
+  --color-menu-border: #e2e8f0;
+
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+  --color-text-subtle: #94a3b8;
+}
+
+/* =============================================================================
+   THEME 2 — EMERALD GREEN
+   ========================================================================== */
+[data-theme="emerald-green"] {
+  --color-primary: #0f766e;
+  --color-primary-hover: #0c5f59;
+  --color-primary-subtle: #d8f3ef;
+  --color-primary-foreground: #ffffff;
+  --color-primary-ring: rgba(15, 118, 110, 0.35);
+
+  --color-secondary: #10b981;
+  --color-secondary-hover: #0e9f70;
+  --color-secondary-subtle: #d6f5e8;
+  --color-secondary-foreground: #ffffff;
+
+  --color-accent: #f59e0b;
+  --color-accent-foreground: #3a2600;
+
+  --color-success: #16a34a;
+  --color-success-subtle: #e3f5e9;
+  --color-warning: #f59e0b;
+  --color-warning-subtle: #fdf0db;
+  --color-danger: #dc3545;
+  --color-danger-subtle: #fce8ea;
+  --color-info: #0891b2;
+  --color-info-subtle: #e0f4f8;
+
+  --color-background: #f3f8f6;
+  --color-surface: #ffffff;
+  --color-surface-2: #eaf3f0;
+  --color-card: #ffffff;
+
+  --color-menu: #0c2e2a;
+  --color-menu-hover: #133e39;
+  --color-menu-active: #0f766e;
+  --color-menu-foreground: #d6ebe7;
+  --color-menu-muted: #7fa8a2;
+  --color-menu-border: rgba(255, 255, 255, 0.06);
+  --app-bg: #f3f8f6;
+  --gradient-brand: linear-gradient(135deg, #0f766e 0%, #10b981 100%);
+
+  --color-border: #dbeae6;
+  --color-border-strong: #c2dcd5;
+  --color-text: #1f3a36;
+  --color-text-muted: #5a726d;
+  --color-text-subtle: #8aa39d;
+}
+
+/* =============================================================================
+   THEME 3 — RETAIL ORANGE
+   ========================================================================== */
+[data-theme="retail-orange"] {
+  --color-primary: #ea580c;
+  --color-primary-hover: #c2410c;
+  --color-primary-subtle: #fdece1;
+  --color-primary-foreground: #ffffff;
+  --color-primary-ring: rgba(234, 88, 12, 0.32);
+
+  --color-secondary: #0f4c81;
+  --color-secondary-hover: #0c3e69;
+  --color-secondary-subtle: #e8f0f8;
+  --color-secondary-foreground: #ffffff;
+
+  --color-accent: #ffb800;
+  --color-accent-foreground: #3a2c00;
+
+  --color-success: #28a745;
+  --color-success-subtle: #e6f5ea;
+  --color-warning: #f59e0b;
+  --color-warning-subtle: #fdf0db;
+  --color-danger: #dc3545;
+  --color-danger-subtle: #fce8ea;
+  --color-info: #0ea5e9;
+  --color-info-subtle: #e3f4fc;
+
+  --color-background: #fdf8f4;
+  --color-surface: #ffffff;
+  --color-surface-2: #f8efe7;
+  --color-card: #ffffff;
+
+  --color-menu: #2b1810;
+  --color-menu-hover: #3a2217;
+  --color-menu-active: #ea580c;
+  --color-menu-foreground: #f0e3da;
+  --color-menu-muted: #b89684;
+  --color-menu-border: rgba(255, 255, 255, 0.06);
+  --app-bg: #fdf8f4;
+  --gradient-brand: linear-gradient(135deg, #ea580c 0%, #f59e0b 100%);
+
+  --color-border: #f0e3d8;
+  --color-border-strong: #e2cdba;
+  --color-text: #3a2a20;
+  --color-text-muted: #6b574a;
+  --color-text-subtle: #a08a7a;
+}
+
+/* =============================================================================
+   THEME 4 — MODERN DARK
+   ========================================================================== */
+[data-theme="modern-dark"] {
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2f6fe0;
+  --color-primary-subtle: #1c2e4a;
+  --color-primary-foreground: #ffffff;
+  --color-primary-ring: rgba(59, 130, 246, 0.4);
+
+  --color-secondary: #06b6d4;
+  --color-secondary-hover: #0aa3bf;
+  --color-secondary-subtle: #16323a;
+  --color-secondary-foreground: #ffffff;
+
+  --color-accent: #fbbf24;
+  --color-accent-foreground: #2a1f00;
+
+  --color-success: #22c55e;
+  --color-success-subtle: #14321f;
+  --color-warning: #f59e0b;
+  --color-warning-subtle: #33260a;
+  --color-danger: #ef4444;
+  --color-danger-subtle: #361717;
+  --color-info: #38bdf8;
+  --color-info-subtle: #102a38;
+
+  --color-background: #0b1120;
+  --color-surface: #131a2a;
+  --color-surface-2: #1a2335;
+  --color-card: #131a2a;
+
+  --color-menu: #0a0f1c;
+  --color-menu-hover: #161f33;
+  --color-menu-active: #3b82f6;
+  --color-menu-foreground: #cbd5e1;
+  --color-menu-muted: #64748b;
+  --color-menu-border: rgba(255, 255, 255, 0.05);
+  --app-bg: #0b1120;
+  --gradient-brand: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+
+  --color-border: #243049;
+  --color-border-strong: #324063;
+  --color-text: #e2e8f0;
+  --color-text-muted: #94a3b8;
+  --color-text-subtle: #64748b;
+}
+
+/* =============================================================================
+   THEME 5 — PHARMACY  (clean clinical teal/white, high legibility)
+   ========================================================================== */
+[data-theme="pharmacy"] {
+  --color-primary: #047481;
+  --color-primary-hover: #035f6a;
+  --color-primary-subtle: #def0f2;
+  --color-primary-foreground: #ffffff;
+  --color-primary-ring: rgba(4, 116, 129, 0.32);
+
+  --color-secondary: #2563eb;
+  --color-secondary-hover: #1d4fd0;
+  --color-secondary-subtle: #e2ecfd;
+  --color-secondary-foreground: #ffffff;
+
+  --color-accent: #00c2a8;
+  --color-accent-foreground: #00322b;
+
+  --color-success: #15a34a;
+  --color-success-subtle: #e3f5e9;
+  --color-warning: #f59e0b;
+  --color-warning-subtle: #fdf0db;
+  --color-danger: #e11d48;
+  --color-danger-subtle: #fce4ea;
+  --color-info: #0891b2;
+  --color-info-subtle: #e0f4f8;
+
+  --color-background: #f4fafb;
+  --color-surface: #ffffff;
+  --color-surface-2: #ebf5f6;
+  --color-card: #ffffff;
+
+  --color-menu: #06363c;
+  --color-menu-hover: #0a474f;
+  --color-menu-active: #047481;
+  --color-menu-foreground: #d4ebee;
+  --color-menu-muted: #7aadb3;
+  --color-menu-border: rgba(255, 255, 255, 0.06);
+  --app-bg: #f4fafb;
+  --gradient-brand: linear-gradient(135deg, #047481 0%, #2563eb 100%);
+
+  --color-border: #dbeaec;
+  --color-border-strong: #bfdce0;
+  --color-text: #103138;
+  --color-text-muted: #4d6a70;
+  --color-text-subtle: #85a3a8;
+}

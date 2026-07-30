@@ -1,0 +1,1492 @@
+
+> oasys-one-pos@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+  - Environments: .env
+
+ ✓ Starting...
+ ⚠ Invalid next.config.mjs options detected: 
+ ⚠     Unrecognized key(s) in object: 'serverExternalPackages'
+ ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+ ✓ Ready in 2.3s
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 1995ms (752 modules)
+ GET /dashboard 200 in 2250ms
+ ✓ Compiled /masters/product in 475ms (888 modules)
+ GET /masters/product 200 in 696ms
+ ✓ Compiled /finance/payables in 318ms (900 modules)
+ GET /finance/payables 200 in 441ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 880ms (924 modules)
+ GET /login 200 in 1034ms
+ ✓ Compiled /api/settings/theme in 246ms (630 modules)
+ GET /api/settings/theme 401 in 420ms
+ GET /api/settings/theme 401 in 422ms
+ ○ Compiling /api/auth/login ...
+ ✓ Compiled /api/auth/login in 637ms (715 modules)
+ POST /api/auth/login 401 in 1339ms
+ POST /api/auth/login 200 in 261ms
+ ○ Compiling /api/system/scope ...
+ ✓ Compiled /api/system/scope in 521ms (718 modules)
+ ✓ Compiled (801 modules)
+ GET /api/system/scope 200 in 1260ms
+ GET /api/auth/me 200 in 1278ms
+ GET /api/auth/me 200 in 1256ms
+ GET /api/system/scope 200 in 1280ms
+ GET /api/company-setup 200 in 1361ms
+ GET /api/company-setup 200 in 1346ms
+ GET /api/company-setup 200 in 142ms
+ GET /api/company-setup 200 in 166ms
+ ○ Compiling /purchase/grn ...
+ ✓ Compiled /purchase/grn in 1340ms (1254 modules)
+ ✓ Compiled /api/purchase/grn in 496ms (819 modules)
+ GET /api/purchase/grn?q=&status=All 200 in 820ms
+ POST /api/system/scope 200 in 65ms
+ GET /api/purchase/grn?q=&status=All 200 in 80ms
+ POST /api/system/scope 200 in 41ms
+ GET /api/purchase/grn?q=&status=All 200 in 73ms
+ POST /api/system/scope 200 in 50ms
+ GET /api/purchase/grn?q=&status=All 200 in 62ms
+ ○ Compiling /inventory/ledger ...
+ ✓ Compiled /inventory/ledger in 1768ms (1281 modules)
+ ✓ Compiled /api/inventory/ledger in 385ms (831 modules)
+ ✓ Compiled (833 modules)
+ GET /api/settings/general 200 in 992ms
+ GET /api/settings/general 200 in 1000ms
+ GET /api/inventory/ledger?q=&type=All 200 in 749ms
+ POST /api/system/scope 200 in 68ms
+ GET /api/settings/general 200 in 76ms
+ GET /api/settings/general 200 in 83ms
+ GET /api/inventory/ledger?q=&type=All 200 in 70ms
+ POST /api/system/scope 200 in 68ms
+ GET /api/settings/general 200 in 98ms
+ GET /api/settings/general 200 in 108ms
+ GET /api/inventory/ledger?q=&type=All 200 in 71ms
+ POST /api/system/scope 200 in 71ms
+ GET /api/settings/general 200 in 104ms
+ GET /api/settings/general 200 in 127ms
+ GET /api/inventory/ledger?q=&type=All 200 in 75ms
+ POST /api/system/scope 200 in 54ms
+ GET /api/settings/general 200 in 79ms
+ GET /api/settings/general 200 in 99ms
+ GET /api/inventory/ledger?q=&type=All 200 in 77ms
+ POST /api/system/scope 200 in 72ms
+ GET /api/settings/general 200 in 68ms
+ GET /api/settings/general 200 in 69ms
+ GET /api/inventory/ledger?q=&type=All 200 in 71ms
+ ○ Compiling /finance/gl ...
+ ✓ Compiled /finance/gl in 1422ms (1203 modules)
+ ✓ Compiled /api/finance/gl in 267ms (750 modules)
+ GET /api/finance/gl 200 in 455ms
+ GET /api/finance/gl 200 in 456ms
+ POST /api/system/scope 200 in 67ms
+ GET /api/finance/gl 200 in 83ms
+ GET /api/finance/gl 200 in 96ms
+ POST /api/system/scope 200 in 68ms
+ GET /api/finance/gl 200 in 79ms
+ GET /api/finance/gl 200 in 81ms
+ POST /api/system/scope 200 in 54ms
+ GET /api/finance/gl 200 in 66ms
+ GET /api/finance/gl 200 in 82ms
+ ○ Compiling /finance/journal ...
+ ✓ Compiled /finance/journal in 1214ms (1045 modules)
+ ✓ Compiled /api/finance/journal in 229ms (589 modules)
+ GET /api/finance/journal? 200 in 398ms
+ GET /api/finance/journal? 200 in 399ms
+ GET /api/finance/journal? 200 in 76ms
+ POST /api/system/scope 200 in 67ms
+ GET /api/finance/journal? 200 in 69ms
+ GET /api/finance/journal? 200 in 86ms
+ GET /api/finance/journal? 200 in 66ms
+ POST /api/system/scope 200 in 59ms
+ GET /api/finance/journal? 200 in 76ms
+ GET /api/finance/journal? 200 in 86ms
+ GET /api/finance/journal? 200 in 56ms
+ ○ Compiling /finance/payables ...
+ ✓ Compiled /finance/payables in 869ms (583 modules)
+ ✓ Compiled /api/finance/payables in 264ms (585 modules)
+ GET /api/finance/payables?q=&status=All 200 in 405ms
+ POST /api/system/scope 200 in 82ms
+ GET /api/finance/payables?q=&status=All 200 in 125ms
+ POST /api/system/scope 200 in 97ms
+ GET /api/finance/payables?q=&status=All 200 in 60ms
+ ○ Compiling /finance/reports ...
+ ✓ Compiled /finance/reports in 1278ms (1030 modules)
+ ✓ Compiled /api/finance/reports in 327ms (572 modules)
+ GET /api/finance/reports?report=trial-balance&to=2026-06-23 200 in 496ms
+ GET /api/finance/reports?report=trial-balance&to=2026-06-23 200 in 505ms
+ POST /api/system/scope 200 in 67ms
+ GET /api/finance/reports?report=trial-balance&to=2026-06-23 200 in 95ms
+ GET /api/finance/reports?report=trial-balance&to=2026-06-23 200 in 109ms
+ POST /api/system/scope 200 in 62ms
+ GET /api/finance/reports?report=trial-balance&to=2026-06-23 200 in 85ms
+ GET /api/finance/reports?report=trial-balance&to=2026-06-23 200 in 90ms
+ POST /api/system/scope 200 in 39ms
+ POST /api/system/scope 200 in 61ms
+ GET /api/finance/reports?report=trial-balance&to=2026-06-23 200 in 90ms
+ GET /api/finance/reports?report=trial-balance&to=2026-06-23 200 in 103ms
+ POST /api/system/scope 200 in 67ms
+ GET /api/finance/reports?report=trial-balance&to=2026-06-23 200 in 104ms
+ GET /api/finance/reports?report=trial-balance&to=2026-06-23 200 in 117ms
+ POST /api/system/scope 200 in 62ms
+ GET /api/finance/reports?report=trading&to=2026-06-23&from=2026-04-01 200 in 94ms
+ GET /api/finance/reports?report=trading&to=2026-06-23&from=2026-04-01 200 in 108ms
+ GET /api/finance/reports?report=balance-sheet&to=2026-06-23 200 in 110ms
+ GET /api/finance/reports?report=balance-sheet&to=2026-06-23 200 in 121ms
+ POST /api/system/scope 200 in 66ms
+ GET /api/finance/reports?report=balance-sheet&to=2026-06-23 200 in 99ms
+ GET /api/finance/reports?report=balance-sheet&to=2026-06-23 200 in 111ms
+ ✓ Compiled in 5.1s (875 modules)
+ ✓ Compiled in 430ms (476 modules)
+ ✓ Compiled in 429ms (476 modules)
+ ✓ Compiled in 368ms (476 modules)
+ ✓ Compiled in 377ms (476 modules)
+ ✓ Compiled in 324ms (476 modules)
+ ✓ Compiled in 366ms (476 modules)
+ ✓ Compiled in 309ms (476 modules)
+ ✓ Compiled in 372ms (476 modules)
+ ✓ Compiled in 288ms (476 modules)
+ ✓ Compiled in 737ms (476 modules)
+ ✓ Compiled in 554ms (476 modules)
+ ✓ Compiled in 397ms (476 modules)
+ ✓ Compiled in 297ms (476 modules)
+ ✓ Compiled in 561ms (476 modules)
+ ✓ Compiled in 640ms (476 modules)
+ ✓ Compiled in 682ms (476 modules)
+ GET /finance/reports 200 in 132ms
+ ✓ Compiled /api/auth/me in 269ms (546 modules)
+ ✓ Compiled (630 modules)
+ GET /api/auth/me 200 in 696ms
+ GET /api/auth/me 200 in 700ms
+ GET /api/system/scope 200 in 728ms
+ GET /api/system/scope 200 in 703ms
+ GET /api/settings/theme 200 in 789ms
+ GET /api/settings/theme 200 in 789ms
+ ✓ Compiled /api/company-setup in 295ms (712 modules)
+ GET /api/company-setup 200 in 489ms
+ GET /api/company-setup 200 in 491ms
+ ✓ Compiled /api/finance/reports in 223ms (716 modules)
+ GET /api/finance/reports?report=trial-balance&to=2026-06-23 200 in 309ms
+ GET /api/finance/reports?report=trial-balance&to=2026-06-23 200 in 312ms
+ POST /api/system/scope 200 in 67ms
+ GET /api/finance/reports?report=trial-balance&to=2026-06-23 200 in 121ms
+ GET /api/finance/reports?report=trial-balance&to=2026-06-23 200 in 130ms
+ POST /api/system/scope 200 in 63ms
+ GET /api/finance/reports?report=trial-balance&to=2026-06-23 200 in 116ms
+ GET /api/finance/reports?report=trial-balance&to=2026-06-23 200 in 121ms
+ GET /api/finance/reports?report=trial-balance 401 in 19ms
+ GET /api/finance/reports?report=trading&to=2026-06-23&from=2026-04-01 200 in 104ms
+ GET /api/finance/reports?report=trading&to=2026-06-23&from=2026-04-01 200 in 111ms
+ GET /api/finance/reports?report=profit-loss&to=2026-06-23&from=2026-04-01 200 in 132ms
+ GET /api/finance/reports?report=profit-loss&to=2026-06-23&from=2026-04-01 200 in 140ms
+ GET /api/finance/reports?report=balance-sheet&to=2026-06-23 200 in 121ms
+ GET /api/finance/reports?report=balance-sheet&to=2026-06-23 200 in 126ms
+ POST /api/system/scope 200 in 70ms
+ GET /api/finance/reports?report=balance-sheet&to=2026-06-23 200 in 109ms
+ GET /api/finance/reports?report=balance-sheet&to=2026-06-23 200 in 121ms
+ POST /api/system/scope 200 in 71ms
+ ✓ Compiled in 2s (1025 modules)
+ ✓ Compiled in 1448ms (1025 modules)
+ ✓ Compiled in 921ms (476 modules)
+ ✓ Compiled in 483ms (476 modules)
+ ✓ Compiled in 637ms (870 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ src\components\layout\Topbar.tsx (96:8) @ ScopeSelector
+ ⨯ ReferenceError: ScopeSelector is not defined
+    at Topbar (./src/components/layout/Topbar.tsx:169:89)
+digest: "1587897258"
+[0m [90m 94 |[39m       {[90m/* Business + branch scope selector — switcher for owner/admin; hidden for[39m[0m
+[0m [90m 95 |[39m [90m          branch + business users (the header branding already shows their scope). */[39m}[0m
+[0m[31m[1m>[22m[39m[90m 96 |[39m       [33m<[39m[33mScopeSelector[39m [33m/[39m[33m>[39m[0m
+[0m [90m    |[39m        [31m[1m^[22m[39m[0m
+[0m [90m 97 |[39m[0m
+[0m [90m 98 |[39m       {[90m/* Search */[39m}[0m
+[0m [90m 99 |[39m       [33m<[39m[33mdiv[39m className[33m=[39m[32m"relative ml-auto hidden max-w-md flex-1 md:block"[39m[33m>[39m[0m
+ GET /finance/reports 200 in 299ms
+ ✓ Compiled /api/settings/theme in 134ms (543 modules)
+ GET /api/settings/theme 200 in 228ms
+ GET /api/settings/theme 200 in 229ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 1291ms (1017 modules)
+ GET /finance/reports 200 in 1131ms
+ ✓ Compiled /api/auth/me in 396ms (545 modules)
+ ✓ Compiled (627 modules)
+ GET /api/settings/theme 200 in 997ms
+ GET /api/settings/theme 200 in 999ms
+ GET /api/auth/me 200 in 868ms
+ GET /api/auth/me 200 in 867ms
+ GET /api/system/scope 200 in 873ms
+ GET /api/system/scope 200 in 875ms
+ ✓ Compiled /api/company-setup in 203ms (709 modules)
+ GET /api/company-setup 200 in 295ms
+ GET /api/company-setup 200 in 297ms
+ ✓ Compiled in 808ms (1183 modules)
+ ✓ Compiled in 1217ms (1190 modules)
+ ○ Compiling /accounting/petty-cash-config ...
+ ✓ Compiled /accounting/petty-cash-config in 1147ms (1195 modules)
+ ✓ Compiled /api/finance/petty-cash/config in 277ms (728 modules)
+ GET /api/finance/petty-cash/config 200 in 499ms
+prisma:error 
+Invalid `prisma.pettyCashConfig.create()` invocation:
+
+
+Unique constraint failed on the constraint: `petty_cash_config_tenantId_key`
+ ⨯ PrismaClientKnownRequestError: 
+Invalid `prisma.pettyCashConfig.create()` invocation:
+
+
+Unique constraint failed on the constraint: `petty_cash_config_tenantId_key`
+    at zr.handleRequestError (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:8286)
+    at zr.handleAndLogRequestError (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7581)
+    at zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7288)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
+    at async getConfig (webpack-internal:///(rsc)/./src/app/api/finance/petty-cash/config/route.ts:20:11)
+    at async Promise.all (index 0)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/finance/petty-cash/config/route.ts:38:42)
+    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:57228
+    at async eT.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:46851)
+    at async eT.handle (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:58760)
+    at async doRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1366:42)
+    at async cacheEntry.responseCache.get.routeKind (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1588:28)
+    at async DevServer.renderToResponseWithComponentsImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1496:28)
+    at async DevServer.renderPageComponent (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1924:24)
+    at async DevServer.renderToResponseImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:818:17)
+    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:179:21)
+    at async handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:359:24)
+    at async requestHandlerImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:383:13)
+    at async Server.requestListener (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'P2002',
+  meta: {
+    modelName: 'PettyCashConfig',
+    driverAdapterError: DriverAdapterError: UniqueConstraintViolation
+        at MariaDbTransaction.onError (webpack-internal:///(rsc)/./node_modules/@prisma/adapter-mariadb/dist/index.mjs:327:11)
+        at MariaDbTransaction.performIO (webpack-internal:///(rsc)/./node_modules/@prisma/adapter-mariadb/dist/index.mjs:322:12)
+        at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        at async MariaDbTransaction.queryRaw (webpack-internal:///(rsc)/./node_modules/@prisma/adapter-mariadb/dist/index.mjs:287:20)
+        at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
+        at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
+        at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:47173)
+        at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43744)
+        at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
+        at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46097)
+        at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
+        at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
+        at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
+        at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
+        at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
+        at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
+        at async getConfig (webpack-internal:///(rsc)/./src/app/api/finance/petty-cash/config/route.ts:20:11)
+        at async Promise.all (index 0)
+        at async GET (webpack-internal:///(rsc)/./src/app/api/finance/petty-cash/config/route.ts:38:42)
+        at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:57228
+        at async eT.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:46851)
+        at async eT.handle (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:58760)
+        at async doRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1366:42)
+        at async cacheEntry.responseCache.get.routeKind (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1588:28)
+        at async DevServer.renderToResponseWithComponentsImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1496:28)
+        at async DevServer.renderPageComponent (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1924:24)
+        at async DevServer.renderToResponseImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1962:32)
+        at async DevServer.pipeImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:922:25)
+        at async NextNodeServer.handleCatchallRenderRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\next-server.js:272:17)
+        at async DevServer.handleRequestImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:818:17)
+        at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+        at async Span.traceAsyncFn (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\trace\trace.js:154:20)
+        at async DevServer.handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+        at async invokeRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:179:21)
+        at async handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:359:24)
+        at async requestHandlerImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:383:13)
+        at async Server.requestListener (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\start-server.js:141:13) {
+      cause: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+ GET /api/finance/petty-cash/config 500 in 519ms
+ ○ Compiling /settings/sales ...
+ ✓ Compiled /settings/sales in 1866ms (1247 modules)
+ ○ Compiling /api/settings/sales ...
+ ✓ Compiled /api/settings/sales in 771ms (753 modules)
+ GET /api/settings/sales 200 in 1004ms
+ GET /api/settings/sales 200 in 1005ms
+ GET /settings/sales 200 in 294ms
+ GET /api/settings/theme 200 in 99ms
+ GET /api/settings/theme 200 in 130ms
+ GET /api/auth/me 200 in 144ms
+ GET /api/system/scope 200 in 211ms
+ GET /api/system/scope 200 in 215ms
+ GET /api/auth/me 200 in 214ms
+ GET /api/settings/sales 200 in 182ms
+ GET /api/settings/sales 200 in 162ms
+ GET /api/company-setup 200 in 128ms
+ GET /api/company-setup 200 in 66ms
+ ○ Compiling /purchase/grn ...
+ ✓ Compiled /purchase/grn in 934ms (755 modules)
+ ✓ Compiled /api/purchase/grn in 378ms (764 modules)
+ GET /api/purchase/grn?q=&status=All 200 in 478ms
+ ○ Compiling /api/auth/logout ...
+ ✓ Compiled /api/auth/logout in 692ms (761 modules)
+ POST /api/auth/logout 200 in 826ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 631ms (774 modules)
+ ○ Compiling /api/auth/login ...
+ ✓ Compiled /api/auth/login in 851ms (772 modules)
+ POST /api/auth/login 200 in 1341ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 754ms (788 modules)
+ GET /api/system/scope 200 in 196ms
+ GET /api/system/scope 200 in 198ms
+ GET /api/auth/me 200 in 219ms
+ GET /api/auth/me 200 in 218ms
+ GET /api/company-setup 200 in 136ms
+ GET /api/company-setup 200 in 173ms
+ GET /api/company-setup 200 in 140ms
+ GET /api/company-setup 200 in 152ms
+ GET /api/purchase/grn?q=&status=All 200 in 88ms
+ ○ Compiling /finance/petty-cash ...
+ ✓ Compiled /finance/petty-cash in 1859ms (1306 modules)
+ ○ Compiling /api/finance/petty-cash ...
+ ✓ Compiled /api/finance/petty-cash in 660ms (792 modules)
+ GET /api/finance/petty-cash?q= 200 in 862ms
+ ○ Compiling /finance/petty-cash/new ...
+ ✓ Compiled /finance/petty-cash/new in 1079ms (1303 modules)
+ ✓ Compiled /api/finance/petty-cash/config in 383ms (800 modules)
+ GET /api/finance/petty-cash/config 200 in 510ms
+ GET /api/finance/petty-cash/config 200 in 513ms
+ POST /api/auth/logout 200 in 91ms
+ POST /api/auth/login 200 in 255ms
+ GET /api/auth/me 200 in 77ms
+ GET /api/auth/me 200 in 77ms
+ GET /api/system/scope 200 in 109ms
+ GET /api/system/scope 200 in 119ms
+ GET /api/company-setup 200 in 126ms
+ GET /api/company-setup 200 in 129ms
+ GET /api/company-setup 200 in 82ms
+ GET /api/company-setup 200 in 78ms
+ POST /api/auth/logout 200 in 58ms
+ POST /api/auth/login 200 in 131ms
+ GET /api/company-setup 200 in 66ms
+ GET /api/company-setup 200 in 58ms
+ GET /api/system/scope 200 in 86ms
+ GET /api/system/scope 200 in 80ms
+ GET /api/auth/me 200 in 87ms
+ GET /api/auth/me 200 in 83ms
+ GET /api/company-setup 200 in 44ms
+ GET /api/company-setup 200 in 53ms
+ ○ Compiling /purchase/payments ...
+ ✓ Compiled /purchase/payments in 697ms (1269 modules)
+ ✓ Compiled in 140ms (523 modules)
+ ✓ Compiled /api/purchase/supplier-payment in 112ms (750 modules)
+ GET /api/purchase/supplier-payment?q= 200 in 190ms
+ ○ Compiling /purchase/payments/new ...
+ ✓ Compiled /purchase/payments/new in 583ms (1282 modules)
+ ✓ Compiled /api/masters/suppliers in 159ms (758 modules)
+ GET /api/masters/suppliers 200 in 255ms
+ GET /api/masters/suppliers 200 in 262ms
+ ✓ Compiled /api/purchase/supplier-payment/open in 166ms (760 modules)
+ GET /api/purchase/supplier-payment/open?supplier=Loyal%20Textile 200 in 230ms
+ POST /api/purchase/supplier-payment 201 in 93ms
+ ○ Compiling /purchase/payments/[id] ...
+ ✓ Compiled /purchase/payments/[id] in 520ms (1295 modules)
+ ✓ Compiled /api/purchase/supplier-payment/[id] in 213ms (768 modules)
+ GET /api/purchase/supplier-payment/2 200 in 715ms
+ GET /api/purchase/supplier-payment/2 200 in 716ms
+ GET /api/purchase/supplier-payment?q= 200 in 30ms
+ GET /api/purchase/supplier-payment/2 200 in 48ms
+ GET /api/purchase/supplier-payment/2 200 in 54ms
+ ○ Compiling /purchase/grn/[id] ...
+ ✓ Compiled /purchase/grn/[id] in 741ms (1194 modules)
+ ✓ Compiled /api/purchase/grn/[id] in 266ms (665 modules)
+ ✓ Compiled (672 modules)
+ GET /api/settings/qr-code 200 in 697ms
+ GET /api/settings/qr-code 200 in 698ms
+ GET /api/purchase/grn/11 200 in 1149ms
+ GET /api/purchase/grn/11 200 in 1153ms
+ ✓ Compiled /api/purchase/grn in 134ms (664 modules)
+ GET /api/purchase/grn?q=&status=All 200 in 200ms
+ GET /api/purchase/grn/11 200 in 62ms
+ GET /api/purchase/grn/11 200 in 77ms
+ GET /api/settings/qr-code 200 in 92ms
+ GET /api/settings/qr-code 200 in 94ms
+ GET /api/purchase/grn?q=&status=All 200 in 36ms
+ GET /api/purchase/supplier-payment?q= 200 in 49ms
+ ✓ Compiled /purchase/payments/new in 202ms (670 modules)
+ ✓ Compiled /api/masters/suppliers in 215ms (672 modules)
+ GET /api/masters/suppliers 200 in 309ms
+ GET /api/masters/suppliers 200 in 314ms
+ ✓ Compiled /api/purchase/supplier-payment/open in 163ms (674 modules)
+ GET /api/purchase/supplier-payment/open?supplier=Loyal%20Textile 200 in 240ms
+ GET /api/purchase/supplier-payment?q= 200 in 47ms
+ ✓ Compiled /finance/gl in 446ms (680 modules)
+ ✓ Compiled /api/finance/gl in 251ms (682 modules)
+ GET /api/finance/gl 200 in 347ms
+ GET /api/finance/gl 200 in 349ms
+ GET /api/finance/gl?accountId=41 200 in 40ms
+ GET /api/finance/gl?accountId=34 200 in 47ms
+ GET /api/purchase/supplier-payment?q= 200 in 38ms
+ GET /api/masters/suppliers 200 in 50ms
+ GET /api/masters/suppliers 200 in 54ms
+ GET /api/purchase/supplier-payment/open?supplier=Loyal%20Textile 200 in 31ms
+ ○ Compiling /accounting/opening-balance ...
+ ✓ Compiled /accounting/opening-balance in 800ms (1130 modules)
+ ✓ Compiled /api/accounting/opening-balance in 171ms (597 modules)
+ GET /api/accounting/opening-balance 200 in 258ms
+ GET /api/accounting/opening-balance 200 in 259ms
+ ○ Compiling /sales/outstanding ...
+ ✓ Compiled /sales/outstanding in 1289ms (982 modules)
+ ✓ Compiled /sales/reports in 485ms (1019 modules)
+ ✓ Compiled in 231ms (542 modules)
+ ✓ Compiled in 234ms (542 modules)
+ ✓ Compiled in 228ms (542 modules)
+ ✓ Compiled in 193ms (542 modules)
+ ✓ Compiled in 492ms (965 modules)
+ ✓ Compiled in 526ms (954 modules)
+ ✓ Compiled /api/auth/logout in 233ms (572 modules)
+ POST /api/auth/logout 200 in 376ms
+ ✓ Compiled /api/auth/login in 236ms (656 modules)
+ POST /api/auth/login 200 in 464ms
+ ✓ Compiled in 331ms (543 modules)
+ ✓ Compiled in 219ms (543 modules)
+ ✓ Compiled in 268ms (543 modules)
+ ✓ Compiled in 211ms (543 modules)
+ ✓ Compiled in 117ms (543 modules)
+ ✓ Compiled in 189ms (543 modules)
+ ✓ Compiled in 198ms (543 modules)
+ ✓ Compiled in 324ms (543 modules)
+ ✓ Compiled in 129ms (543 modules)
+ ✓ Compiled in 188ms (543 modules)
+ ✓ Compiled in 200ms (543 modules)
+ ✓ Compiled in 190ms (543 modules)
+ ✓ Compiled in 204ms (543 modules)
+ ✓ Compiled in 224ms (543 modules)
+ ✓ Compiled in 200ms (543 modules)
+ ✓ Compiled in 187ms (543 modules)
+ ✓ Compiled in 190ms (543 modules)
+ ✓ Compiled in 283ms (543 modules)
+ ✓ Compiled in 174ms (543 modules)
+ ✓ Compiled in 104ms (543 modules)
+ ✓ Compiled in 138ms (543 modules)
+ ✓ Compiled in 96ms (543 modules)
+ ✓ Compiled in 213ms (543 modules)
+ ✓ Compiled in 290ms (543 modules)
+ ✓ Compiled in 181ms (543 modules)
+ ✓ Compiled in 186ms (543 modules)
+ ✓ Compiled in 195ms (543 modules)
+ ✓ Compiled in 127ms (543 modules)
+ ✓ Compiled in 131ms (543 modules)
+ ✓ Compiled in 142ms (543 modules)
+ ✓ Compiled in 200ms (543 modules)
+ ✓ Compiled in 174ms (543 modules)
+ ✓ Compiled in 248ms (543 modules)
+ ✓ Compiled in 161ms (543 modules)
+ ✓ Compiled in 136ms (543 modules)
+ ✓ Compiled in 100ms (543 modules)
+ ✓ Compiled in 122ms (543 modules)
+ ✓ Compiled in 122ms (543 modules)
+ ✓ Compiled in 102ms (543 modules)
+ ✓ Compiled in 129ms (543 modules)
+ ✓ Compiled in 137ms (543 modules)
+ ✓ Compiled in 140ms (543 modules)
+ ✓ Compiled in 266ms (543 modules)
+ ✓ Compiled in 165ms (543 modules)
+ ✓ Compiled in 276ms (543 modules)
+ ✓ Compiled in 126ms (543 modules)
+ ✓ Compiled in 105ms (543 modules)
+ ✓ Compiled in 142ms (543 modules)
+ ✓ Compiled in 117ms (543 modules)
+ ✓ Compiled in 146ms (543 modules)
+ ✓ Compiled in 178ms (543 modules)
+ ✓ Compiled in 211ms (543 modules)
+ ✓ Compiled in 257ms (543 modules)
+ ✓ Compiled in 215ms (543 modules)
+ ✓ Compiled in 220ms (543 modules)
+ ✓ Compiled in 208ms (543 modules)
+ ✓ Compiled in 285ms (543 modules)
+ ✓ Compiled in 222ms (543 modules)
+ ✓ Compiled in 195ms (543 modules)
+ ✓ Compiled in 205ms (543 modules)
+ ✓ Compiled in 182ms (543 modules)
+ ✓ Compiled in 228ms (543 modules)
+ ✓ Compiled in 168ms (543 modules)
+ ✓ Compiled in 269ms (543 modules)
+ ✓ Compiled in 235ms (543 modules)
+ ✓ Compiled in 340ms (543 modules)
+ ✓ Compiled in 230ms (543 modules)
+ ✓ Compiled in 226ms (543 modules)
+ ✓ Compiled in 220ms (543 modules)
+ ✓ Compiled in 202ms (543 modules)
+ ✓ Compiled in 260ms (543 modules)
+ ✓ Compiled in 184ms (543 modules)
+ ✓ Compiled in 221ms (543 modules)
+ ✓ Compiled in 187ms (543 modules)
+ ✓ Compiled in 193ms (543 modules)
+ ✓ Compiled in 180ms (543 modules)
+ ✓ Compiled in 203ms (543 modules)
+ ✓ Compiled in 178ms (543 modules)
+ ✓ Compiled in 268ms (543 modules)
+ ✓ Compiled in 181ms (543 modules)
+ ✓ Compiled in 183ms (543 modules)
+ ✓ Compiled in 170ms (543 modules)
+ ✓ Compiled in 173ms (543 modules)
+ ✓ Compiled in 168ms (543 modules)
+ ✓ Compiled in 206ms (543 modules)
+ ✓ Compiled in 263ms (543 modules)
+ ✓ Compiled in 219ms (543 modules)
+ ✓ Compiled in 259ms (543 modules)
+ ✓ Compiled in 193ms (543 modules)
+ ✓ Compiled in 566ms (969 modules)
+ ✓ Compiled in 175ms (543 modules)
+ ✓ Compiled in 207ms (543 modules)
+ ✓ Compiled in 187ms (543 modules)
+ ✓ Compiled in 168ms (543 modules)
+ ✓ Compiled in 205ms (543 modules)
+ ✓ Compiled in 196ms (543 modules)
+ ✓ Compiled in 112ms (543 modules)
+ ✓ Compiled in 112ms (543 modules)
+ ✓ Compiled in 394ms (969 modules)
+ ✓ Compiled in 254ms (543 modules)
+ ✓ Compiled in 494ms (969 modules)
+ ✓ Compiled in 197ms (543 modules)
+ ✓ Compiled in 182ms (543 modules)
+ ✓ Compiled in 175ms (543 modules)
+ ✓ Compiled in 125ms (543 modules)
+ ✓ Compiled in 195ms (543 modules)
+ ✓ Compiled in 200ms (543 modules)
+ ✓ Compiled in 184ms (543 modules)
+ ✓ Compiled in 188ms (543 modules)
+ ✓ Compiled in 370ms (543 modules)
+ ✓ Compiled in 268ms (543 modules)
+ ✓ Compiled in 189ms (543 modules)
+ ✓ Compiled in 207ms (543 modules)
+ ✓ Compiled in 182ms (543 modules)
+ ✓ Compiled in 210ms (543 modules)
+ ✓ Compiled in 167ms (543 modules)
+ ✓ Compiled in 183ms (543 modules)
+ ✓ Compiled in 195ms (543 modules)
+ ✓ Compiled in 198ms (543 modules)
+ ✓ Compiled in 189ms (543 modules)
+ ✓ Compiled in 167ms (543 modules)
+ ✓ Compiled in 185ms (543 modules)
+ ✓ Compiled in 166ms (543 modules)
+ ✓ Compiled in 179ms (543 modules)
+ ✓ Compiled in 149ms (543 modules)
+ ✓ Compiled in 123ms (543 modules)
+ ✓ Compiled in 130ms (543 modules)
+ ✓ Compiled in 126ms (543 modules)
+ ✓ Compiled in 184ms (543 modules)
+ ✓ Compiled in 184ms (543 modules)
+ ✓ Compiled in 173ms (543 modules)
+ ✓ Compiled in 223ms (543 modules)
+ ✓ Compiled in 196ms (543 modules)
+ ✓ Compiled in 211ms (543 modules)
+ ✓ Compiled in 294ms (543 modules)
+ ✓ Compiled in 177ms (543 modules)
+ ✓ Compiled in 255ms (543 modules)
+ ✓ Compiled in 188ms (543 modules)
+ ✓ Compiled in 184ms (543 modules)
+ ✓ Compiled in 201ms (543 modules)
+ ✓ Compiled in 179ms (543 modules)
+ ✓ Compiled in 197ms (543 modules)
+ ✓ Compiled in 269ms (543 modules)
+ ✓ Compiled in 205ms (543 modules)
+ ✓ Compiled in 203ms (543 modules)
+ ✓ Compiled in 207ms (543 modules)
+ ✓ Compiled in 500ms (543 modules)
+ ✓ Compiled in 242ms (543 modules)
+ ✓ Compiled in 204ms (543 modules)
+ ✓ Compiled in 712ms (969 modules)
+ ✓ Compiled in 147ms (543 modules)
+ ⨯ ./src/app/(app)/purchase/grn/page.tsx
+Error: 
+  [31mx[0m the name `fmt` is defined multiple times
+    ,-[[36;1;4mD:\Old_LapTop_Backup_2\Retail_POS\src\app\(app)\purchase\grn\page.tsx[0m:16:1]
+ [2m16[0m | const FILTERS: ("All" | GrnRow["status"])[] = ["All", "Draft", "Posted", "Cancelled"];
+ [2m17[0m | 
+ [2m18[0m | export default function GrnListPage() {
+ [2m19[0m |   const fmt = useFmt();
+    : [31;1m        ^|^[0m
+    :          [31;1m`-- [31;1mprevious definition of `fmt` here[0m[0m
+ [2m20[0m |   const [query, setQuery] = useState("");
+ [2m21[0m |   const [filter, setFilter] = useState<"All" | GrnRow["status"]>("All");
+ [2m22[0m |   const [rows, setRows] = useState<GrnRow[]>([]);
+ [2m23[0m |   const [stats, setStats] = useState<Stats>(EMPTY);
+ [2m24[0m |   const [loading, setLoading] = useState(true);
+ [2m25[0m |   const [notAuthed, setNotAuthed] = useState(false);
+ [2m26[0m |   const [reloadKey, setReloadKey] = useState(0);
+ [2m27[0m | 
+ [2m28[0m |   useEffect(() => {
+ [2m29[0m |     const ctrl = new AbortController();
+ [2m30[0m |     setLoading(true);
+ [2m31[0m |     const t = setTimeout(async () => {
+ [2m32[0m |       try {
+ [2m33[0m |         const res = await fetch(`/api/purchase/grn?${new URLSearchParams({ q: query, status: filter })}`, { cache: "no-store", signal: ctrl.signal });
+ [2m34[0m |         if (res.status === 401) { setNotAuthed(true); return; }
+ [2m35[0m |         const j = await res.json().catch(() => ({}));
+ [2m36[0m |         if (j.ok) { setNotAuthed(false); setRows(j.rows); setStats(j.stats); }
+ [2m37[0m |       } catch { /* ignore */ } finally { setLoading(false); }
+ [2m38[0m |     }, 200);
+ [2m39[0m |     return () => { clearTimeout(t); ctrl.abort(); };
+ [2m40[0m |   }, [query, filter, reloadKey]);
+ [2m41[0m | 
+ [2m42[0m |   async function remove(id: number) {
+ [2m43[0m |     if (!window.confirm("Delete this draft GRN?")) return;
+ [2m44[0m |     await fetch(`/api/purchase/grn/${id}`, { method: "DELETE" });
+ [2m45[0m |     setReloadKey((k) => k + 1);
+ [2m46[0m |   }
+ [2m47[0m |   async function cancel(id: number) {
+ [2m48[0m |     if (!window.confirm("Cancel this GRN? Its received stock and any payable will be reversed. The record is kept with status Cancelled.")) return;
+ [2m49[0m |     const j = await fetch(`/api/purchase/grn/${id}/cancel`, { method: "POST" }).then((r) => r.json()).catch(() => ({}));
+ [2m50[0m |     if (!j.ok && j.message) window.alert(j.message);
+ [2m51[0m |     setReloadKey((k) => k + 1);
+ [2m52[0m |   }
+ [2m53[0m |   const fmt = (n: number) => (n >= 100000 ? `₹${(n / 100000).toFixed(1)}L` : `₹${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`);
+    : [33;1m        ^|^[0m
+    :          [33;1m`-- [33;1m`fmt` redefined here[0m[0m
+ [2m54[0m | 
+ [2m55[0m |   return (
+ [2m56[0m |     <div className="space-y-6">
+    `----
+
+Import trace for requested module:
+./src/app/(app)/purchase/grn/page.tsx
+ ✓ Compiled in 183ms (537 modules)
+ ✓ Compiled in 536ms (954 modules)
+ ✓ Compiled in 207ms (543 modules)
+ ✓ Compiled in 224ms (969 modules)
+ ✓ Compiled in 181ms (543 modules)
+ ✓ Compiled in 264ms (969 modules)
+ ✓ Compiled in 189ms (543 modules)
+ ✓ Compiled in 188ms (543 modules)
+ ✓ Compiled in 195ms (543 modules)
+ ✓ Compiled in 180ms (543 modules)
+ ✓ Compiled in 264ms (543 modules)
+ ✓ Compiled in 267ms (543 modules)
+ ✓ Compiled in 302ms (543 modules)
+ ✓ Compiled in 214ms (543 modules)
+ ✓ Compiled in 265ms (543 modules)
+ ✓ Compiled in 521ms (543 modules)
+ ✓ Compiled in 378ms (543 modules)
+ ✓ Compiled in 159ms (543 modules)
+ ✓ Compiled in 181ms (543 modules)
+ ✓ Compiled in 178ms (543 modules)
+ ✓ Compiled in 183ms (543 modules)
+ ✓ Compiled in 221ms (543 modules)
+ ✓ Compiled in 217ms (543 modules)
+ ✓ Compiled in 252ms (543 modules)
+ ✓ Compiled in 209ms (543 modules)
+ ✓ Compiled in 246ms (543 modules)
+ ✓ Compiled in 167ms (543 modules)
+ ✓ Compiled in 154ms (543 modules)
+ ✓ Compiled in 279ms (543 modules)
+ ✓ Compiled in 208ms (543 modules)
+ ✓ Compiled in 249ms (543 modules)
+ ✓ Compiled in 181ms (543 modules)
+ ✓ Compiled in 240ms (543 modules)
+ ✓ Compiled in 227ms (543 modules)
+ ✓ Compiled in 190ms (543 modules)
+ ✓ Compiled in 190ms (543 modules)
+ ✓ Compiled in 192ms (543 modules)
+ ✓ Compiled in 208ms (543 modules)
+ ✓ Compiled /accounting/opening-balance in 457ms (432 modules)
+ GET /accounting/opening-balance 200 in 647ms
+ ○ Compiling /sales/history ...
+ ✓ Compiled /sales/history in 728ms (993 modules)
+ GET /sales/history 200 in 870ms
+ ✓ Compiled /inventory/ledger in 230ms (451 modules)
+ GET /inventory/ledger 200 in 335ms
+ ✓ Compiled /finance/payables in 95ms (457 modules)
+ GET /finance/payables 200 in 234ms
+ GET /purchase/grn 200 in 72ms
+ ✓ Compiled /masters/customer in 354ms (1023 modules)
+ GET /masters/customer 200 in 464ms
+ ✓ Compiled /api/accounting/opening-balance in 215ms (625 modules)
+ GET /api/accounting/opening-balance 401 in 297ms
+ GET /dashboard 200 in 163ms
+ ✓ Compiled /api/auth/me in 308ms (573 modules)
+ ✓ Compiled (659 modules)
+ GET /api/auth/me 200 in 862ms
+ GET /api/system/scope 200 in 894ms
+ GET /api/settings/theme 200 in 946ms
+ GET /api/settings/general 200 in 914ms
+ GET /api/settings/general 200 in 918ms
+ GET /api/settings/theme 200 in 941ms
+ GET /api/system/scope 200 in 62ms
+ GET /api/auth/me 200 in 63ms
+ ✓ Compiled /api/company-setup in 249ms (741 modules)
+ GET /api/company-setup 200 in 431ms
+ GET /api/company-setup 200 in 432ms
+ GET /api/company-setup 200 in 438ms
+ GET /api/company-setup 200 in 394ms
+ ✓ Compiled /api/auth/logout in 161ms (744 modules)
+ POST /api/auth/logout 200 in 277ms
+ ✓ Compiled /api/auth/login in 238ms (748 modules)
+ POST /api/auth/login 401 in 410ms
+ POST /api/auth/login 200 in 157ms
+ GET /api/company-setup 200 in 108ms
+ GET /api/company-setup 200 in 101ms
+ GET /api/system/scope 200 in 118ms
+ GET /api/settings/general 200 in 141ms
+ GET /api/auth/me 200 in 135ms
+ GET /api/settings/general 200 in 138ms
+ GET /api/system/scope 200 in 75ms
+ GET /api/company-setup 200 in 47ms
+ GET /api/auth/me 200 in 87ms
+ GET /api/company-setup 200 in 27ms
+ ✓ Compiled /accounting/opening-balance in 393ms (754 modules)
+ ✓ Compiled /api/accounting/opening-balance in 233ms (758 modules)
+ GET /api/accounting/opening-balance 200 in 308ms
+ GET /api/accounting/opening-balance 200 in 310ms
+ GET /accounting/opening-balance 200 in 157ms
+ GET /api/settings/theme 200 in 67ms
+ GET /api/settings/theme 200 in 84ms
+ GET /api/system/scope 200 in 121ms
+ GET /api/auth/me 200 in 128ms
+ GET /api/settings/general 200 in 142ms
+ GET /api/settings/general 200 in 152ms
+ GET /api/system/scope 200 in 126ms
+ GET /api/auth/me 200 in 101ms
+ GET /api/accounting/opening-balance 200 in 99ms
+ GET /api/company-setup 200 in 67ms
+ GET /api/accounting/opening-balance 200 in 82ms
+ GET /api/company-setup 200 in 62ms
+ ✓ Compiled in 532ms (984 modules)
+ ✓ Compiled in 213ms (561 modules)
+ GET /accounting/opening-balance 200 in 136ms
+ ✓ Compiled /api/system/scope in 224ms (570 modules)
+ ✓ Compiled (656 modules)
+ GET /api/system/scope 200 in 531ms
+ GET /api/auth/me 200 in 539ms
+ GET /api/settings/general 200 in 544ms
+ GET /api/settings/general 200 in 546ms
+ GET /api/settings/theme 200 in 577ms
+ GET /api/settings/theme 200 in 589ms
+ GET /api/system/scope 200 in 65ms
+ ✓ Compiled /api/company-setup in 151ms (660 modules)
+ ✓ Compiled in 0ms (742 modules)
+ GET /api/auth/me 200 in 817ms
+ ✓ Compiled in 1ms (742 modules)
+ ✓ Compiled in 0ms (742 modules)
+ GET /api/accounting/opening-balance 200 in 1156ms
+ GET /api/accounting/opening-balance 200 in 1158ms
+ GET /api/company-setup 200 in 1357ms
+ GET /api/company-setup 200 in 541ms
+ PUT /api/accounting/opening-balance 200 in 78ms
+ ○ Compiling /sales ...
+ ✓ Compiled /sales in 617ms (1323 modules)
+ GET /api/accounting/opening-balance 200 in 73ms
+ GET /api/accounting/opening-balance 200 in 79ms
+ ✓ Compiled /finance/gl in 472ms (429 modules)
+ ✓ Compiled /api/finance/gl in 209ms (576 modules)
+ GET /api/finance/gl 200 in 349ms
+ GET /api/finance/gl 200 in 350ms
+ GET /api/finance/gl?accountId=34 200 in 51ms
+ ✓ Compiled /finance/reports in 491ms (572 modules)
+ ✓ Compiled /api/finance/reports in 132ms (575 modules)
+ GET /api/finance/reports?report=balance-sheet&to=2026-06-24 200 in 221ms
+ GET /api/finance/reports?report=balance-sheet&to=2026-06-24 200 in 223ms
+ GET /api/finance/gl 200 in 54ms
+ GET /api/finance/gl 200 in 55ms
+ ✓ Compiled /api/accounting/opening-balance in 317ms (561 modules)
+ GET /api/accounting/opening-balance 200 in 401ms
+ GET /api/accounting/opening-balance 200 in 403ms
+ ✓ Compiled in 306ms (561 modules)
+ ✓ Compiled in 353ms (1117 modules)
+ ✓ Compiled in 547ms (1123 modules)
+ ✓ Compiled /api/accounting/opening-balance in 135ms (559 modules)
+ ✓ Compiled (647 modules)
+ GET /api/system/scope 200 in 533ms
+ GET /api/accounting/opening-balance 200 in 547ms
+ GET /api/accounting/opening-balance 200 in 547ms
+ GET /api/auth/me 200 in 551ms
+ GET /api/settings/general 200 in 559ms
+ GET /api/settings/general 200 in 565ms
+ GET /api/system/scope 200 in 76ms
+ ○ Compiling /api/company-setup ...
+ ✓ Compiled /api/company-setup in 818ms (1286 modules)
+ GET /api/auth/me 200 in 996ms
+ GET /api/company-setup 200 in 991ms
+ GET /api/company-setup 200 in 34ms
+ ✓ Compiled /api/accounting/chart-of-accounts in 190ms (737 modules)
+ GET /api/accounting/chart-of-accounts 200 in 267ms
+ GET /api/accounting/chart-of-accounts 200 in 269ms
+ ✓ Compiled in 454ms (1303 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ✓ Compiled in 393ms (1293 modules)
+ GET /accounting/chart-of-accounts 200 in 465ms
+ ✓ Compiled /api/settings/theme in 173ms (729 modules)
+ GET /api/system/scope 200 in 413ms
+ GET /api/auth/me 200 in 420ms
+ GET /api/settings/theme 200 in 443ms
+ GET /api/settings/theme 200 in 444ms
+ GET /api/settings/general 200 in 425ms
+ GET /api/settings/general 200 in 427ms
+ GET /api/system/scope 200 in 96ms
+ GET /api/company-setup 200 in 84ms
+ GET /api/auth/me 200 in 105ms
+ GET /api/accounting/chart-of-accounts 200 in 103ms
+ GET /api/accounting/chart-of-accounts 200 in 107ms
+ GET /api/company-setup 200 in 22ms
+ ✓ Compiled in 354ms (1295 modules)
+ ✓ Compiled in 345ms (566 modules)
+ ✓ Compiled in 223ms (566 modules)
+ ✓ Compiled in 224ms (566 modules)
+ ✓ Compiled in 266ms (566 modules)
+ ✓ Compiled in 220ms (566 modules)
+ ✓ Compiled in 190ms (566 modules)
+ ✓ Compiled in 193ms (566 modules)
+ ✓ Compiled in 204ms (566 modules)
+ ✓ Compiled in 281ms (566 modules)
+ ✓ Compiled in 128ms (566 modules)
+ ✓ Compiled in 215ms (566 modules)
+ ✓ Compiled in 220ms (566 modules)
+ ✓ Compiled in 235ms (566 modules)
+ ✓ Compiled in 234ms (566 modules)
+ ✓ Compiled in 204ms (566 modules)
+ ✓ Compiled in 191ms (566 modules)
+ ✓ Compiled in 179ms (566 modules)
+ ✓ Compiled in 206ms (566 modules)
+ ✓ Compiled in 198ms (566 modules)
+ ✓ Compiled in 199ms (566 modules)
+ ✓ Compiled in 375ms (566 modules)
+ ✓ Compiled in 231ms (566 modules)
+ ✓ Compiled in 212ms (566 modules)
+ ✓ Compiled in 236ms (566 modules)
+ ✓ Compiled in 198ms (566 modules)
+ ✓ Compiled in 211ms (566 modules)
+ ✓ Compiled in 184ms (566 modules)
+ ✓ Compiled in 193ms (566 modules)
+ ✓ Compiled in 234ms (566 modules)
+ ✓ Compiled in 253ms (566 modules)
+ ✓ Compiled in 207ms (566 modules)
+ ✓ Compiled in 200ms (566 modules)
+ ✓ Compiled in 186ms (566 modules)
+ GET /accounting/opening-balance 200 in 135ms
+ ○ Compiling /settings/general ...
+ ✓ Compiled /settings/general in 824ms (999 modules)
+ GET /settings/general 200 in 991ms
+ ✓ Compiled /settings/sales in 273ms (455 modules)
+ GET /settings/sales 200 in 375ms
+ ✓ Compiled /[...slug] in 304ms (1104 modules)
+ GET /settings/pos 200 in 854ms
+ ✓ Compiled /settings/qr-code in 268ms (1184 modules)
+ GET /settings/qr-code 200 in 387ms
+ ○ Compiling /masters/supplier/new ...
+ ✓ Compiled /masters/supplier/new in 513ms (1227 modules)
+ GET /masters/supplier/new 200 in 615ms
+ ✓ Compiled /masters/customer/new in 329ms (1242 modules)
+ GET /masters/customer/new 200 in 424ms
+ ✓ Compiled /purchase/grn/new in 428ms (1252 modules)
+ GET /purchase/grn/new 200 in 544ms
+ ✓ Compiled /masters/opening-stock/bulk in 400ms (1262 modules)
+ GET /masters/opening-stock/bulk 200 in 485ms
+ ✓ Compiled /api/accounting/opening-balance in 475ms (815 modules)
+ GET /api/accounting/opening-balance 200 in 666ms
+ GET /api/accounting/opening-balance 200 in 669ms
+ PUT /api/accounting/opening-balance 200 in 73ms
+ ✓ Compiled /api/finance/gl in 166ms (558 modules)
+ GET /api/finance/gl 200 in 290ms
+ GET /api/finance/gl 200 in 291ms
+ ○ Compiling /finance ...
+ ✓ Compiled /finance in 533ms (1199 modules)
+ ✓ Compiled /dashboard in 259ms (625 modules)
+ ✓ Compiled /api/company-setup in 307ms (707 modules)
+ GET /api/company-setup 200 in 466ms
+ GET /api/company-setup 200 in 468ms
+ ✓ Compiled in 768ms (1066 modules)
+ ✓ Compiled in 308ms (606 modules)
+ ✓ Compiled in 246ms (606 modules)
+ ✓ Compiled /api/accounting/opening-balance in 243ms (608 modules)
+ GET /api/accounting/opening-balance 401 in 365ms
+ ✓ Compiled /accounting/opening-balance in 188ms (615 modules)
+ GET /accounting/opening-balance 200 in 338ms
+ GET /api/accounting/opening-balance 200 in 89ms
+ GET /api/accounting/opening-balance 200 in 87ms
+ PUT /api/accounting/opening-balance 200 in 79ms
+ ✓ Compiled /api/company-setup in 258ms (691 modules)
+ GET /api/company-setup 200 in 363ms
+ GET /api/company-setup 200 in 364ms
+ ✓ Compiled /finance/gl in 218ms (697 modules)
+ ✓ Compiled /api/finance/gl in 348ms (699 modules)
+ GET /api/finance/gl 200 in 426ms
+ GET /api/finance/gl 200 in 427ms
+ ○ Compiling /purchase/grn ...
+ ✓ Compiled /purchase/grn in 533ms (701 modules)
+ ✓ Compiled /api/purchase/grn in 249ms (708 modules)
+ GET /api/purchase/grn?q=&status=All 200 in 370ms
+ ✓ Compiled /purchase/grn/new in 408ms (714 modules)
+ ✓ Compiled /api/settings/pos in 255ms (716 modules)
+ ✓ Compiled (720 modules)
+ GET /api/masters/suppliers 200 in 690ms
+ GET /api/masters/suppliers 200 in 691ms
+ GET /api/settings/pos 200 in 696ms
+ GET /api/settings/pos 200 in 694ms
+ ✓ Compiled /api/products in 381ms (726 modules)
+ GET /api/products?q=pna&pageSize=20 200 in 39ms
+ GET /api/products?q=pnat&pageSize=20 200 in 39ms
+ GET /api/products?q=foma&pageSize=20 200 in 38ms
+ GET /api/products?q=form&pageSize=20 200 in 56ms
+ POST /api/purchase/grn 201 in 150ms
+ ✓ Compiled /purchase/grn/[id] in 420ms (782 modules)
+ ✓ Compiled /api/purchase/grn/[id] in 197ms (784 modules)
+ ✓ Compiled (786 modules)
+ GET /api/purchase/grn/13 200 in 530ms
+ GET /api/purchase/grn/13 200 in 535ms
+ GET /api/settings/qr-code 200 in 545ms
+ GET /api/settings/qr-code 200 in 545ms
+ GET /api/masters/suppliers 200 in 110ms
+ GET /api/masters/suppliers 200 in 114ms
+ GET /api/settings/pos 200 in 119ms
+ GET /api/settings/pos 200 in 126ms
+ GET /api/purchase/grn/13 200 in 117ms
+ GET /api/purchase/grn/13 200 in 116ms
+ ✓ Compiled in 1187ms (1242 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /purchase/grn/new?id=13 200 in 129ms
+ ✓ Compiled /api/auth/me in 186ms (638 modules)
+ ✓ Compiled (724 modules)
+ GET /api/system/scope 200 in 584ms
+ GET /api/auth/me 200 in 591ms
+ GET /api/settings/theme 200 in 663ms
+ GET /api/settings/general 200 in 603ms
+ GET /api/settings/general 200 in 598ms
+ GET /api/settings/theme 200 in 662ms
+ GET /api/system/scope 200 in 51ms
+ GET /api/auth/me 200 in 77ms
+ GET /api/masters/suppliers 200 in 83ms
+ GET /api/masters/suppliers 200 in 82ms
+ GET /api/purchase/grn/13 200 in 84ms
+ GET /api/settings/pos 200 in 89ms
+ GET /api/settings/pos 200 in 74ms
+ ✓ Compiled /api/company-setup in 184ms (806 modules)
+ GET /api/purchase/grn/13 200 in 393ms
+ GET /api/company-setup 200 in 389ms
+ GET /api/company-setup 200 in 386ms
+ ✓ Compiled in 739ms (1412 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /purchase/grn/new?id=13 200 in 191ms
+ GET /api/settings/theme 200 in 83ms
+ GET /api/settings/theme 200 in 110ms
+ GET /api/settings/general 200 in 133ms
+ GET /api/settings/general 200 in 133ms
+ GET /api/system/scope 200 in 139ms
+ GET /api/auth/me 200 in 142ms
+ GET /api/system/scope 200 in 127ms
+ GET /api/auth/me 200 in 126ms
+ GET /api/masters/suppliers 200 in 125ms
+ GET /api/masters/suppliers 200 in 115ms
+ GET /api/purchase/grn/13 200 in 118ms
+ GET /api/settings/pos 200 in 138ms
+ GET /api/settings/pos 200 in 129ms
+ GET /api/purchase/grn/13 200 in 93ms
+ GET /api/company-setup 200 in 80ms
+ GET /api/company-setup 200 in 77ms
+ PUT /api/purchase/grn/13 200 in 108ms
+ ✓ Compiled /api/settings/qr-code in 291ms (808 modules)
+ GET /api/purchase/grn/13 200 in 514ms
+ GET /api/purchase/grn/13 200 in 520ms
+ GET /api/settings/qr-code 200 in 528ms
+ GET /api/settings/qr-code 200 in 529ms
+ ✓ Compiled /purchase/grn in 285ms (815 modules)
+ ✓ Compiled /api/purchase/grn in 244ms (819 modules)
+ GET /api/purchase/grn?q=&status=All 200 in 335ms
+ ○ Compiling /inventory/ledger ...
+ ✓ Compiled /inventory/ledger in 541ms (812 modules)
+ ✓ Compiled /api/inventory/ledger in 230ms (814 modules)
+ GET /api/inventory/ledger?q=&type=All 200 in 340ms
+ ✓ Compiled /api/inventory/stock-position in 242ms (816 modules)
+ GET /api/inventory/stock-position?productId=37&from=2026-06-01&to=2026-06-30 200 in 337ms
+ GET /api/purchase/grn?q=&status=All 200 in 57ms
+ GET /api/purchase/grn/13 200 in 89ms
+ GET /api/settings/qr-code 200 in 92ms
+ GET /api/purchase/grn/13 200 in 89ms
+ GET /api/settings/qr-code 200 in 103ms
+ GET /api/purchase/grn?q=&status=All 200 in 38ms
+ GET /api/masters/suppliers 200 in 113ms
+ GET /api/purchase/grn/13 200 in 105ms
+ GET /api/settings/pos 200 in 148ms
+ GET /api/masters/suppliers 200 in 148ms
+ GET /api/purchase/grn/13 200 in 140ms
+ GET /api/settings/pos 200 in 151ms
+ PUT /api/purchase/grn/13 200 in 127ms
+ GET /api/settings/qr-code 200 in 58ms
+ GET /api/purchase/grn/13 200 in 67ms
+ GET /api/purchase/grn/13 200 in 57ms
+ GET /api/settings/qr-code 200 in 71ms
+ GET /api/purchase/grn?q=&status=All 200 in 41ms
+ GET /api/inventory/ledger?q=&type=All 200 in 44ms
+ GET /api/inventory/stock-position?productId=37&from=2026-06-01&to=2026-06-30 200 in 30ms
+ ○ Compiling /sales/pos ...
+ ✓ Compiled /sales/pos in 1209ms (1095 modules)
+ ✓ Compiled in 317ms (607 modules)
+ ✓ Compiled /api/sales in 135ms (632 modules)
+ ✓ Compiled (641 modules)
+ GET /api/sales 200 in 546ms
+ GET /api/sales 200 in 534ms
+ GET /api/settings/pos 200 in 548ms
+ GET /api/settings/pos 200 in 553ms
+ GET /api/settings/sales 200 in 555ms
+ GET /api/settings/sales 200 in 560ms
+ ✓ Compiled /api/pos/products in 205ms (643 modules)
+ GET /api/pos/products?q=pant 200 in 305ms
+ POST /api/sales 201 in 132ms
+ ✓ Compiled /api/sales/[id] in 169ms (628 modules)
+ GET /api/sales/8 200 in 779ms
+ GET /api/sales 200 in 35ms
+ ✓ Compiled /sales/history in 255ms (639 modules)
+ GET /api/sales?q=&from=&to= 200 in 51ms
+ GET /api/sales/8 200 in 50ms
+ ✓ Compiled /api/finance/gl in 229ms (641 modules)
+ GET /api/finance/gl 200 in 329ms
+ GET /api/finance/gl 200 in 332ms
+ GET /api/finance/gl?accountId=39 200 in 34ms
+ GET /api/finance/gl?accountId=42 200 in 31ms
+ ✓ Compiled /api/auth/logout in 156ms (644 modules)
+ POST /api/auth/logout 200 in 274ms
+ ✓ Compiled /login in 234ms (657 modules)
+ ✓ Compiled /api/auth/login in 259ms (741 modules)
+ POST /api/auth/login 200 in 469ms
+ ✓ Compiled /dashboard in 279ms (755 modules)
+ ✓ Compiled /api/settings/general in 206ms (757 modules)
+ ✓ Compiled (840 modules)
+ GET /api/system/scope 200 in 614ms
+ GET /api/system/scope 200 in 616ms
+ GET /api/auth/me 200 in 625ms
+ GET /api/auth/me 200 in 601ms
+ GET /api/settings/general 200 in 627ms
+ GET /api/settings/general 200 in 629ms
+ ✓ Compiled /api/company-setup in 200ms (843 modules)
+ GET /api/company-setup 200 in 299ms
+ GET /api/company-setup 200 in 250ms
+ GET /api/company-setup 200 in 250ms
+ GET /api/company-setup 200 in 300ms
+ ✓ Compiled /sales/pos in 477ms (834 modules)
+ ✓ Compiled /api/settings/pos in 186ms (837 modules)
+ ✓ Compiled (845 modules)
+ GET /api/sales 200 in 668ms
+ GET /api/sales 200 in 664ms
+ GET /api/settings/pos 200 in 671ms
+ GET /api/settings/pos 200 in 668ms
+ GET /api/settings/sales 200 in 673ms
+ GET /api/settings/sales 200 in 683ms
+ ✓ Compiled /api/pos/products in 261ms (847 modules)
+ GET /api/pos/products?q=pant 200 in 338ms
+ POST /api/sales 201 in 100ms
+ ✓ Compiled /api/sales/[id] in 178ms (847 modules)
+ GET /api/sales/9 200 in 257ms
+ GET /api/sales 200 in 35ms
+ ✓ Compiled /sales/history in 338ms (650 modules)
+ GET /api/sales?q=&from=&to= 200 in 50ms
+ ✓ Compiled /api/finance/gl in 164ms (652 modules)
+ GET /api/finance/gl 200 in 250ms
+ GET /api/finance/gl 200 in 253ms
+ ○ Compiling /finance/gst ...
+ ✓ Compiled /finance/gst in 903ms (1299 modules)
+ ✓ Compiled /api/auth/logout in 261ms (695 modules)
+ POST /api/auth/logout 200 in 353ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 512ms (708 modules)
+ ✓ Compiled /api/auth/login in 330ms (790 modules)
+ POST /api/auth/login 401 in 534ms
+ POST /api/auth/login 200 in 121ms
+ ✓ Compiled /api/auth/me in 406ms (804 modules)
+ ✓ Compiled (860 modules)
+ GET /api/auth/me 200 in 873ms
+ GET /api/system/scope 200 in 893ms
+ GET /api/system/scope 200 in 900ms
+ GET /api/settings/general 200 in 912ms
+ GET /api/settings/general 200 in 916ms
+ ✓ Compiled /api/company-setup in 218ms (863 modules)
+ GET /api/auth/me 200 in 532ms
+ GET /api/company-setup 200 in 595ms
+ GET /api/company-setup 200 in 580ms
+ GET /api/company-setup 200 in 574ms
+ GET /api/company-setup 200 in 82ms
+ ✓ Compiled /api/settings/pos in 434ms (865 modules)
+ ✓ Compiled (868 modules)
+ GET /api/settings/sales 200 in 1039ms
+ GET /api/settings/sales 200 in 1030ms
+ GET /api/sales 200 in 1032ms
+ GET /api/sales 200 in 1042ms
+ GET /api/settings/pos 200 in 1045ms
+ GET /api/settings/pos 200 in 1037ms
+ GET /api/sales?q=&from=&to= 200 in 35ms
+ GET /api/finance/gl 200 in 68ms
+ GET /api/finance/gl 200 in 70ms
+ GET /api/finance/gl?accountId=34 200 in 59ms
+ GET /api/finance/gl 200 in 41ms
+ ○ Compiling /finance/journal ...
+ ✓ Compiled /finance/journal in 701ms (874 modules)
+ ✓ Compiled /api/finance/journal in 347ms (876 modules)
+ GET /api/finance/journal? 200 in 141ms
+ GET /api/finance/journal? 200 in 479ms
+ GET /api/finance/journal? 200 in 481ms
+ POST /api/system/scope 200 in 29ms
+ GET /api/settings/general 200 in 42ms
+ GET /api/finance/journal? 200 in 52ms
+ GET /api/finance/journal? 200 in 54ms
+ GET /api/finance/journal? 200 in 29ms
+ POST /api/system/scope 200 in 24ms
+ GET /api/settings/general 200 in 39ms
+ GET /api/finance/journal? 200 in 47ms
+ GET /api/finance/journal? 200 in 48ms
+ GET /api/finance/journal? 200 in 37ms
+ GET /api/finance/gl 200 in 53ms
+ GET /api/finance/gl 200 in 56ms
+ POST /api/auth/logout 200 in 62ms
+ POST /api/auth/login 200 in 147ms
+ GET /api/system/scope 200 in 119ms
+ GET /api/system/scope 200 in 121ms
+ GET /api/auth/me 200 in 126ms
+ GET /api/settings/general 200 in 129ms
+ GET /api/settings/general 200 in 131ms
+ GET /api/auth/me 200 in 96ms
+ GET /api/company-setup 200 in 61ms
+ GET /api/company-setup 200 in 83ms
+ GET /api/company-setup 200 in 72ms
+ GET /api/company-setup 200 in 62ms
+ ○ Compiling /masters/product ...
+ ✓ Compiled /masters/product in 564ms (511 modules)
+ ✓ Compiled /api/products in 251ms (736 modules)
+ GET /api/products?q=&status=All&page=1&pageSize=8 200 in 387ms
+ ○ Compiling /masters/product/new ...
+ ✓ Compiled /masters/product/new in 957ms (1383 modules)
+ ✓ Compiled /api/masters/values in 165ms (769 modules)
+ ✓ Compiled (771 modules)
+ GET /api/company-setup 200 in 459ms
+ GET /api/company-setup 200 in 461ms
+ GET /api/masters/values 200 in 467ms
+ GET /api/masters/values 200 in 469ms
+ ✓ Compiled /api/auth/logout in 402ms (620 modules)
+ POST /api/auth/logout 200 in 525ms
+ ✓ Compiled /login in 382ms (634 modules)
+ ✓ Compiled /api/auth/login in 215ms (718 modules)
+ POST /api/auth/login 401 in 418ms
+ POST /api/auth/login 200 in 116ms
+ ✓ Compiled /api/auth/me in 165ms (732 modules)
+ ✓ Compiled (819 modules)
+ GET /api/auth/me 200 in 653ms
+ GET /api/system/scope 200 in 692ms
+ GET /api/system/scope 200 in 695ms
+ GET /api/settings/general 200 in 718ms
+ GET /api/settings/general 200 in 731ms
+ GET /api/auth/me 200 in 76ms
+ ✓ Compiled /api/company-setup in 311ms (822 modules)
+ GET /api/company-setup 200 in 408ms
+ GET /api/company-setup 200 in 408ms
+ GET /api/company-setup 200 in 373ms
+ GET /api/company-setup 200 in 452ms
+ ○ Compiling /masters/product ...
+ ✓ Compiled /masters/product in 747ms (840 modules)
+ ✓ Compiled /api/products in 185ms (846 modules)
+ GET /api/products?q=&status=All&page=1&pageSize=8 200 in 286ms
+ ✓ Compiled /masters/product/new in 415ms (876 modules)
+ GET /api/company-setup 200 in 78ms
+ ✓ Compiled /api/masters/values in 210ms (878 modules)
+ GET /api/company-setup 200 in 521ms
+ GET /api/masters/values 200 in 524ms
+ GET /api/masters/values 200 in 525ms
+ ○ Compiling /masters/supplier ...
+ ✓ Compiled /masters/supplier in 1055ms (1127 modules)
+ ✓ Compiled /masters/supplier/new in 329ms (534 modules)
+ ✓ Compiled /masters/customer in 497ms (542 modules)
+ ✓ Compiled /masters/customer/new in 235ms (550 modules)
+ ○ Compiling /masters/discount ...
+ ✓ Compiled /masters/discount in 1119ms (1189 modules)
+ ○ Compiling /masters/discount/new ...
+ ✓ Compiled /masters/discount/new in 812ms (1205 modules)
+ ○ Compiling /masters/opening-stock ...
+ ✓ Compiled /masters/opening-stock in 910ms (1219 modules)
+ ✓ Compiled /api/inventory/opening-stock in 456ms (722 modules)
+ GET /api/inventory/opening-stock?q=&status=All 200 in 616ms
+ ✓ Compiled /masters/opening-stock/bulk in 481ms (728 modules)
+ ○ Compiling /api/products ...
+ ✓ Compiled /api/products in 597ms (813 modules)
+ GET /api/products?q=pa&pageSize=20 200 in 239ms
+ GET /api/products?q=pany&pageSize=20 200 in 29ms
+ GET /api/products?q=pan&pageSize=20 200 in 48ms
+ GET /api/products?q=pant&pageSize=20 200 in 50ms
+ ○ Compiling /settings/invoice-template ...
+ ✓ Compiled /settings/invoice-template in 1003ms (1463 modules)
+ ✓ Compiled /api/settings/invoice-template in 257ms (821 modules)
+ GET /api/settings/invoice-template?type=B2C 200 in 398ms
+ GET /api/settings/invoice-template?type=B2C 200 in 399ms
+ GET /api/settings/invoice-template?type=B2B 200 in 27ms
+ GET /api/settings/invoice-template?type=COLLECTION 200 in 43ms
+ GET /api/settings/invoice-template?type=B2C 200 in 34ms
+ GET /api/settings/invoice-template?type=B2B 200 in 30ms
+ GET /api/settings/invoice-template?type=COLLECTION 200 in 35ms
+ GET /api/settings/invoice-template?type=B2C 200 in 23ms
+ ✓ Compiled /api/finance/gl in 366ms (621 modules)
+ GET /api/finance/gl 200 in 507ms
+ GET /api/finance/gl 200 in 500ms
+ GET /api/finance/gl?accountId=38 200 in 37ms
+ GET /api/finance/gl?accountId=39 200 in 40ms
+ ✓ Compiled /api/system/scope in 363ms (623 modules)
+ POST /api/system/scope 200 in 503ms
+ ✓ Compiled /api/settings/general in 263ms (626 modules)
+ GET /api/finance/gl 200 in 518ms
+ GET /api/finance/gl 200 in 519ms
+ GET /api/settings/general 200 in 523ms
+ GET /api/finance/gl?accountId=38 200 in 38ms
+ ○ Compiling /settings/sales ...
+ ✓ Compiled /settings/sales in 658ms (660 modules)
+ ✓ Compiled /api/settings/sales in 282ms (663 modules)
+ GET /api/settings/sales 200 in 424ms
+ GET /api/settings/sales 200 in 424ms
+ ✓ Compiled in 429ms (644 modules)
+ ✓ Compiled in 343ms (644 modules)
+ ✓ Compiled in 461ms (644 modules)
+ ✓ Compiled in 443ms (644 modules)
+ ✓ Compiled in 350ms (644 modules)
+ ✓ Compiled in 252ms (644 modules)
+ ✓ Compiled in 338ms (644 modules)
+ ✓ Compiled in 318ms (644 modules)
+ ✓ Compiled in 274ms (644 modules)
+ ✓ Compiled in 274ms (644 modules)
+ ✓ Compiled in 273ms (644 modules)
+ ✓ Compiled in 358ms (644 modules)
+ ✓ Compiled in 520ms (1122 modules)
+ ✓ Compiled in 159ms (644 modules)
+ ✓ Compiled in 254ms (644 modules)
+ ✓ Compiled in 952ms (1122 modules)
+ ✓ Compiled /masters/product in 483ms (496 modules)
+ ✓ Compiled /api/products in 733ms (1365 modules)
+ GET /api/products?q=&status=All&page=1&pageSize=8 200 in 699ms
+ ○ Compiling /masters/product/new ...
+ ✓ Compiled /masters/product/new in 1278ms (752 modules)
+ ✓ Compiled /api/masters/values in 100ms (755 modules)
+ ✓ Compiled (757 modules)
+ GET /api/masters/values 200 in 427ms
+ GET /api/masters/values 200 in 429ms
+ GET /api/company-setup 200 in 435ms
+ GET /api/company-setup 200 in 434ms
+ ✓ Compiled in 309ms (644 modules)
+ ✓ Compiled in 223ms (644 modules)
+ ✓ Compiled in 319ms (644 modules)
+ ✓ Compiled in 264ms (644 modules)
+ ✓ Compiled in 274ms (644 modules)
+ ✓ Compiled /settings/general in 320ms (494 modules)
+ ✓ Compiled /api/settings/general in 174ms (637 modules)
+ GET /api/settings/general 200 in 266ms
+ GET /api/settings/general 200 in 266ms
+ ○ Compiling /settings/sales ...
+ ✓ Compiled /settings/sales in 556ms (668 modules)
+ ✓ Compiled /api/settings/sales in 243ms (671 modules)
+ GET /api/settings/sales 200 in 329ms
+ GET /api/settings/sales 200 in 332ms
+ ○ Compiling /settings/notifications ...
+ ✓ Compiled /settings/notifications in 1069ms (1123 modules)
+ ✓ Compiled /settings/sales in 149ms (522 modules)
+ ✓ Compiled /api/settings/sales in 166ms (666 modules)
+ GET /api/settings/sales 200 in 318ms
+ GET /api/settings/sales 200 in 308ms
+ ✓ Compiled in 278ms (649 modules)
+ ✓ Compiled in 245ms (649 modules)
+ ✓ Compiled in 147ms (649 modules)
+ ✓ Compiled in 235ms (649 modules)
+ ○ Compiling /inventory/batch ...
+ ✓ Compiled /inventory/batch in 793ms (1312 modules)
+ ✓ Compiled /inventory/batch/new in 485ms (1321 modules)
+ ✓ Compiled /inventory/expiry in 416ms (1329 modules)
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 609ms (493 modules)
+ GET /dashboard 200 in 821ms
+ ✓ Compiled /settings/sales in 148ms (526 modules)
+ GET /settings/sales 200 in 346ms
+ ○ Compiling /settings/invoice-template/new ...
+ ✓ Compiled /settings/invoice-template/new in 783ms (1203 modules)
+ GET /settings/invoice-template/new 200 in 889ms
+ ✓ Compiled /masters/product/new in 286ms (565 modules)
+ GET /masters/product/new 200 in 410ms
+ ✓ Compiled /system/branches in 319ms (1233 modules)
+ GET /system/branches 200 in 416ms
+ ○ Compiling /api/purchase/grn ...
+ ✓ Compiled /api/purchase/grn in 525ms (721 modules)
+ GET /api/purchase/grn?q=&status=All 200 in 708ms
+ ✓ Compiled /api/settings/pos in 348ms (723 modules)
+ ✓ Compiled (727 modules)
+ GET /api/settings/pos 200 in 812ms
+ GET /api/settings/pos 200 in 810ms
+ GET /api/masters/suppliers 200 in 821ms
+ GET /api/masters/suppliers 200 in 818ms
+ GET /purchase/grn/new 200 in 174ms
+ ✓ Compiled /api/auth/me in 303ms (621 modules)
+ ✓ Compiled (707 modules)
+ GET /api/auth/me 200 in 678ms
+ GET /api/system/scope 200 in 703ms
+ GET /api/settings/theme 200 in 822ms
+ GET /api/settings/theme 200 in 815ms
+ GET /api/settings/general 200 in 706ms
+ GET /api/settings/general 200 in 721ms
+ GET /api/system/scope 200 in 44ms
+ GET /api/auth/me 200 in 45ms
+ ✓ Compiled /api/company-setup in 90ms (710 modules)
+ ✓ Compiled (794 modules)
+ GET /api/masters/suppliers 200 in 422ms
+ GET /api/masters/suppliers 200 in 417ms
+ GET /api/settings/pos 200 in 424ms
+ GET /api/settings/pos 200 in 420ms
+ GET /api/company-setup 200 in 394ms
+ GET /api/company-setup 200 in 38ms
+ ○ Compiling /settings/sales ...
+ ✓ Compiled /settings/sales in 616ms (828 modules)
+ ✓ Compiled /api/settings/sales in 274ms (831 modules)
+ GET /api/settings/sales 200 in 346ms
+ GET /api/settings/sales 200 in 348ms
+ ✓ Compiled /api/auth/logout in 146ms (828 modules)
+ POST /api/auth/logout 200 in 252ms
+ ✓ Compiled /login in 243ms (841 modules)
+ ✓ Compiled /api/auth/login in 112ms (845 modules)
+ POST /api/auth/login 200 in 260ms
+ ✓ Compiled /dashboard in 294ms (859 modules)
+ GET /api/system/scope 200 in 56ms
+ GET /api/system/scope 200 in 80ms
+ GET /api/settings/general 200 in 87ms
+ GET /api/settings/general 200 in 91ms
+ GET /api/auth/me 200 in 93ms
+ GET /api/auth/me 200 in 84ms
+ GET /api/company-setup 200 in 34ms
+ GET /api/company-setup 200 in 45ms
+ GET /api/company-setup 200 in 31ms
+ GET /api/company-setup 200 in 31ms
+ ✓ Compiled /system/branches in 333ms (866 modules)
+ GET /api/company-setup 200 in 79ms
+ GET /api/company-setup 200 in 78ms
+ ○ Compiling /setup ...
+ ✓ Compiled /setup in 1449ms (1499 modules)
+ GET /api/company-setup 200 in 61ms
+ GET /api/company-setup 200 in 66ms
+ GET /api/settings/general 200 in 111ms
+ GET /api/company-setup 200 in 129ms
+ GET /api/company-setup 200 in 121ms
+ GET /api/system/scope 200 in 142ms
+ GET /api/auth/me 200 in 151ms
+ GET /api/settings/general 200 in 152ms
+ GET /api/system/scope 200 in 86ms
+ GET /api/company-setup 200 in 58ms
+ GET /api/auth/me 200 in 95ms
+ GET /api/company-setup 200 in 30ms
+ POST /api/auth/logout 200 in 63ms
+ POST /api/auth/login 401 in 123ms
+ POST /api/auth/login 200 in 141ms
+ GET /api/auth/me 200 in 70ms
+ GET /api/system/scope 200 in 109ms
+ GET /api/system/scope 200 in 113ms
+ GET /api/settings/general 200 in 122ms
+ GET /api/settings/general 200 in 122ms
+ GET /api/auth/me 200 in 65ms
+ GET /api/company-setup 200 in 91ms
+ GET /api/company-setup 200 in 66ms
+ GET /api/company-setup 200 in 65ms
+ GET /api/company-setup 200 in 57ms
+ GET /api/settings/sales 200 in 46ms
+ GET /api/settings/sales 200 in 47ms
+ ✓ Compiled /settings/invoice-template in 378ms (807 modules)
+ ✓ Compiled /api/settings/invoice-template in 253ms (809 modules)
+ GET /api/settings/invoice-template?type=B2C 200 in 358ms
+ GET /api/settings/invoice-template?type=B2C 200 in 359ms
+ GET /api/settings/invoice-template?type=B2B 200 in 36ms
+ GET /api/settings/invoice-template?type=B2C 200 in 33ms
+ GET /api/settings/invoice-template?type=B2B 200 in 27ms
+ GET /api/settings/invoice-template?type=COLLECTION 200 in 32ms
+ GET /api/settings/invoice-template?type=B2C 200 in 28ms
+ GET /api/settings/sales 200 in 49ms
+ GET /api/settings/sales 200 in 51ms
+ ○ Compiling /settings/notifications ...
+ ✓ Compiled /settings/notifications in 549ms (631 modules)
+ GET /api/settings/sales 200 in 90ms
+ GET /api/settings/sales 200 in 95ms
+ ○ Compiling /masters/product ...
+ ✓ Compiled /masters/product in 622ms (698 modules)
+ ✓ Compiled /api/products in 212ms (783 modules)
+ GET /api/products?q=&status=All&page=1&pageSize=8 200 in 385ms
+ ✓ Compiled /masters/product/new in 237ms (800 modules)
+ ✓ Compiled /api/masters/values in 177ms (803 modules)
+ ✓ Compiled (805 modules)
+ GET /api/masters/values 200 in 482ms
+ GET /api/masters/values 200 in 483ms
+ GET /api/company-setup 200 in 488ms
+ GET /api/company-setup 200 in 491ms
+ GET /api/products?q=&status=All&page=1&pageSize=8 200 in 54ms
+ GET /api/company-setup 200 in 62ms
+ GET /api/masters/values 200 in 64ms
+ GET /api/company-setup 200 in 64ms
+ GET /api/masters/values 200 in 66ms
+ ○ Compiling /purchase/grn ...
+ ✓ Compiled /purchase/grn in 613ms (489 modules)
+ ✓ Compiled /api/purchase/grn in 272ms (642 modules)
+ GET /api/purchase/grn?q=&status=All 200 in 396ms
+ ○ Compiling /purchase/grn/new ...
+ ✓ Compiled /purchase/grn/new in 547ms (649 modules)
+ ✓ Compiled /api/settings/pos in 146ms (651 modules)
+ ✓ Compiled (655 modules)
+ GET /api/settings/pos 200 in 552ms
+ GET /api/settings/pos 200 in 554ms
+ GET /api/masters/suppliers 200 in 559ms
+ GET /api/masters/suppliers 200 in 557ms
+ ✓ Compiled /api/products in 499ms (707 modules)
+ GET /api/products?q=pant&pageSize=20 200 in 666ms
+ ✓ Compiled /masters/product in 490ms (785 modules)
+ GET /api/products?q=&status=All&page=1&pageSize=8 200 in 66ms
+ ✓ Compiled /api/masters/values in 183ms (788 modules)
+ ✓ Compiled (790 modules)
+ GET /api/masters/values 200 in 497ms
+ GET /api/masters/values 200 in 499ms
+ GET /api/company-setup 200 in 502ms
+ GET /api/company-setup 200 in 508ms
+ ✓ Compiled in 3.1s (1151 modules)
+ ✓ Compiled in 457ms (1151 modules)
+ ✓ Compiled in 462ms (1151 modules)
+ ○ Compiling /[...slug] ...
+ ✓ Compiled /[...slug] in 1392ms (543 modules)
+ ✓ Compiled /dashboard in 421ms (551 modules)
+ ✓ Compiled /api/company-setup in 264ms (776 modules)
+ GET /api/company-setup 200 in 1178ms
+ GET /api/company-setup 200 in 1177ms
+ ○ Compiling /accounting/financial-period ...
+ ✓ Compiled /accounting/financial-period in 1003ms (1460 modules)
+ ✓ Compiled /api/accounting/financial-period in 280ms (772 modules)
+ GET /api/accounting/financial-period 200 in 407ms
+ GET /api/accounting/financial-period 200 in 408ms
+ ✓ Compiled in 388ms (706 modules)
+ ✓ Compiled in 283ms (706 modules)
+ ✓ Compiled in 270ms (706 modules)
+ ✓ Compiled in 278ms (706 modules)
+ ✓ Compiled in 429ms (706 modules)
+ ✓ Compiled in 283ms (706 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /accounting/financial-period 200 in 174ms
+ ✓ Compiled /api/system/scope in 424ms (682 modules)
+ ✓ Compiled (691 modules)
+ GET /api/auth/me 200 in 746ms
+ GET /api/system/scope 200 in 769ms
+ GET /api/settings/theme 200 in 887ms
+ GET /api/settings/theme 200 in 897ms
+ GET /api/settings/general 200 in 778ms
+ GET /api/settings/general 200 in 784ms
+ GET /api/system/scope 200 in 36ms
+ GET /api/auth/me 200 in 47ms
+ ✓ Compiled /api/company-setup in 90ms (693 modules)
+ ✓ Compiled (775 modules)
+ GET /api/accounting/financial-period 200 in 298ms
+ GET /api/accounting/financial-period 200 in 300ms
+ GET /api/company-setup 200 in 263ms
+ GET /api/company-setup 200 in 300ms
+ ✓ Compiled in 314ms (706 modules)
+ ✓ Compiled in 335ms (706 modules)
+ ✓ Compiled in 285ms (706 modules)
+ ✓ Compiled in 271ms (706 modules)
+ ✓ Compiled in 272ms (706 modules)
+ ✓ Compiled in 337ms (706 modules)
+ ✓ Compiled in 284ms (706 modules)
+ ✓ Compiled in 307ms (706 modules)
+ ✓ Compiled in 461ms (706 modules)

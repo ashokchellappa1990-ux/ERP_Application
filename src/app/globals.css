@@ -1,0 +1,220 @@
+@import "../styles/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =============================================================================
+   BASE LAYER
+   ========================================================================== */
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    letter-spacing: -0.006em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Smooth theme transitions */
+  body,
+  .theme-transition * {
+    transition: background-color 0.2s ease, border-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border-strong);
+    border-radius: 999px;
+    border: 2px solid var(--color-background);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-subtle);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+/* =============================================================================
+   COMPONENT UTILITIES
+   ========================================================================== */
+@layer components {
+  .card {
+    background-color: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .surface-panel {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  /* Touch-friendly hit targets for POS / tablet */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Brand gradient — active nav item, hero accents */
+  .nav-item-active {
+    background-image: var(--gradient-brand);
+  }
+
+  /* Brand gradient surface (buttons, chips) */
+  .bg-brand-gradient {
+    background-image: var(--gradient-brand);
+  }
+}
+
+/* =============================================================================
+   SUCCESS ANIMATION (registration complete)
+   ========================================================================== */
+@keyframes success-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes success-ring {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+@keyframes check-draw {
+  to { stroke-dashoffset: 0; }
+}
+.success-pop {
+  animation: success-pop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.success-ring {
+  animation: success-ring 1.1s ease-out infinite;
+}
+.check-path {
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  animation: check-draw 0.5s 0.25s ease-out forwards;
+}
+
+/* =============================================================================
+   APP LOADER — modern gradient ring spinner
+   ========================================================================== */
+@keyframes app-spin {
+  to { transform: rotate(1turn); }
+}
+.app-spinner {
+  border-radius: 9999px;
+  background: conic-gradient(
+    from 90deg,
+    transparent 0deg,
+    var(--color-secondary) 110deg,
+    var(--color-primary) 300deg,
+    var(--color-primary) 360deg
+  );
+  -webkit-mask: radial-gradient(farthest-side, #0000 calc(100% - var(--ring-thick, 6px)), #000 calc(100% - var(--ring-thick, 6px)));
+  mask: radial-gradient(farthest-side, #0000 calc(100% - var(--ring-thick, 6px)), #000 calc(100% - var(--ring-thick, 6px)));
+  animation: app-spin 0.8s linear infinite;
+}
+@keyframes app-core {
+  0%, 100% { transform: scale(0.82); opacity: 0.8; }
+  50%      { transform: scale(1); opacity: 1; }
+}
+.app-core {
+  animation: app-core 1.1s ease-in-out infinite;
+}
+@keyframes loader-dot {
+  0%, 80%, 100% { opacity: 0.2; transform: translateY(0); }
+  40%           { opacity: 1; transform: translateY(-2px); }
+}
+.loader-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: var(--color-primary);
+  animation: loader-dot 1.2s ease-in-out infinite;
+}
+
+/* Marketing site — infinite logo marquee + slow blob drift */
+@keyframes site-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.site-marquee { animation: site-marquee 32s linear infinite; }
+.site-marquee-group:hover .site-marquee { animation-play-state: paused; }
+@keyframes site-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+.site-float { animation: site-float 6s ease-in-out infinite; }
+@keyframes site-blob { 0%, 100% { transform: translate(0, 0) scale(1); } 33% { transform: translate(30px, -20px) scale(1.1); } 66% { transform: translate(-20px, 20px) scale(0.95); } }
+.site-blob { animation: site-blob 18s ease-in-out infinite; }
+
+/* Hero orbit animation — rotating dashed rings, flowing spokes, pulsing core */
+@keyframes orbit-spin { to { transform: rotate(360deg); } }
+@keyframes orbit-dash { to { stroke-dashoffset: -100; } }
+@keyframes orbit-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.06); opacity: .85; } }
+.orbit-ring { animation: orbit-spin 46s linear infinite; transform-origin: center; }
+.orbit-ring-rev { animation: orbit-spin 64s linear infinite reverse; transform-origin: center; }
+.orbit-spoke { animation: orbit-dash 3.5s linear infinite; }
+.orbit-core { animation: orbit-pulse 3.6s ease-in-out infinite; }
+/* sequential zoom — one node at a time */
+@keyframes orbit-zoom { 0%, 14%, 100% { transform: scale(1); box-shadow: 0 4px 10px -4px rgba(0,0,0,.15); border-color: var(--color-border); } 7% { transform: scale(1.34); box-shadow: 0 12px 30px -6px var(--color-primary); border-color: var(--color-primary); } }
+.orbit-zoom { animation: orbit-zoom 9s ease-in-out infinite; }
+/* the module name zooms in + highlights in sync with its logo */
+@keyframes orbit-name { 0%, 14%, 100% { transform: translateX(-50%) scale(1); background-color: transparent; box-shadow: none; } 7% { transform: translateX(-50%) scale(1.3); background-color: color-mix(in srgb, var(--color-primary) 16%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 42%, transparent), 0 8px 18px -8px var(--color-primary); } }
+.orbit-name { animation: orbit-name 9s ease-in-out infinite; transform-origin: top center; }
+/* sequential colour-focus for the 5 flow cards (each carries its own --fc) */
+@keyframes card-focus { 0%, 22%, 100% { transform: scale(1); box-shadow: 0 1px 2px rgba(0,0,0,.05); border-color: var(--color-border); } 10% { transform: scale(1.05); box-shadow: 0 0 0 2px var(--fc), 0 14px 30px -10px var(--fc); border-color: var(--fc); } }
+.card-focus { animation: card-focus 5s ease-in-out infinite; }
+/* expanding "sonar" pulse from the orbit centre */
+@keyframes orbit-sonar { 0% { transform: scale(0.16); opacity: 0.55; } 80% { opacity: 0.06; } 100% { transform: scale(1); opacity: 0; } }
+.orbit-sonar { animation: orbit-sonar 3.8s ease-out infinite; transform-origin: center; }
+/* retail-flow — steps light up one after another, arrows flow between them */
+@keyframes flow-pulse { 0%, 15%, 100% { transform: scale(1) translateY(0); box-shadow: 0 4px 10px -4px rgba(0,0,0,.2); } 7.5% { transform: scale(1.22) translateY(-3px); box-shadow: 0 14px 28px -6px var(--color-primary); } }
+.flow-step { animation: flow-pulse 7s ease-in-out infinite; }
+@keyframes flow-arrow { 0%, 15%, 100% { color: rgba(124,58,237,.3); transform: translateX(0); } 7.5% { color: var(--color-primary); transform: translateX(4px); } }
+.flow-arrow { animation: flow-arrow 7s ease-in-out infinite; }
+/* soft breathing aurora glow for section backgrounds */
+@keyframes site-aurora { 0%, 100% { transform: translate(0,0) scale(1); opacity: .5; } 50% { transform: translate(20px,-16px) scale(1.15); opacity: .8; } }
+.site-aurora { animation: site-aurora 14s ease-in-out infinite; }
+/* hero flowing wave ribbons — two layers weave slowly in opposite directions */
+@keyframes hero-wave-a { 0%, 100% { transform: translate3d(0, 0, 0) scaleY(1); } 50% { transform: translate3d(-2.2%, -1.6%, 0) scaleY(1.04); } }
+@keyframes hero-wave-b { 0%, 100% { transform: translate3d(0, 0, 0) scaleY(1); } 50% { transform: translate3d(2.4%, 1.4%, 0) scaleY(1.05); } }
+.hero-wave-a { animation: hero-wave-a 18s ease-in-out infinite; transform-origin: bottom center; }
+.hero-wave-b { animation: hero-wave-b 24s ease-in-out infinite; transform-origin: bottom center; }
+/* subtle drift for the halftone dot clusters */
+@keyframes hero-dots { 0%, 100% { opacity: .5; transform: translate(0, 0); } 50% { opacity: .34; transform: translate(4px, -4px); } }
+.hero-dots { animation: hero-dots 12s ease-in-out infinite; }
+/* customer-app — QR scan sweep + gradient-text shimmer */
+@keyframes ca-scan { 0% { top: 6%; opacity: 0; } 12% { opacity: 1; } 50% { top: 80%; opacity: 1; } 88% { opacity: 1; } 100% { top: 6%; opacity: 0; } }
+.ca-scan { animation: ca-scan 2.6s ease-in-out infinite; }
+@keyframes ca-shimmer { to { background-position: 200% center; } }
+.ca-shimmer { animation: ca-shimmer 5s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .orbit-ring, .orbit-ring-rev, .orbit-spoke, .orbit-core, .orbit-zoom, .orbit-name, .card-focus, .orbit-sonar, .flow-step, .flow-arrow, .site-aurora, .hero-wave-a, .hero-wave-b, .hero-dots, .ca-scan, .ca-shimmer { animation: none; } }
+
+/* POS / touch mode: enlarge interactive targets globally */
+[data-density="touch"] {
+  --topbar-height: 68px;
+}
+[data-density="touch"] button,
+[data-density="touch"] .touch-target {
+  min-height: 48px;
+}

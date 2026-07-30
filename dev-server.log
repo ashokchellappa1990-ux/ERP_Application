@@ -1,0 +1,187 @@
+
+> oasys-one-pos@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+  - Environments: .env
+
+ ✓ Starting...
+ ⚠ Invalid next.config.mjs options detected: 
+ ⚠     Unrecognized key(s) in object: 'serverExternalPackages'
+ ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+ ✓ Ready in 1588ms
+ ○ Compiling /api/finance/petty-cash/config ...
+ ✓ Compiled /api/finance/petty-cash/config in 604ms (174 modules)
+ GET /api/finance/petty-cash/config 401 in 756ms
+ ✓ Compiled /api/finance/petty-cash/heads in 41ms (176 modules)
+ GET /api/finance/petty-cash/heads 405 in 83ms
+ ✓ Compiled /api/finance/petty-cash/[id] in 34ms (178 modules)
+ GET /api/finance/petty-cash/1 401 in 381ms
+ ○ Compiling /accounting/petty-cash-config ...
+ ✓ Compiled /accounting/petty-cash-config in 1061ms (874 modules)
+ GET /accounting/petty-cash-config 200 in 1198ms
+ ✓ Compiled /finance/petty-cash in 173ms (891 modules)
+ GET /finance/petty-cash 200 in 307ms
+ ✓ Compiled /finance/petty-cash/new in 211ms (904 modules)
+ GET /finance/petty-cash/new 200 in 315ms
+ GET /finance/petty-cash/new 200 in 176ms
+ ✓ Compiled /api/finance/petty-cash/config in 151ms (512 modules)
+ ✓ Compiled (517 modules)
+ GET /api/auth/me 200 in 487ms
+ GET /api/auth/me 200 in 468ms
+ GET /api/settings/theme 200 in 589ms
+ GET /api/settings/theme 200 in 587ms
+ GET /api/finance/petty-cash/config 200 in 510ms
+prisma:error 
+Invalid `prisma.pettyCashConfig.create()` invocation:
+
+
+Unique constraint failed on the constraint: `petty_cash_config_tenantId_key`
+ ⨯ PrismaClientKnownRequestError: 
+Invalid `prisma.pettyCashConfig.create()` invocation:
+
+
+Unique constraint failed on the constraint: `petty_cash_config_tenantId_key`
+    at zr.handleRequestError (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:8286)
+    at zr.handleAndLogRequestError (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7581)
+    at zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7288)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
+    at async getConfig (webpack-internal:///(rsc)/./src/app/api/finance/petty-cash/config/route.ts:18:11)
+    at async Promise.all (index 0)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/finance/petty-cash/config/route.ts:33:42)
+    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:57228
+    at async eT.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:46851)
+    at async eT.handle (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:58760)
+    at async doRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1366:42)
+    at async cacheEntry.responseCache.get.routeKind (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1588:28)
+    at async DevServer.renderToResponseWithComponentsImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1496:28)
+    at async DevServer.renderPageComponent (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1924:24)
+    at async DevServer.renderToResponseImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1962:32)
+    at async DevServer.pipeImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:818:17)
+    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:179:21)
+    at async handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:359:24)
+    at async requestHandlerImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:383:13)
+    at async Server.requestListener (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'P2002',
+  meta: {
+    modelName: 'PettyCashConfig',
+    driverAdapterError: DriverAdapterError: UniqueConstraintViolation
+        at MariaDbTransaction.onError (webpack-internal:///(rsc)/./node_modules/@prisma/adapter-mariadb/dist/index.mjs:327:11)
+        at MariaDbTransaction.performIO (webpack-internal:///(rsc)/./node_modules/@prisma/adapter-mariadb/dist/index.mjs:322:12)
+        at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        at async MariaDbTransaction.queryRaw (webpack-internal:///(rsc)/./node_modules/@prisma/adapter-mariadb/dist/index.mjs:287:20)
+        at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
+        at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
+        at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:47173)
+        at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43744)
+        at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
+        at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46097)
+        at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
+        at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
+        at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
+        at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
+        at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
+        at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
+        at async getConfig (webpack-internal:///(rsc)/./src/app/api/finance/petty-cash/config/route.ts:18:11)
+        at async Promise.all (index 0)
+        at async GET (webpack-internal:///(rsc)/./src/app/api/finance/petty-cash/config/route.ts:33:42)
+        at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:57228
+        at async eT.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:46851)
+        at async eT.handle (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:58760)
+        at async doRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1366:42)
+        at async cacheEntry.responseCache.get.routeKind (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1588:28)
+        at async DevServer.renderToResponseWithComponentsImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1496:28)
+        at async DevServer.renderPageComponent (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1924:24)
+        at async DevServer.renderToResponseImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1962:32)
+        at async DevServer.pipeImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:922:25)
+        at async NextNodeServer.handleCatchallRenderRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\next-server.js:272:17)
+        at async DevServer.handleRequestImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:818:17)
+        at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+        at async Span.traceAsyncFn (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\trace\trace.js:154:20)
+        at async DevServer.handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+        at async invokeRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:179:21)
+        at async handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:359:24)
+        at async requestHandlerImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:383:13)
+        at async Server.requestListener (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\start-server.js:141:13) {
+      cause: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+ GET /api/finance/petty-cash/config 500 in 520ms
+ ✓ Compiled /api/company-setup in 276ms (599 modules)
+ GET /api/company-setup 200 in 363ms
+ GET /api/company-setup 200 in 363ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 1452ms (1020 modules)
+ GET /api/company-setup 200 in 81ms
+ GET /api/company-setup 200 in 88ms
+ ✓ Compiled /accounting/petty-cash-config in 145ms (625 modules)
+ GET /api/finance/petty-cash/config 200 in 50ms
+ GET /api/finance/petty-cash/config 200 in 61ms
+ ✓ Compiled /api/finance/petty-cash/heads in 137ms (627 modules)
+ POST /api/finance/petty-cash/heads 201 in 225ms
+ POST /api/finance/petty-cash/heads 201 in 44ms
+ PATCH /api/finance/petty-cash/heads 200 in 43ms
+ PATCH /api/finance/petty-cash/heads 200 in 59ms
+ POST /api/finance/petty-cash/heads 201 in 52ms
+ POST /api/finance/petty-cash/heads 201 in 49ms
+ POST /api/finance/petty-cash/heads 201 in 44ms
+ PUT /api/finance/petty-cash/config 200 in 40ms
+ ○ Compiling /accounting/opening-balance ...
+ ✓ Compiled /accounting/opening-balance in 815ms (944 modules)
+ ✓ Compiled /api/accounting/opening-balance in 173ms (542 modules)
+ GET /api/accounting/opening-balance 200 in 289ms
+ GET /api/accounting/opening-balance 200 in 291ms
+ GET /api/finance/petty-cash/config 200 in 41ms
+ GET /api/finance/petty-cash/config 200 in 59ms
+ ○ Compiling /finance/expense ...
+ ✓ Compiled /finance/expense in 1008ms (828 modules)
+ ✓ Compiled in 244ms (422 modules)
+ ✓ Compiled /finance/expense/new in 449ms (824 modules)
+ ✓ Compiled /finance/petty-cash in 156ms (420 modules)
+ ✓ Compiled /api/finance/petty-cash in 198ms (567 modules)
+ GET /api/finance/petty-cash?q= 200 in 327ms
+ ✓ Compiled /finance/petty-cash/new in 177ms (575 modules)
+ ✓ Compiled /api/finance/petty-cash/config in 151ms (577 modules)
+ GET /api/finance/petty-cash/config 200 in 240ms
+ GET /api/finance/petty-cash/config 200 in 242ms
+ ✓ Compiled in 449ms (836 modules)
+ ✓ Compiled in 193ms (426 modules)
+ ✓ Compiled in 224ms (426 modules)
+ ✓ Compiled in 178ms (426 modules)
+ ✓ Compiled in 173ms (426 modules)
+ ✓ Compiled in 269ms (426 modules)
+ ✓ Compiled in 544ms (836 modules)
+ ✓ Compiled in 418ms (836 modules)
+ ✓ Compiled in 344ms (836 modules)
+ ✓ Compiled in 555ms (836 modules)
+ ✓ Compiled in 634ms (836 modules)
+ ✓ Compiled in 988ms (836 modules)
+ ✓ Compiled /api/finance/petty-cash/config in 459ms (836 modules)
+ ✓ Compiled in 1ms (555 modules)
+ GET /api/finance/petty-cash/config 200 in 827ms
+ GET /api/finance/petty-cash/config 200 in 829ms
+ ✓ Compiled in 364ms (981 modules)
+ ✓ Compiled in 657ms (981 modules)
+ GET /api/finance/petty-cash/config 200 in 87ms
+ GET /api/finance/petty-cash/config 200 in 98ms
+ ✓ Compiled in 644ms (981 modules)
+ GET /api/finance/petty-cash/config 200 in 51ms
+ GET /api/finance/petty-cash/config 200 in 62ms
+ ✓ Compiled in 573ms (981 modules)
+ ✓ Compiled in 801ms (981 modules)
+ ✓ Compiled in 488ms (836 modules)
+ ✓ Compiled in 431ms (836 modules)
+ ✓ Compiled in 240ms (836 modules)
+ ✓ Compiled in 168ms (426 modules)
+ ✓ Compiled in 235ms (426 modules)
+ ✓ Compiled in 103ms (426 modules)
+ ✓ Compiled in 99ms (426 modules)

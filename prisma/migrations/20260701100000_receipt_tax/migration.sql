@@ -1,0 +1,19 @@
+-- Receipt module: sub-head tax type (GST/TDS/TCS) + per-receipt & per-line tax split.
+
+ALTER TABLE `receipt_sub_head`
+  ADD COLUMN `taxType` VARCHAR(10) NOT NULL DEFAULT 'None',
+  ADD COLUMN `taxRate` DECIMAL(9,2) NOT NULL DEFAULT 0;
+
+ALTER TABLE `receipt_transaction`
+  ADD COLUMN `cgstAmount` DECIMAL(18,2) NOT NULL DEFAULT 0,
+  ADD COLUMN `sgstAmount` DECIMAL(18,2) NOT NULL DEFAULT 0,
+  ADD COLUMN `igstAmount` DECIMAL(18,2) NOT NULL DEFAULT 0,
+  ADD COLUMN `tdsAmount` DECIMAL(18,2) NOT NULL DEFAULT 0,
+  ADD COLUMN `tcsAmount` DECIMAL(18,2) NOT NULL DEFAULT 0;
+
+ALTER TABLE `receipt_transaction_details`
+  ADD COLUMN `taxType` VARCHAR(10) NOT NULL DEFAULT 'None',
+  ADD COLUMN `cgst` DECIMAL(18,2) NOT NULL DEFAULT 0,
+  ADD COLUMN `sgst` DECIMAL(18,2) NOT NULL DEFAULT 0,
+  ADD COLUMN `tdsAmount` DECIMAL(18,2) NOT NULL DEFAULT 0,
+  ADD COLUMN `tcsAmount` DECIMAL(18,2) NOT NULL DEFAULT 0;
