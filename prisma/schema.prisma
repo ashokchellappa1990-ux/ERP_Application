@@ -1,4 +1,4 @@
-// ONE POS — Prisma schema (MySQL 8.x), database: retail_erp.
+// ONE POS — Prisma schema (MySQL 8.x), database: onepos.
 // First functionality: User Registration. The `User` model below maps the
 // registration UI (Personal → Account → Business → Terms) plus the OTP
 // verification flow, with an AUTO-INCREMENT integer primary key.

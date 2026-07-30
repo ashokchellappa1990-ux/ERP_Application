@@ -16,7 +16,7 @@ try {
 const adapter = new PrismaMariaDb({
   host: process.env.DB_SERVER ?? "localhost",
   port: Number(process.env.DB_PORT ?? 3306),
-  database: process.env.DB_NAME ?? "retail_erp",
+  database: process.env.DB_NAME ?? "onepos",
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   connectionLimit: 5,
