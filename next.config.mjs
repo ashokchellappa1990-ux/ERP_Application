@@ -1,9 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Keep the native MySQL driver & Prisma out of the bundler — they run
+  // Keep native/heavy Node-only packages out of the webpack bundle — they run
   // only in Node (route handlers / server components), never in the browser.
-  serverExternalPackages: ["@prisma/client", "@prisma/adapter-mariadb", "mariadb"],
+  // This project is on Next.js 14, where this option is still under
+  // `experimental` (it only became a stable top-level `serverExternalPackages`
+  // key in Next.js 15 — using the top-level key on 14 just silently no-ops
+  // with a config warning, which is what was happening here).
+  experimental: {
+    serverComponentsExternalPackages: ["@prisma/client", "@prisma/adapter-mariadb", "mariadb", "pdf-parse", "pdfjs-dist"],
+  },
 };
 
 export default nextConfig;
