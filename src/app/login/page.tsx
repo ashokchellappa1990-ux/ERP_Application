@@ -181,7 +181,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen bg-[#F8FAFC]">
       {/* ================ LEFT PANEL — width/mode/seam all config-driven ================ */}
       <aside
-        className="relative hidden flex-col justify-between p-9 text-white lg:flex xl:p-11"
+        className="relative hidden min-w-0 flex-col justify-between overflow-hidden p-9 text-white lg:flex xl:p-11"
         style={{
           // A plain brand-gradient backdrop for the WHOLE panel (header, news
           // ticker, and footer all sit on this). The uploaded photo is NOT
@@ -233,12 +233,12 @@ export default function LoginPage() {
         {leftImageOnly ? (
           <div className="relative flex-1" style={midBgStyle} />
         ) : (
-          <div className="relative flex-1 overflow-y-auto py-8" style={midBgStyle}>
+          <div className="relative min-w-0 flex-1 overflow-y-auto py-8" style={midBgStyle}>
             {/* `justify-evenly` spreads these sections across whatever height the
                 middle area actually has — no more dead space clustering at the
                 bottom on tall screens/short content, and it still scrolls
                 (parent's overflow-y-auto) if content ever outgrows the space. */}
-            <div className="flex h-full min-h-full flex-col justify-evenly gap-7">
+            <div className="flex h-full min-h-full min-w-0 flex-col justify-evenly gap-7">
               <div>
                 <h1 className="text-[2rem] font-bold leading-[1.12] tracking-tight xl:text-[2.55rem]">
                   {id?.loginHeadlineLine1 ?? "All Your Business."}
@@ -257,7 +257,7 @@ export default function LoginPage() {
                   shape/position, card tint — everything but colour, which always
                   follows the brand Primary/Secondary above). */}
               {showModules && (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+                <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
                   {modules.map((m) => (
                     <div
                       key={m.label}
@@ -304,8 +304,8 @@ export default function LoginPage() {
             → "Login — Trust Strip Items". Always shown (both modes), pinned to
             the bottom, matching an app-style footer band rather than baked-in image text. */}
         {showTrust && (
-          <div className="relative shrink-0 border-t border-white/10 pt-4">
-            <div className="flex flex-wrap gap-x-6 gap-y-3">
+          <div className="relative min-w-0 shrink-0 border-t border-white/10 pt-4">
+            <div className="flex min-w-0 flex-wrap gap-x-6 gap-y-3">
               {trustItems.map((t) => (
                 <div
                   key={t.title}
@@ -338,7 +338,7 @@ export default function LoginPage() {
 
       {/* ================ RIGHT PANEL — fills the remainder (flex-1); optional bg image ================ */}
       <main
-        className="relative flex w-full flex-1 flex-col overflow-hidden bg-[#F8FAFC]"
+        className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[#F8FAFC]"
         style={rightBgImage ? {
           backgroundImage: `linear-gradient(rgba(248,250,252,${1 - rightBgOpacity}), rgba(248,250,252,${1 - rightBgOpacity})), url(${rightBgImage})`,
           // Same fix as the left panel — "contain" fits the whole image inside
@@ -680,8 +680,8 @@ function NewsTicker({ items }: { items: NewsItem[] }) {
 function CapabilityStrip({ items }: { items: { icon: string; label: string }[] }) {
   if (!items.length) return null;
   return (
-    <div className="rounded-[2rem] px-6 py-5" style={{ backgroundColor: "color-mix(in srgb, var(--brand-1) 88%, black)" }}>
-      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-5">
+    <div className="min-w-0 rounded-[2rem] px-6 py-5" style={{ backgroundColor: "color-mix(in srgb, var(--brand-1) 88%, black)" }}>
+      <div className="flex min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-5">
         {items.map((it) => (
           <div key={it.label} className="flex min-w-[110px] flex-1 flex-col items-center text-center">
             <span className="mb-2 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/40">
