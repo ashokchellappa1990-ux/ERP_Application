@@ -135,7 +135,7 @@ function PaperPreview() {
         <div className={cn("flex items-start gap-3 border-b border-slate-300 pb-2", thermal && "flex-col items-center text-center")}>
           {isOn("headerComponents", "logo") && <div className="grid h-10 w-10 shrink-0 place-items-center rounded bg-indigo-600 text-[8px] font-bold text-white">LOGO</div>}
           <div className={cn("flex-1", thermal && "text-center")}>
-            {isOn("headerComponents", "companyName") && <p className="text-sm font-bold text-slate-900">{flag("useBranchDetails") ? "Oasys ERP — Chennai Branch" : "Oasys ERP Retail Pvt Ltd"}</p>}
+            {isOn("headerComponents", "companyName") && <p className="text-sm font-bold text-slate-900">{flag("useBranchDetails") ? "One ERP — Chennai Branch" : "One ERP Retail Pvt Ltd"}</p>}
             {isOn("headerComponents", "branchName") && <p className="text-[9px] text-slate-500">Branch: Chennai (CHN)</p>}
             {isOn("headerComponents", "address") && <p className="text-[9px] text-slate-500">12 MG Road, Chennai 600001</p>}
             {isOn("headerComponents", "gst") && <p className="text-[9px] text-slate-500">{flag("useBranchDetails") ? "GSTIN: 33AABCO1234A2Z4 (Branch)" : "GSTIN: 33AABCO1234A1Z5"}</p>}

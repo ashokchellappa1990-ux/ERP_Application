@@ -82,7 +82,7 @@ export interface NavSection {
 }
 
 /**
- * Primary navigation for Oasys ERP, grouped to match the ERP module map.
+ * Primary navigation for One ERP, grouped to match the ERP module map.
  * Routes are placeholders for the build-out; only /dashboard is live today.
  */
 export const NAV_SECTIONS: NavSection[] = [

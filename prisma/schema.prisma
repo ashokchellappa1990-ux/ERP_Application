@@ -549,7 +549,7 @@ model ThemeSetting {
   businessId Int?
   branchId   Int?
 
-  theme   String @default("oasys") @db.VarChar(30) // preset id
+  theme   String @default("oneerp") @db.VarChar(30) // preset id
   density String @default("comfortable") @db.VarChar(20)
 
   primaryColor   String? @db.VarChar(20)
@@ -6818,7 +6818,7 @@ model GiftVoucherAudit {
 }
 
 // ============================================================================
-// Platform Administration Portal (OASYS Cybernetics super-admin control plane).
+// Platform Administration Portal (super-admin control plane).
 // SEPARATE from the customer ERP: own auth (platform_session), own RBAC
 // (platform_role/platform_user), cross-tenant scope. Reuses tenant_master.
 // ============================================================================
@@ -6836,7 +6836,7 @@ model PlatformRole {
   @@map("platform_role")
 }
 
-/// Platform staff user (OASYS Cybernetics). Not a tenant user.
+/// Platform staff user. Not a tenant user.
 model PlatformUser {
   id           Int    @id @default(autoincrement())
   name         String @db.VarChar(150)
@@ -7096,7 +7096,7 @@ model UsageMonitor {
   @@map("usage_monitor")
 }
 
-/// Platform subscription invoice (OASYS's own billing to customers).
+/// Platform subscription invoice (One ERP's own billing to customers).
 model SubscriptionInvoice {
   id         Int    @id @default(autoincrement())
   tenantId   Int
@@ -7169,7 +7169,7 @@ model PlatformAudit {
   @@map("platform_audit")
 }
 
-/// Website CMS — the OASYS Orbit marketing site is fully config-driven. One row
+/// Website CMS — the One ERP marketing site is fully config-driven. One row
 /// holds the draft (edited in the Product Admin portal) and the published
 /// snapshot the public site renders. Product-level (not tenant-scoped).
 model WebsiteSetting {

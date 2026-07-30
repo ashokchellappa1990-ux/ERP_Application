@@ -1,5 +1,5 @@
 /* =============================================================================
-   OASYS ERP — DESIGN TOKENS & THEME ENGINE
+   ONE ERP — DESIGN TOKENS & THEME ENGINE
    -----------------------------------------------------------------------------
    Single source of truth for color, typography, spacing, radius, elevation.
    Themes are activated by setting `data-theme="<id>"` on <html>.
@@ -85,9 +85,9 @@
 }
 
 /* =============================================================================
-   THEME — OASYS (brand blue + lime green)
+   THEME — ONE ERP (brand blue + lime green)
    ========================================================================== */
-[data-theme="oasys"] {
+[data-theme="oneerp"] {
   --color-primary: #1b75bc;
   --color-primary-hover: #155e96;
   --color-primary-subtle: #e7f1fa;
@@ -117,7 +117,7 @@
   --color-card: #ffffff;
   --app-bg: #ffffff;
 
-  /* Brand gradient: OASYS blue -> green */
+  /* Brand gradient: One ERP blue -> green */
   --gradient-brand: linear-gradient(135deg, #1b75bc 0%, #7ab317 100%);
 
   --color-menu: #f7fafd;

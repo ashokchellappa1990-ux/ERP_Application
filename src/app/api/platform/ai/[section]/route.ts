@@ -5,7 +5,7 @@ import { getAiSettings, hasApiKey, apiKeySource } from "@/lib/ai/config";
 
 /**
  * Platform (SaaS control-plane) AI configuration reader — GLOBAL defaults + cross-tenant
- * usage. Guarded by the platform session (OASYS staff), not the ERP session.
+ * usage. Guarded by the platform session (platform staff), not the ERP session.
  */
 const arr = (s: string | null) => { if (!s) return []; try { const a = JSON.parse(s); return Array.isArray(a) ? a : []; } catch { return []; } };
 const num = (v: unknown) => (v == null ? 0 : Number(v));

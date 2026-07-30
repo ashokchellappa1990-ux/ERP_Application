@@ -1,12 +1,12 @@
 import { cn } from "@/lib/cn";
 
 /**
- * OASYS brand mark — the four-colour ring (orange / blue / purple / yellow) from the
- * official OASYS logo. Rendered as a self-contained SVG so it scales crisply and works
+ * Brand mark — the four-colour ring (orange / blue / purple / yellow) from the
+ * official logo. Rendered as a self-contained SVG so it scales crisply and works
  * on any background. This is the factory default logo; a tenant can still override it
  * with an uploaded image via Website CMS → Theme & Identity (brand.logoUrl).
  */
-export function OasysMark({ className }: { className?: string }) {
+export function OneErpMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={cn("shrink-0", className)} fill="none" strokeWidth={3.3} strokeLinecap="round" aria-hidden>
       {/* top-left */}

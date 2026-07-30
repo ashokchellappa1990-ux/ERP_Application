@@ -10,7 +10,7 @@ import { SettingsScopeBanner } from "@/components/scope/SettingsScopeBanner";
 import { THEMES } from "@/lib/themes";
 import { cn } from "@/lib/cn";
 
-const OASYS = { primaryColor: "#1B75BC", secondaryColor: "#7AB317", accentColor: "#F5A623" };
+const ONE_ERP = { primaryColor: "#1B75BC", secondaryColor: "#7AB317", accentColor: "#F5A623" };
 const ANGLES: { deg: number; label: string }[] = [
   { deg: 90, label: "→" }, { deg: 135, label: "↘" }, { deg: 180, label: "↓" }, { deg: 45, label: "↗" },
 ];
@@ -73,7 +73,7 @@ export default function ApplicationThemePage() {
             <button key={t.id} onClick={() => { setTheme(t.id); setBrand({ primaryColor: undefined, secondaryColor: undefined, accentColor: undefined, gradientFrom: undefined, gradientTo: undefined }); }} className={cn("flex items-start gap-3 rounded-xl border p-3 text-left transition", theme === t.id ? "border-primary bg-primary-subtle/40 ring-2 ring-primary/20" : "border-border bg-surface hover:border-primary/40")}>
               <span className="flex shrink-0 gap-1">{t.swatch.map((c, i) => <span key={i} className="h-9 w-4 rounded-full border border-black/10" style={{ background: c }} />)}</span>
               <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-1.5 text-sm font-bold text-foreground">{t.name}{t.id === "oasys" && <Badge tone="primary">Brand</Badge>}{theme === t.id && <Check className="h-3.5 w-3.5 text-primary" />}</span>
+                <span className="flex items-center gap-1.5 text-sm font-bold text-foreground">{t.name}{t.id === "oneerp" && <Badge tone="primary">Brand</Badge>}{theme === t.id && <Check className="h-3.5 w-3.5 text-primary" />}</span>
                 <span className="mt-0.5 block text-2xs text-muted">{t.description}</span>
               </span>
             </button>
@@ -90,8 +90,8 @@ export default function ApplicationThemePage() {
           <ColorField label="Accent" value={eff("accentColor", 2)} onChange={(v) => setBrand({ accentColor: v })} />
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => { setTheme("oasys"); setBrand({ primaryColor: undefined, secondaryColor: undefined, accentColor: undefined }); }}>Use OASYS theme</Button>
-          <Button size="sm" variant="ghost" onClick={() => setBrand(OASYS)}>Apply OASYS colours only</Button>
+          <Button size="sm" variant="outline" onClick={() => { setTheme("oneerp"); setBrand({ primaryColor: undefined, secondaryColor: undefined, accentColor: undefined }); }}>Use One ERP theme</Button>
+          <Button size="sm" variant="ghost" onClick={() => setBrand(ONE_ERP)}>Apply One ERP colours only</Button>
           <span className="text-2xs text-muted">Overrides apply on top of the selected preset.</span>
         </div>
       </SectionCard>

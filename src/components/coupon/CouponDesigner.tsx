@@ -9,7 +9,7 @@ import { PLACEHOLDERS, TEMPLATE_CATEGORIES, type CouponTemplateRow, type Templat
 import { renderCoupon, defaultLayout, qrCells } from "@/lib/coupon/render";
 
 const API = "/api/coupon";
-const SAMPLE: CouponRenderData = { CompanyName: "OASYS Retail", BranchName: "Main Store", CampaignName: "Diwali Dhamaka", CouponNumber: "CPN0000123", CouponCode: "AB7X9K2Q", Discount: "10% OFF", CustomerName: "Ashok Kumar", IssueDate: "2026-07-01", ExpiryDate: "2026-12-31", Terms: "Terms & conditions apply. One coupon per bill.", GeneratedDate: "2026-07-01", qrData: "CPN0000123", barcodeData: "CPN0000123", securityCode: "7F3K9A" };
+const SAMPLE: CouponRenderData = { CompanyName: "One ERP Retail", BranchName: "Main Store", CampaignName: "Diwali Dhamaka", CouponNumber: "CPN0000123", CouponCode: "AB7X9K2Q", Discount: "10% OFF", CustomerName: "Ashok Kumar", IssueDate: "2026-07-01", ExpiryDate: "2026-12-31", Terms: "Terms & conditions apply. One coupon per bill.", GeneratedDate: "2026-07-01", qrData: "CPN0000123", barcodeData: "CPN0000123", securityCode: "7F3K9A" };
 const uid = () => `o${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
 
 export function CouponDesigner() {

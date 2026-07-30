@@ -44,11 +44,11 @@ export const viewport: Viewport = {
 const themeInit = `
 (function(){
   try {
-    var t = localStorage.getItem('oasys.theme') || 'corporate';
-    var d = localStorage.getItem('oasys.density') || 'comfortable';
+    var t = localStorage.getItem('oneerp.theme') || 'corporate';
+    var d = localStorage.getItem('oneerp.density') || 'comfortable';
     document.documentElement.setAttribute('data-theme', t);
     document.documentElement.setAttribute('data-density', d);
-    var b = localStorage.getItem('oasys.brand');
+    var b = localStorage.getItem('oneerp.brand');
     if (b) {
       var c = JSON.parse(b), s = document.documentElement.style;
       if (c.primaryColor) s.setProperty('--color-primary', c.primaryColor);

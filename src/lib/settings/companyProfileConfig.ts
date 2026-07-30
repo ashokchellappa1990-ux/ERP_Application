@@ -21,8 +21,8 @@ export interface CompanyProfile {
 }
 
 export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
-  name: "Oasys ERP Retail Pvt Ltd",
-  legalName: "Oasys ERP Retail Private Limited",
+  name: "One ERP Retail Pvt Ltd",
+  legalName: "One ERP Retail Private Limited",
   gstin: "33AABCO1234A1Z5",
   logoDataUrl: "",
   phone: "044-4000 1234",
@@ -54,7 +54,7 @@ export function subscribeCompanyProfile(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
-/** Initials fallback for the logo tile (e.g. "Oasys ERP Retail" → "OO"). */
+/** Initials fallback for the logo tile (e.g. "One ERP Retail" → "OO"). */
 export function companyInitials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
   if (!words.length) return "?";

@@ -98,7 +98,7 @@ function SettingsTab({ flash }: { flash: (m: string) => void }) {
           <div><label className={lbl}>Conversation Retention (days)</label><input type="number" value={Number(s.retentionDays ?? 0)} onChange={(e) => set("retentionDays", e.target.value)} className={inp} /></div>
           <div><label className={lbl}>Daily Token Limit (optional)</label><input type="number" value={Number(s.dailyTokenLimit ?? 0)} onChange={(e) => set("dailyTokenLimit", e.target.value)} className={inp} /></div>
         </div>
-        <div className="mt-3"><label className={lbl}>System Prompt Override (optional)</label><textarea value={String(s.systemPrompt ?? "")} onChange={(e) => set("systemPrompt", e.target.value)} rows={3} className={cn(inp, "h-auto py-2")} placeholder="Leave blank to use the built-in OASYS Orbit copilot system prompt." /></div>
+        <div className="mt-3"><label className={lbl}>System Prompt Override (optional)</label><textarea value={String(s.systemPrompt ?? "")} onChange={(e) => set("systemPrompt", e.target.value)} rows={3} className={cn(inp, "h-auto py-2")} placeholder="Leave blank to use the built-in One ERP copilot system prompt." /></div>
         <div className="mt-4 flex justify-end"><button className={btn} onClick={save} disabled={busy}><Save className="h-4 w-4" /> {busy ? "Saving…" : "Save Settings"}</button></div>
       </div>
     </div>

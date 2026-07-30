@@ -6,9 +6,9 @@ import { prisma } from "@/lib/db/prisma";
 /**
  * Platform Portal auth — COMPLETELY SEPARATE from the customer ERP session
  * (`pos_session`). Own cookie, own user/role tables, cross-tenant scope. Used
- * only by OASYS Cybernetics staff at the Platform Administration Portal.
+ * only by platform staff at the Platform Administration Portal.
  */
-export const PLATFORM_COOKIE = "oasys_platform_session";
+export const PLATFORM_COOKIE = "oneerp_platform_session";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function platformCookieOptions(remember: boolean) {
@@ -71,7 +71,7 @@ export async function ensurePlatformBootstrap(): Promise<{ created: boolean; ema
     await prisma.platformRole.upsert({ where: { slug: r.slug }, create: { slug: r.slug, name: r.name, description: r.description, permissions: r.permissions, isSystem: true }, update: { name: r.name, permissions: r.permissions, isSystem: true } });
   }
   const count = await prisma.platformUser.count();
-  const email = "owner@oasysorbit.com"; const password = "Platform@123";
+  const email = "owner@oneerp.example"; const password = "Platform@123";
   if (count === 0) {
     const owner = await prisma.platformRole.findUnique({ where: { slug: "platform-owner" } });
     await prisma.platformUser.create({ data: { name: "Platform Owner", email, passwordHash: await bcrypt.hash(password, 10), platformRoleId: owner!.id, active: true } });

@@ -244,9 +244,9 @@ export function SetupProvider({ children }: { children: ReactNode }) {
   // On mount: a fresh launch from Business Setup (sessionStorage handoff) takes
   // priority; otherwise resume a previously saved draft from the database.
   useEffect(() => {
-    const raw = sessionStorage.getItem("oasys.setup.start");
+    const raw = sessionStorage.getItem("oneerp.setup.start");
     if (raw) {
-      sessionStorage.removeItem("oasys.setup.start");
+      sessionStorage.removeItem("oneerp.setup.start");
       try {
         const { mode: m, prefill } = JSON.parse(raw) as {
           mode?: SetupMode;

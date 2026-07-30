@@ -76,7 +76,7 @@ export function SubscriptionBilling() {
               <Button size="sm" className="mt-3 w-full" disabled={busy || current} onClick={() => act({ action: "subscribe", planId: p.id, billingCycle: cycle })}>{current ? "Current plan" : onTrial ? "Subscribe" : "Switch to this plan"}</Button>
             </div>
           ); })}
-          {!d.plans.length && <div className="col-span-full py-8 text-center text-sm text-muted">No plans available yet. Please contact OASYS sales.</div>}
+          {!d.plans.length && <div className="col-span-full py-8 text-center text-sm text-muted">No plans available yet. Please contact One ERP sales.</div>}
         </div>
         <p className="mt-2 text-2xs text-subtle">Your Tenant ID, business administrator, users and data are always preserved through subscription and renewal.</p>
       </div>

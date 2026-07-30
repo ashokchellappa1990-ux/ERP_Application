@@ -838,7 +838,7 @@ function OrbitDiagram() {
       <div className="absolute inset-4 rounded-full border-2 border-dashed border-primary/25" />
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
         <div className="grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-primary to-secondary text-white shadow-lg shadow-primary/30"><SiteIcon name="Boxes" className="h-8 w-8" /></div>
-        <div className="mt-1 text-[9px] font-bold text-primary">OASYS ERP</div>
+        <div className="mt-1 text-[9px] font-bold text-primary">ONE ERP</div>
       </div>
       {ring.map((r, i) => {
         const a = (i / ring.length) * 2 * Math.PI - Math.PI / 2;

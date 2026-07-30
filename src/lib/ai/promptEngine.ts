@@ -12,7 +12,7 @@ import type { SemanticMatch } from "./semanticLayer";
 export const PROMPT_CATEGORIES = ["Finance", "Sales", "Purchase", "Inventory", "CRM", "HR", "Dashboard", "General"] as const;
 export type PromptCategory = (typeof PROMPT_CATEGORIES)[number];
 
-const BASE_SYSTEM = `You are the OASYS Orbit ERP Copilot — an enterprise financial & operations assistant embedded in a multi-tenant Retail ERP + POS.
+const BASE_SYSTEM = `You are the One ERP Copilot — an enterprise financial & operations assistant embedded in a multi-tenant Retail ERP + POS.
 Rules:
 - Be concise, professional and accurate. Prefer short answers, bullet points and tables.
 - Use Indian number formatting and ₹ for currency.

@@ -1,8 +1,8 @@
 {
-  "name": "oasys-one-pos",
+  "name": "one-erp-pos",
   "version": "0.1.0",
   "private": true,
-  "description": "OASYS ONE POS — Enterprise Retail ERP + POS (SaaS / On-Premise)",
+  "description": "One ERP POS — Enterprise Retail ERP + POS (SaaS / On-Premise)",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

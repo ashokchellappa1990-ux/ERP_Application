@@ -100,7 +100,7 @@ export function PlatformPortal() {
 /* -------------------- login -------------------- */
 function LoginView({ onDone }: { onDone: () => void }) {
   const brandName = useBrandName();
-  const [email, setEmail] = useState("owner@oasysorbit.com"); const [password, setPassword] = useState(""); const [busy, setBusy] = useState(false); const [err, setErr] = useState("");
+  const [email, setEmail] = useState("owner@oneerp.example"); const [password, setPassword] = useState(""); const [busy, setBusy] = useState(false); const [err, setErr] = useState("");
   async function submit(e: React.FormEvent) { e.preventDefault(); setBusy(true); setErr(""); const j = await fetch(api("auth/login"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password, remember: true }) }).then((r) => r.json()).catch(() => ({ ok: false, message: "Network error." })); setBusy(false); if (j.ok) onDone(); else setErr(j.message || "Sign-in failed."); }
   return (
     <div className="grid min-h-screen place-items-center bg-slate-900 p-4">
@@ -112,7 +112,7 @@ function LoginView({ onDone }: { onDone: () => void }) {
         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="mb-4 h-10 w-full rounded-md border border-slate-600 bg-slate-900 px-3 text-sm text-white focus:border-indigo-500 focus:outline-none" />
         {err && <p className="mb-3 text-2xs font-semibold text-rose-400">{err}</p>}
         <button type="submit" disabled={busy} className="h-10 w-full rounded-lg bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50">{busy ? "Signing in…" : "Sign in"}</button>
-        <p className="mt-4 text-center text-[10px] text-slate-500">Separate portal for OASYS Cybernetics staff only.<br />First run seeds owner@oasysorbit.com / Platform@123</p>
+        <p className="mt-4 text-center text-[10px] text-slate-500">Separate portal for platform staff only.<br />First run seeds owner@oneerp.example / Platform@123</p>
       </form>
     </div>
   );

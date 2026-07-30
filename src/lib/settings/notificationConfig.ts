@@ -36,7 +36,7 @@ export const DEFAULT_NOTIFICATION_CONFIG: NotificationConfigData = {
     enabled: true,
     fields: {
       provider: "smtp", // smtp | sendgrid | ses | mailgun
-      fromName: "Oasys ERP Retail",
+      fromName: "One ERP Retail",
       fromEmail: "billing@onepos.in",
       replyTo: "support@onepos.in",
       smtpHost: "smtp.onepos.in",
@@ -70,7 +70,7 @@ export const DEFAULT_NOTIFICATION_CONFIG: NotificationConfigData = {
     enabled: true,
     fields: {
       provider: "fcm", // fcm | onesignal | apns
-      appName: "Oasys ERP",
+      appName: "One ERP",
       serverKey: "",
       sound: "default",
     },
@@ -89,7 +89,7 @@ export const CHANNEL_META: Record<keyof NotificationConfigData, { label: string;
 export const CHANNEL_FIELDS: Record<keyof NotificationConfigData, { key: string; label: string; type?: "text" | "password"; options?: { value: string; label: string }[]; placeholder?: string }[]> = {
   email: [
     { key: "provider", label: "Provider", options: [{ value: "smtp", label: "SMTP" }, { value: "sendgrid", label: "SendGrid" }, { value: "ses", label: "Amazon SES" }, { value: "mailgun", label: "Mailgun" }] },
-    { key: "fromName", label: "From Name", placeholder: "Oasys ERP Retail" },
+    { key: "fromName", label: "From Name", placeholder: "One ERP Retail" },
     { key: "fromEmail", label: "From Email", placeholder: "billing@company.com" },
     { key: "replyTo", label: "Reply-To Email", placeholder: "support@company.com" },
     { key: "smtpHost", label: "SMTP Host", placeholder: "smtp.company.com" },
@@ -111,7 +111,7 @@ export const CHANNEL_FIELDS: Record<keyof NotificationConfigData, { key: string;
   ],
   app: [
     { key: "provider", label: "Provider", options: [{ value: "fcm", label: "Firebase (FCM)" }, { value: "onesignal", label: "OneSignal" }, { value: "apns", label: "Apple (APNs)" }] },
-    { key: "appName", label: "App Name", placeholder: "Oasys ERP" },
+    { key: "appName", label: "App Name", placeholder: "One ERP" },
     { key: "serverKey", label: "Server / API Key", type: "password", placeholder: "••••••••" },
     { key: "sound", label: "Notification Sound", placeholder: "default" },
   ],

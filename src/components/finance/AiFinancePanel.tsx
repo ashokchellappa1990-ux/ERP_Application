@@ -23,7 +23,7 @@ interface PanelData {
   summary: { cash: number; receivable: number; payable: number; netProfit: number; budgetUtil: number };
 }
 
-const FAV_KEY = "oasys.ai.fav";
+const FAV_KEY = "oneerp.ai.fav";
 
 export function AiFinancePanel({ open, onClose, period, costCenterId, profitCenterId }: { open: boolean; onClose: () => void; period: string; costCenterId?: string; profitCenterId?: string }) {
   const toast = useToast();

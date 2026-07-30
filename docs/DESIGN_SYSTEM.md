@@ -1,4 +1,4 @@
-# OASYS ONE POS — Design System & UI Architecture
+# ONE ERP POS — Design System & UI Architecture
 
 > Premium · Enterprise · Modern · Clean · Fast · Touch-friendly
 > Built to stand alongside SAP Business One, Oracle NetSuite, Microsoft Dynamics, Zoho, Odoo, Salesforce and Shopify POS.
@@ -312,4 +312,4 @@ an entry to `THEMES` in `src/lib/themes.ts`. Nothing else changes.
 
 ---
 
-© 2026 OASYS ONE POS — Enterprise Retail ERP + POS.
+© 2026 ONE ERP POS — Enterprise Retail ERP + POS.

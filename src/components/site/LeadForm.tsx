@@ -6,7 +6,7 @@ import { cn } from "@/lib/cn";
 
 const TABS = [
   { id: "trial", label: "Start Free Trial", icon: Sparkles, blurb: "Get your workspace and login — no credit card." },
-  { id: "demo", label: "Book a Demo", icon: CalendarClock, blurb: "See Oasys ERP live with our team." },
+  { id: "demo", label: "Book a Demo", icon: CalendarClock, blurb: "See One ERP live with our team." },
   { id: "contact", label: "Contact Us", icon: Mail, blurb: "Questions? We'll get back to you." },
 ];
 const inp = "h-11 w-full rounded-lg border border-border bg-card px-3.5 text-sm text-foreground outline-none transition focus:border-primary";
@@ -62,7 +62,7 @@ export function LeadForm({ defaultType = "trial", defaultPlan }: { defaultType?:
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <TabIcon type={type} />}
           {type === "trial" ? "Start my free trial" : type === "demo" ? "Book my demo" : "Send message"}
         </button>
-        <p className="text-center text-2xs text-subtle">By submitting, you agree to be contacted about Oasys ERP.</p>
+        <p className="text-center text-2xs text-subtle">By submitting, you agree to be contacted about One ERP.</p>
       </form>
     </div>
   );

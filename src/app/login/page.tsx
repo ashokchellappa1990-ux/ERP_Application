@@ -17,7 +17,7 @@ import {
 import { APP_VERSION } from "@/lib/techStack";
 import { useBrand } from "@/components/theme/ThemeProvider";
 import { splitBrandName, DEFAULT_PRODUCT_NAME } from "@/lib/brand";
-import { OasysMark } from "@/components/ui/OasysMark";
+import { OneErpMark } from "@/components/ui/OneErpMark";
 import { SiteIcon } from "@/components/site/SiteIcon";
 import { PatternLayer } from "@/components/site/sections";
 import { cn } from "@/lib/cn";
@@ -556,7 +556,7 @@ function HexMark() {
   }
   return (
     <span className="grid h-14 w-14 place-items-center rounded-2xl bg-white shadow-md">
-      <OasysMark className="h-10 w-10" />
+      <OneErpMark className="h-10 w-10" />
     </span>
   );
 }
@@ -573,7 +573,7 @@ function BrandLogo({ light = false, tagline }: { light?: boolean; tagline?: stri
           className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white shadow-md"
           style={{ border: light ? "1px solid rgba(255,255,255,0.25)" : "1px solid rgba(0,0,0,0.06)" }}
         >
-          <OasysMark className="h-8 w-8" />
+          <OneErpMark className="h-8 w-8" />
         </span>
       )}
       <span className="flex flex-col leading-none">

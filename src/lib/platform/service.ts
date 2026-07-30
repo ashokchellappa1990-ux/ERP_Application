@@ -366,7 +366,7 @@ export async function listAudit() {
 // -------------------------------------------------------------- settings
 export async function getSettings(): Promise<Record<string, unknown>> {
   const row = (await prisma.platformSetting.findFirst()) ?? await prisma.platformSetting.create({ data: {} });
-  return { productName: "Oasys ERP", theme: "Indigo", defaultLanguage: "en", defaultCurrency: "INR", timezone: "Asia/Kolkata", emailProvider: "", smsProvider: "", whatsappProvider: "", paymentGateway: "", aiProvider: "", licensePolicy: "Per-tenant", showTrialBanner: false, ...parseObj(row.configJson) };
+  return { productName: "One ERP", theme: "Indigo", defaultLanguage: "en", defaultCurrency: "INR", timezone: "Asia/Kolkata", emailProvider: "", smsProvider: "", whatsappProvider: "", paymentGateway: "", aiProvider: "", licensePolicy: "Per-tenant", showTrialBanner: false, ...parseObj(row.configJson) };
 }
 export async function saveSettings(actor: Actor, config: Record<string, unknown>) {
   const row = (await prisma.platformSetting.findFirst()) ?? await prisma.platformSetting.create({ data: {} });

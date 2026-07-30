@@ -1,5 +1,5 @@
 /**
- * Oasys ERP marketing website — the entire public site is driven by this
+ * One ERP marketing website — the entire public site is driven by this
  * config object, which the Product Owner edits from the Website CMS (no code
  * changes). `DEFAULT_WEBSITE_CONFIG` is the seed/fallback so the site renders
  * beautifully out of the box; the CMS persists a draft + a published snapshot.
@@ -155,8 +155,8 @@ const F = (icon: string, title: string, text: string): FeatureItem => ({ icon, t
 
 export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
   identity: {
-    productName: "Oasys ERP", tagline: "The AI-Powered Unified Business Platform",
-    logoText: "Oasys ERP", loginImageUrl: "",
+    productName: "One ERP", tagline: "The AI-Powered Unified Business Platform",
+    logoText: "One ERP", loginImageUrl: "",
     loginHeadlineLine1: "All Your Business.", loginHeadlineLine2Before: "One ", loginHeadlineHighlight: "Intelligent", loginHeadlineLine2After: " Platform.",
     loginSubtitle: "Unify operations, drive efficiency, and accelerate growth with a connected digital ecosystem.",
     loginShowModules: true,
@@ -232,7 +232,7 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
     titleLead: "One Platform.\nEvery Process.",
     titleHighlight: "Limitless Growth.",
     titleTail: "",
-    subtitle: "Oasys ERP unifies ERP, Finance, HR, Retail, E-Commerce and Customer Engagement on a single, AI-powered platform to streamline operations, delight customers and grow faster.",
+    subtitle: "One ERP unifies ERP, Finance, HR, Retail, E-Commerce and Customer Engagement on a single, AI-powered platform to streamline operations, delight customers and grow faster.",
     primaryCta: { label: "Start Free Trial", href: "/contact?type=trial", style: "primary" },
     secondaryCta: { label: "Book Live Demo", href: "/contact?type=demo", style: "outline" },
     trustPoints: ["No Credit Card", "No Setup Fee", "Cancel Anytime"],
@@ -263,7 +263,7 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
     { name: "MedPlus" }, { name: "FirstCry" }, { name: "Bajaj Electronics" }, { name: "Croma" },
   ],
   spotlights: [
-    { badge: "Unified Platform", icon: "Boxes", title: "One platform, zero silos", subtitle: "Stop stitching together POS, accounting, inventory and CRM. Oasys ERP unifies your entire operation on a single real-time data model — so every module talks to every other.", points: ["Single source of truth across all modules", "Real-time stock, sales & finance sync", "Multi-company, multi-branch, multi-warehouse", "Role-based access with full audit trails"], imageSide: "right", imageUrl: "", cta: { label: "Explore the platform", href: "/#platform", style: "outline" } },
+    { badge: "Unified Platform", icon: "Boxes", title: "One platform, zero silos", subtitle: "Stop stitching together POS, accounting, inventory and CRM. One ERP unifies your entire operation on a single real-time data model — so every module talks to every other.", points: ["Single source of truth across all modules", "Real-time stock, sales & finance sync", "Multi-company, multi-branch, multi-warehouse", "Role-based access with full audit trails"], imageSide: "right", imageUrl: "", cta: { label: "Explore the platform", href: "/#platform", style: "outline" } },
     { badge: "AI Built-In", icon: "Sparkles", title: "AI that runs your business smarter", subtitle: "Forecasting, reorder suggestions, dead-stock alerts and a business health score — intelligence woven into every screen, not bolted on as an afterthought.", points: ["Demand & sales forecasting", "Smart reorder & inventory optimization", "Business health score & anomaly alerts", "Natural-language reports & AI chatbot"], imageSide: "left", imageUrl: "", cta: { label: "See the AI platform", href: "/#ai", style: "outline" } },
     { badge: "Customer Experience", icon: "Smartphone", title: "Your brand, in every customer's pocket", subtitle: "A branded mobile app with orders, digital bills, loyalty, wallet and an AI shopping assistant — turning one-time buyers into loyal, repeat customers.", points: ["Branded customer mobile app", "Loyalty, membership, coupons & gift vouchers", "Order & delivery tracking", "AI shopping assistant & smart reorder"], imageSide: "right", imageUrl: "", cta: { label: "Discover the customer app", href: "/#cx", style: "outline" } },
   ],
@@ -375,7 +375,7 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
       { category: "AI & ERP", title: "How AI is Revolutionizing the Future of ERP", date: "June 5, 2026", readTime: "5 min read", href: "/contact" },
       { category: "Marketing", title: "Top 10 Marketing Automation Strategies for 2026", date: "June 3, 2026", readTime: "6 min read", href: "/contact" },
       { category: "Retail", title: "Smart Retail: How Data Drives Customer Loyalty", date: "June 1, 2026", readTime: "4 min read", href: "/contact" },
-      { category: "Finance", title: "GST Compliance Made Easy with Oasys ERP", date: "May 30, 2026", readTime: "7 min read", href: "/contact" },
+      { category: "Finance", title: "GST Compliance Made Easy with One ERP", date: "May 30, 2026", readTime: "7 min read", href: "/contact" },
     ],
   },
   integrationLogos: {
@@ -386,7 +386,7 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
     customerApp: { imageUrl: "/samples/customer-bg.svg", overlay: "light", blur: false },
   },
   why: {
-    title: "Why Oasys ERP", subtitle: "One platform, engineered for modern enterprises — intelligent, secure and built to scale.",
+    title: "Why One ERP", subtitle: "One platform, engineered for modern enterprises — intelligent, secure and built to scale.",
     items: [], pillars: [
       F("Sparkles", "AI-Powered", "Forecasting, insights and recommendations built into every module."),
       F("Cloud", "Cloud Native", "Zero-install, always-updated, accessible anywhere."),
@@ -572,9 +572,9 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
     items: ["Next.js", "React", "TypeScript", "Tailwind CSS", "Prisma", "MySQL", "REST API", "Cloud Architecture", "Microservice-Ready", "AI-Ready"],
   },
   testimonials: {
-    title: "Trusted by growing businesses", subtitle: "Teams run their whole operation on Oasys ERP.",
+    title: "Trusted by growing businesses", subtitle: "Teams run their whole operation on One ERP.",
     items: [
-      { quote: "We replaced five tools with Oasys ERP. Billing, GST, inventory and loyalty finally live in one place.", author: "Priya Sharma", role: "Director", company: "FreshMart Chain" },
+      { quote: "We replaced five tools with One ERP. Billing, GST, inventory and loyalty finally live in one place.", author: "Priya Sharma", role: "Director", company: "FreshMart Chain" },
       { quote: "The AI reorder suggestions cut our dead stock by 30% in the first quarter.", author: "Arjun Mehta", role: "Operations Head", company: "TechBazaR" },
       { quote: "GST returns that used to take days now take minutes. Our accountant loves it.", author: "Sunita Rao", role: "Finance Manager", company: "UrbanStyle" },
     ],
@@ -591,7 +591,7 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
   faq: {
     title: "Frequently asked questions", subtitle: "Everything you need to know before you start.",
     items: [
-      { q: "Is Oasys ERP cloud or on-premise?", a: "Both. Start in the cloud and move on-premise anytime — same product, same data model." },
+      { q: "Is One ERP cloud or on-premise?", a: "Both. Start in the cloud and move on-premise anytime — same product, same data model." },
       { q: "Do I need technical skills to set up?", a: "No. Guided setup gets you billing in minutes, and our team helps with onboarding." },
       { q: "Is GST and e-invoicing included?", a: "Yes. GSTR-1/2B/3B/9, e-invoice (IRN) and e-way bill are built in." },
       { q: "Can I manage multiple stores and companies?", a: "Yes — multi-company, multi-branch and multi-tenant are core to the platform." },
@@ -600,7 +600,7 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
     ],
   },
   cta: {
-    title: "Ready to Transform Your Business?", subtitle: "Join thousands of businesses already growing with Oasys ERP.",
+    title: "Ready to Transform Your Business?", subtitle: "Join thousands of businesses already growing with One ERP.",
     primaryCta: { label: "Start Free Trial", href: "/contact?type=trial", style: "primary" },
     secondaryCta: { label: "Book Live Demo", href: "/contact?type=demo", style: "outline" },
   },
@@ -613,11 +613,11 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
       { title: "Company", links: [{ label: "About Us", href: "/contact" }, { label: "Careers", href: "/contact" }, { label: "Partners", href: "/contact" }, { label: "Pricing", href: "/pricing" }, { label: "Privacy Policy", href: "/contact" }, { label: "Terms of Service", href: "/contact" }] },
     ],
     social: [{ label: "Facebook", href: "#" }, { label: "X", href: "#" }, { label: "LinkedIn", href: "#" }, { label: "Instagram", href: "#" }, { label: "YouTube", href: "#" }],
-    contactEmail: "info@oasysorbit.com", contactPhone: "+91 98765 43210", address: "Chennai, India",
-    copyright: "© 2026 Oasys ERP. Made with ❤ for Businesses Worldwide.",
+    contactEmail: "info@oneerp.example", contactPhone: "+91 98765 43210", address: "Chennai, India",
+    copyright: "© 2026 One ERP. Made with ❤ for Businesses Worldwide.",
   },
   seo: {
-    title: "Oasys ERP — AI-Powered Unified Business Platform",
+    title: "One ERP — AI-Powered Unified Business Platform",
     description: "ERP, Finance, GST, HR & Payroll, Manufacturing, CRM, POS, E-Commerce, Customer App, Marketing Automation and AI — unified in one cloud-native platform.",
     keywords: "ERP, GST software, POS, retail ERP, cloud ERP, business platform, inventory, accounting, CRM, loyalty, e-commerce, AI",
   },
@@ -653,7 +653,7 @@ export const SECTION_LABELS: Record<string, string> = {
   hero: "Hero Banner", retailShowcase: "Retail Showcase", everything: "Module Strip", realtime: "Real-Time Insights", erpIndustries: "ERP + Industries", customerApp: "Customer App",
   aiMarketing: "AI & Marketing", trustedLogos: "Trusted Logos", stats: "Stats Band", pricing: "Pricing", blog: "Blog / Insights",
   integrationLogos: "Integrations", cta: "Call to Action",
-  logos: "Customer Logos", spotlights: "Feature Spotlights", why: "Why Oasys ERP", platform: "ERP Platform",
+  logos: "Customer Logos", spotlights: "Feature Spotlights", why: "Why One ERP", platform: "ERP Platform",
   finance: "Finance & GST", hr: "HR & Payroll", cx: "Customer Experience", aiAssistant: "AI Shopping Assistant",
   marketing: "Marketing Automation", benefits: "Customer Benefits", ecommerce: "E-Commerce",
   integrations: "Banking · Delivery · Communication", ai: "AI Platform", industries: "Industries",

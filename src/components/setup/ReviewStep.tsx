@@ -203,7 +203,7 @@ export function SuccessScreen() {
             </div>
 
             <div className="mt-6 grid grid-cols-3 gap-3">
-              <Stat label="Company" value={data.company.name || "Oasys ERP"} />
+              <Stat label="Company" value={data.company.name || "One ERP"} />
               <Stat label="Branches" value={String(Math.max(data.branches.length, 1))} />
               <Stat label="Users" value={String(data.users.length + 1)} />
             </div>
@@ -234,7 +234,7 @@ export function SuccessScreen() {
           <Logo showText={false} />
           <span className="inline-flex items-center gap-1">
             <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-            Workspace provisioned · Oasys ERP
+            Workspace provisioned · One ERP
           </span>
         </div>
       </div>

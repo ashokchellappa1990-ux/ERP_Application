@@ -59,9 +59,9 @@ interface ThemeContextValue {
   resetBrand: () => void;
 }
 
-const STORAGE_KEY = "oasys.theme";
-const DENSITY_KEY = "oasys.density";
-const BRAND_KEY = "oasys.brand";
+const STORAGE_KEY = "oneerp.theme";
+const DENSITY_KEY = "oneerp.density";
+const BRAND_KEY = "oneerp.brand";
 
 const DEFAULT_BRAND: BrandConfig = { productName: DEFAULT_PRODUCT_NAME, tagline: DEFAULT_TAGLINE };
 

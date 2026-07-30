@@ -5,7 +5,7 @@ import { getRequest } from "@/lib/warehouse/transfer";
 import { StockTransferEditor } from "@/components/warehouse/transfer/StockTransferEditor";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Edit Stock Transfer Request · Oasys Orbit" };
+export const metadata = { title: "Edit Stock Transfer Request" };
 
 export default async function Page({ params }: { params: { id: string } }) {
   const user = await getSessionUser();

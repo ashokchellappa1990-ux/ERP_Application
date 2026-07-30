@@ -1,10 +1,10 @@
-# OASYS ONE POS
+# ONE ERP POS
 
 Enterprise-grade **Retail ERP + POS** — designed for SaaS and On-Premise deployment across 15+ retail verticals (grocery, pharmacy, textile, footwear, cosmetics, electronics, furniture, hardware, auto parts, agri, gifts, stationery, sports, wholesale and multi-store chains).
 
 This repository contains the **product UI foundation**: a configurable design system, a 5-theme engine, a reusable component library, the enterprise app shell, and the first user journey — **Landing → Login → Dashboard**.
 
-> Product name `OASYS ONE POS` is a working title and is centrally configurable (see Theming → Brand).
+> Product name `ONE ERP POS` is a working title and is centrally configurable (see Theming → Brand).
 
 ---
 
@@ -99,4 +99,4 @@ Designed and tested against: POS `1024×768` / `1366×768`, laptop `1366×768` /
 
 ---
 
-© 2026 OASYS ONE POS — Enterprise Retail ERP + POS.
+© 2026 ONE ERP POS — Enterprise Retail ERP + POS.

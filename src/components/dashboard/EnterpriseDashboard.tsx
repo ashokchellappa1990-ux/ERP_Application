@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Oasys ERP — Enterprise Dashboard & Business Intelligence Workspace.
+ * One ERP — Enterprise Dashboard & Business Intelligence Workspace.
  *
  * The default post-login home. Everything is LIVE, tenant/business/branch scoped
  * and role/permission gated: each section lazy-loads from /api/dashboard/<section>,
@@ -73,8 +73,8 @@ const SPOTLIGHT_GRADIENT: Record<string, string> = {
 
 const WIDGET_LABELS: Record<string, string> = { kpis: "KPI Metrics", charts: "Charts", health: "Business Health", pending: "Pending Activities", notifications: "Notifications", insights: "AI Insights", activity: "Recent Activity", quickActions: "Quick Actions", reports: "Report Shortcuts" };
 const ALL_WIDGETS = Object.keys(WIDGET_LABELS);
-const LS_HIDDEN = "oasys.dash.hidden";
-const LS_AUTO = "oasys.dash.autorefresh";
+const LS_HIDDEN = "oneerp.dash.hidden";
+const LS_AUTO = "oneerp.dash.autorefresh";
 
 /* --------------------------------------------------------- section hook -- */
 function useSection<T>(name: string, enabled = true) {

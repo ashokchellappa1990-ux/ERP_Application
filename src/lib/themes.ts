@@ -1,11 +1,11 @@
 /**
- * Theme registry for Oasys ERP.
+ * Theme registry for One ERP.
  * Each theme maps to a `data-theme` block in src/styles/tokens.css.
  * `swatch` values are only used for the theme-picker preview chips.
  */
 
 export type ThemeId =
-  | "oasys"
+  | "oneerp"
   | "corporate"
   | "emerald-green"
   | "retail-orange"
@@ -27,16 +27,16 @@ export interface ThemeMeta {
 
 export const THEMES: ThemeMeta[] = [
   {
-    id: "oasys",
-    name: "OASYS",
-    description: "OASYS brand — corporate blue with a lime-green accent.",
+    id: "oneerp",
+    name: "One ERP",
+    description: "One ERP brand — corporate blue with a lime-green accent.",
     swatch: ["#1B75BC", "#7AB317", "#F5A623"],
     lightSidebar: true,
   },
   {
     id: "corporate",
     name: "Indigo Modern",
-    description: "Clean indigo + cyan on a light sidebar. The default Oasys ERP look.",
+    description: "Clean indigo + cyan on a light sidebar. The default One ERP look.",
     swatch: ["#4338CA", "#06B6D4", "#F59E0B"],
     lightSidebar: true,
   },

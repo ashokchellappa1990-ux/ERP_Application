@@ -6,12 +6,12 @@
  * app-wide through <ThemeProvider>'s `brand` context. These constants are the
  * factory fallback used before that setting loads (and when it is unset).
  */
-export const DEFAULT_PRODUCT_NAME = "Oasys ERP";
+export const DEFAULT_PRODUCT_NAME = "One ERP";
 export const DEFAULT_TAGLINE = "Retail ERP";
 
 /**
  * Split a product name into two parts for the two-tone wordmark
- * (first word normal, remainder accented). "Oasys ERP" -> ["Oasys", "Orbit"].
+ * (first word normal, remainder accented). "One ERP" -> ["One", "ERP"].
  */
 export function splitBrandName(name?: string): [string, string] {
   const n = (name || DEFAULT_PRODUCT_NAME).trim();

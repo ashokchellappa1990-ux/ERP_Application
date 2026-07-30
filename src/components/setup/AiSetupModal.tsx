@@ -229,7 +229,7 @@ export function AiSetupModal({
 
   function confirm() {
     sessionStorage.setItem(
-      "oasys.setup.start",
+      "oneerp.setup.start",
       JSON.stringify({
         mode: pace,
         prefill: { company: EXTRACTED.company, gst: EXTRACTED.gst },

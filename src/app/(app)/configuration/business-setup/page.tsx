@@ -50,7 +50,7 @@ export default function BusinessSetupPage() {
   const [modalMethod, setModalMethod] = useState<SmartMethod | null>(null);
 
   function startManual() {
-    sessionStorage.setItem("oasys.setup.start", JSON.stringify({ mode: pace }));
+    sessionStorage.setItem("oneerp.setup.start", JSON.stringify({ mode: pace }));
     router.push("/setup");
   }
   function startSmart() {

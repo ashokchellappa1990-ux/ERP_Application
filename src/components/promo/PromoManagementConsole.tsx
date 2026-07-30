@@ -181,7 +181,7 @@ function CodesTab({ campaigns, flash }: { campaigns: PromoCampaignRow[]; flash: 
 }
 
 /* -------------------------------------------------------------- distribution */
-const SAMPLE = { CustomerName: "Rahul Sharma", CompanyName: "Oasys Retail", CampaignName: "Festive Offer" };
+const SAMPLE = { CustomerName: "Rahul Sharma", CompanyName: "One ERP Retail", CampaignName: "Festive Offer" };
 function fillMsg(body: string, code: string, discount: string, expiry: string) {
   return body
     .replaceAll("{CustomerName}", SAMPLE.CustomerName).replaceAll("{CompanyName}", SAMPLE.CompanyName)

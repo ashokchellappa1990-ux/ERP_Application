@@ -6,7 +6,7 @@ import { MASTERS, type MasterRow } from "./masterConfig";
  * (Swap these functions for `/api/masters/:slug` calls when the backend lands.)
  */
 
-const storageKey = (slug: string) => `oasys.master.${slug}`;
+const storageKey = (slug: string) => `oneerp.master.${slug}`;
 
 function read(slug: string): MasterRow[] {
   const entity = MASTERS[slug];

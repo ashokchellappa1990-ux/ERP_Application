@@ -63,7 +63,7 @@ export function AiChat({ conversationId, onConversationChange, compact, autoSend
         {messages.length === 0 && !sending && (
           <div className="flex h-full flex-col items-center justify-center gap-3 py-8 text-center">
             <span className="grid h-14 w-14 place-items-center rounded-2xl bg-brand-gradient text-white shadow-lg"><Sparkles className="h-7 w-7" /></span>
-            <div><p className="text-base font-bold text-foreground">OASYS Orbit Copilot</p><p className="mt-0.5 text-xs text-muted">Ask about sales, finance, inventory, GST, budget and more.</p></div>
+            <div><p className="text-base font-bold text-foreground">One ERP Copilot</p><p className="mt-0.5 text-xs text-muted">Ask about sales, finance, inventory, GST, budget and more.</p></div>
             <div className={cn("grid w-full gap-1.5", compact ? "grid-cols-1" : "sm:grid-cols-2")}>
               {suggestions.map((s) => <button key={s.id} onClick={() => send(s.promptText, s.id)} className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-left text-xs text-foreground transition hover:border-primary/40 hover:bg-primary-subtle/30"><Zap className="h-3.5 w-3.5 shrink-0 text-primary" /><span className="truncate">{s.title}</span></button>)}
             </div>

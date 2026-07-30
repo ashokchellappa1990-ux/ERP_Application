@@ -3,11 +3,11 @@
 import { cn } from "@/lib/cn";
 import { useBrand } from "@/components/theme/ThemeProvider";
 import { splitBrandName } from "@/lib/brand";
-import { OasysMark } from "@/components/ui/OasysMark";
+import { OneErpMark } from "@/components/ui/OneErpMark";
 
 /**
  * Product wordmark. Name / logo / tagline come from the portal system setting
- * (Website CMS identity) via <ThemeProvider>, defaulting to "Oasys ERP".
+ * (Website CMS identity) via <ThemeProvider>, defaulting to "One ERP".
  * When a logo image (brand.logoUrl) is set, that <img> is rendered instead of
  * the SVG mark.
  */
@@ -32,7 +32,7 @@ export function Logo({
           className="h-9 w-9 shrink-0 rounded-lg object-contain"
         />
       ) : (
-        <OasysMark className="h-9 w-9" />
+        <OneErpMark className="h-9 w-9" />
       )}
       {showText && (
         <span className="flex flex-col leading-none">

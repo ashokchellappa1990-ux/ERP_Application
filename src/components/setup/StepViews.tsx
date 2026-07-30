@@ -337,7 +337,7 @@ const PROFILE_TIME_FIELDS: FieldDef[] = [
 const FINANCE_FIELDS: FieldDef[] = [
   { name: "fyStart", label: "Financial Year Start Date", icon: Calendar, info: "Start of your financial year (India: 1 April).", type: "date" },
   { name: "fyEnd", label: "Financial Year End Date", icon: Calendar, info: "End of your financial year (India: 31 March).", type: "date" },
-  { name: "acctStart", label: "Accounting Start Date", icon: Calendar, info: "Date from which books are maintained in Oasys ERP.", type: "date" },
+  { name: "acctStart", label: "Accounting Start Date", icon: Calendar, info: "Date from which books are maintained in One ERP.", type: "date" },
   { name: "currency", label: "Base Currency", icon: Coins, info: "Default currency for transactions and reports.", sample: "INR", options: [
     { value: "INR", label: "₹ Indian Rupee (INR)" },
     { value: "USD", label: "$ US Dollar (USD)" },
@@ -1085,7 +1085,7 @@ function MigrationStep() {
         <Select
           label="Existing Software"
           leadingIcon={<FileText className="h-4 w-4" />}
-          info="Your current software — we map its data into Oasys ERP."
+          info="Your current software — we map its data into One ERP."
           placeholder="Select your current software"
           options={MIGRATION_SOURCES}
           value={data.migrationSource}
