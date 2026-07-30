@@ -11,7 +11,13 @@ const adapter = new PrismaMariaDb({
   database: process.env.DB_NAME ?? "onepos",
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  connectionLimit: 5,
+  // Kept small: on serverless (Vercel), every concurrent invocation/cold start
+  // opens its own pool, so a handful of simultaneous requests can multiply this
+  // by dozens of lambda instances and exhaust a small RDS instance's
+  // max_connections. idleTimeout releases unused connections quickly instead of
+  // holding them open across invocations.
+  connectionLimit: 2,
+  idleTimeout: 15,
   allowPublicKeyRetrieval: true,
 });
 
