@@ -6,6 +6,16 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { getPublishedConfig } from "@/lib/website/service";
 import { DEFAULT_PRODUCT_NAME } from "@/lib/brand";
 
+// This app is a multi-tenant, authenticated ERP/SaaS — nothing under it should
+// be statically prerendered at BUILD time (content is per-tenant/per-user and
+// the CMS-driven copy below must reflect live edits without a redeploy).
+// Without this, Next's automatic static optimization tries to prerender every
+// route, and generateMetadata() below (which reads the DB) runs once PER PAGE
+// during the build — hundreds of DB round-trips against a build machine that,
+// unlike the deployed runtime, may not even have DB access configured yet.
+// This is a `layout.tsx` setting, so it cascades to every nested route.
+export const dynamic = "force-dynamic";
+
 /** Title/description follow the portal system setting (Website CMS identity). */
 export async function generateMetadata(): Promise<Metadata> {
   let name = DEFAULT_PRODUCT_NAME;
