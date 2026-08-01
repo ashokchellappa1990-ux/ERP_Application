@@ -32,6 +32,10 @@ export interface PreparedSale {
   customerId: number | null;
   customerName: string | null;
   customerPhone: string | null;
+  // B2B-only header detail (GSTIN, due date, terms) — POS sales leave these
+  // unset; Load & Dispatch's invoice posting populates customerGstin from the
+  // customer master so it isn't blank on the Sales Invoice (B2B) list.
+  customerGstin?: string | null; dueDate?: string | null; paymentTerms?: string | null; soNumber?: string | null; termsConditions?: string | null;
   notes: string | null;
   lines: Prisma.SaleLineUncheckedCreateWithoutSaleInput[];
   lineCodes: string[][];
@@ -307,6 +311,8 @@ export async function createSaleTx(
     data: {
       tenantId: user.tenantId, ...seg, invoiceNo: "TMP", saleDate: p.saleDate, warehouse: p.warehouse, channel, status: opts.status ?? "Completed",
       customerId: p.customerId, customerName: p.customerName ?? undefined, customerPhone: p.customerPhone,
+      customerGstin: p.customerGstin ?? undefined, dueDate: p.dueDate ?? undefined, paymentTerms: p.paymentTerms ?? undefined,
+      soNumber: p.soNumber ?? undefined, termsConditions: p.termsConditions ?? undefined,
       subtotal: p.subtotal, itemDiscount: p.itemDiscount, billDiscount: p.billDiscount, taxableValue: p.taxableValue,
       cgst: p.cgst, sgst: p.sgst, igst: 0, taxTotal: p.taxTotal, roundOff: p.roundOff, total: p.total,
       amountPaid: p.amountPaid, changeDue: p.amountPaid >= p.total ? p.changeDue : 0, paymentMode: p.paymentMode, paymentStatus: p.paymentStatus, notes: p.notes,

@@ -482,6 +482,7 @@ interface PreparedSaleSourceItem {
 }
 interface PreparedSaleSourceDoc {
   items: PreparedSaleSourceItem[]; warehouse: string | null; partyId: number | null; partyName: string | null; dispatchDate: string;
+  sourceRefType: string | null; sourceRefNo: string | null;
   paymentMode: string | null; paymentAmount: Prisma.Decimal | null; paymentMethod: string | null;
   bankId: number | null; bankName: string | null; bankAccount: string | null;
 }
@@ -491,6 +492,9 @@ async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc): 
   const productIds = Array.from(new Set(needsGst.map((i) => i.productId)));
   const prods = productIds.length ? await prisma.product.findMany({ where: { id: { in: productIds }, tenantId }, select: { id: true, gstRate: true } }) : [];
   const gstById = new Map(prods.map((p) => [p.id, Number(String(p.gstRate ?? "0").replace(/[^0-9.]/g, "")) || 0]));
+  // GSTIN isn't captured on LoadDispatch itself — read it from the customer
+  // master so the posted invoice isn't missing it on the B2B invoice list.
+  const customer = doc.partyId ? await prisma.customer.findFirst({ where: { id: doc.partyId, tenantId }, select: { gstin: true } }) : null;
 
   let subtotal = 0, itemDiscount = 0, taxableValue = 0, taxTotal = 0, itemCount = 0;
   const lines: Prisma.SaleLineUncheckedCreateWithoutSaleInput[] = items.map((it) => {
@@ -525,6 +529,7 @@ async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc): 
   return {
     saleDate: doc.dispatchDate, warehouse: doc.warehouse || "Main Store",
     customerId: doc.partyId, customerName: doc.partyName ?? "Dispatch Customer", customerPhone: null, notes: null,
+    customerGstin: customer?.gstin ?? null, soNumber: doc.sourceRefType === "SALES_ORDER" ? doc.sourceRefNo : null,
     lines, lineCodes: lines.map(() => []), scannedCodes: [], fefoSet: new Set(),
     payments,
     subtotal: r2(subtotal), itemDiscount: r2(itemDiscount), billDiscount: 0, taxableValue: r2(taxableValue),
