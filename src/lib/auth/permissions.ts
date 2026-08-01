@@ -65,6 +65,12 @@ export const PREDEFINED_ROLES: PredefinedRole[] = [
   { slug: "purchase-executive", name: "Purchase Executive", description: "Purchase, suppliers & stock.", grants: ["dashboard", "purchase", "masters.supplier", "masters.product", "inventory"] },
   { slug: "inventory-manager", name: "Inventory Manager", description: "Inventory, stock & products.", grants: ["dashboard", "inventory", "warehouse", "masters.product", "masters.opening-stock", "purchase"] },
   { slug: "auditor", name: "Auditor", description: "Read access to finance, accounting & reports.", grants: ["dashboard", "finance", "accounting"] },
+  { slug: "logistics-manager", name: "Logistics Manager", description: "Full transport & dispatch operations, masters and warehouse dispatch.", grants: ["dashboard", "transport", "masters.transport", "warehouse"] },
+  { slug: "transport-manager", name: "Transport Manager", description: "Vehicle/driver/transport-company masters and transport operations.", grants: ["dashboard", "transport", "masters.transport"] },
+  { slug: "dispatch-planner", name: "Dispatch Planner", description: "Plans dispatches and coordinates stock allocation/transfer.", grants: ["dashboard", "transport", "warehouse"] },
+  { slug: "gate-security", name: "Gate Security", description: "Vehicle gate entry and gate exit only.", grants: ["transport.gate-entry", "transport.gate-exit"] },
+  { slug: "weighbridge-operator", name: "Weighbridge Operator", description: "Pre and post loading weighment only.", grants: ["transport.pre-weighment", "transport.post-weighment"] },
+  { slug: "loading-supervisor", name: "Loading Supervisor", description: "Load & Dispatch (loading, product confirmation) only.", grants: ["warehouse.transfer"] },
 ];
 
 /** Expand a role's grants to concrete permission keys. */

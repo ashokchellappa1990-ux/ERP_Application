@@ -47,8 +47,9 @@ export interface OpeningStockDetailLine {
   purchaseRef: string;
   purchaseDate: string;
   remarks: string;
+  qrRequired: boolean;
   qrMode: "shared" | "unique";
-  qrStatus: "Pending" | "Generated";
+  qrStatus: "Pending" | "Generated" | "Not Required";
   qrGeneratedCount: number;
   printedQty: number;
 }

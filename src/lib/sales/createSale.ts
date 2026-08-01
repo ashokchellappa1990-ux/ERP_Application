@@ -283,6 +283,11 @@ export interface CreateSaleOpts {
   channel?: string;            // "POS" | "B2B" — defaults to POS
   series?: "b2c" | "b2b";      // invoice number series — defaults to b2c
   status?: string;             // sale status — defaults to "Completed"
+  // Load & Dispatch already reduced stock at "Complete Load & Dispatch" time
+  // (see completeLoadDispatch, src/lib/transport/loadDispatch.ts) — when set,
+  // prepared.lines must already carry the resolved cost/batchNo/mfgDate/expiryDate
+  // and this skips postSaleLineMovements entirely so stock isn't moved twice.
+  skipInventoryMovement?: boolean;
 }
 
 /** Insert a Sale (+ lines, payments), assign its invoice number, post inventory OUT
@@ -320,6 +325,11 @@ export async function createSaleTx(
   let totalCost = 0;
   for (let i = 0; i < orderedLines.length; i++) {
     const line = orderedLines[i];
+    if (opts.skipInventoryMovement) {
+      // Stock already moved upstream — the line was created with its final cost/batch.
+      totalCost += Number(line.cost ?? 0);
+      continue;
+    }
     const res = await postSaleLineMovements(tx, ctx, { id: line.id, productId: line.productId, qty: line.qty, rate: line.rate, batchNo: line.batchNo }, p.lineCodes[i] ?? [], { fefo: p.fefoSet.has(line.productId) });
     await tx.saleLine.update({ where: { id: line.id }, data: { cost: res.cost, batchNo: res.batchNo, mfgDate: res.mfgDate, expiryDate: res.expiryDate } });
     totalCost += res.cost;

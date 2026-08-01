@@ -118,6 +118,7 @@ export default function OpeningStockViewPage() {
             <tbody>
               {doc.lines.map((l) => {
                 const generated = l.qrStatus === "Generated";
+                const notRequired = !l.qrRequired;
                 const printed = l.printedQty > 0;
                 const isShared = (generated ? l.qrMode : mode[l.id]) === "shared";
                 const lineBusy = busy === l.id;
@@ -130,18 +131,26 @@ export default function OpeningStockViewPage() {
                     <td className="px-4 py-3 text-right font-semibold text-foreground">{fmt.qty(l.qty)}</td>
                     <td className="px-4 py-3 text-2xs text-muted">{l.batchNo || "—"}{l.expiryDate ? ` · exp ${l.expiryDate}` : ""}</td>
                     <td className="px-4 py-3">
-                      <div className="inline-flex overflow-hidden rounded-md border border-border">
-                        {(["shared", "unique"] as const).map((m) => (
-                          <button key={m} disabled={generated} onClick={() => setMode((p) => ({ ...p, [l.id]: m }))}
-                            className={cn("px-2.5 py-1 text-2xs font-semibold transition", (mode[l.id] || "shared") === m ? "bg-primary text-white" : "bg-surface text-muted hover:bg-surface-2", generated && "cursor-not-allowed opacity-70")}>
-                            {m === "shared" ? "Same" : "Unique"}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="mt-0.5 text-[10px] text-subtle">{(mode[l.id] || "shared") === "shared" ? "1 code, all qty" : "1 code per piece"}</div>
+                      {notRequired ? (
+                        <span className="text-2xs text-subtle">Not applicable</span>
+                      ) : (
+                        <>
+                          <div className="inline-flex overflow-hidden rounded-md border border-border">
+                            {(["shared", "unique"] as const).map((m) => (
+                              <button key={m} disabled={generated} onClick={() => setMode((p) => ({ ...p, [l.id]: m }))}
+                                className={cn("px-2.5 py-1 text-2xs font-semibold transition", (mode[l.id] || "shared") === m ? "bg-primary text-white" : "bg-surface text-muted hover:bg-surface-2", generated && "cursor-not-allowed opacity-70")}>
+                                {m === "shared" ? "Same" : "Unique"}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="mt-0.5 text-[10px] text-subtle">{(mode[l.id] || "shared") === "shared" ? "1 code, all qty" : "1 code per piece"}</div>
+                        </>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      {!generated ? (
+                      {notRequired ? (
+                        <Badge tone="success">Posted (No QR Required)</Badge>
+                      ) : !generated ? (
                         <Badge tone="neutral">Pending</Badge>
                       ) : printed ? (
                         <Badge tone="success">Code Generated &amp; Printed</Badge>
@@ -154,15 +163,18 @@ export default function OpeningStockViewPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1.5">
-                        {/* Generate when pending; allow Regenerate only for per-piece (unique) codes. */}
-                        {(!generated || !isShared) && (
+                        {/* Generate when pending; allow Regenerate only for per-piece (unique) codes.
+                            Non-QR-required products post automatically on submit — no QR action at all. */}
+                        {!notRequired && (!generated || !isShared) && (
                           <Button variant={generated ? "outline" : "primary"} size="sm" onClick={() => generate(l)} disabled={lineBusy}>
                             <Sparkles className="h-3.5 w-3.5" /> {generated ? "Regenerate" : lineBusy ? "…" : "Generate"}
                           </Button>
                         )}
-                        <Button variant="secondary" size="sm" onClick={() => setPrintFor(l)} disabled={!generated || lineBusy}>
-                          <Printer className="h-3.5 w-3.5" /> Print
-                        </Button>
+                        {!notRequired && (
+                          <Button variant="secondary" size="sm" onClick={() => setPrintFor(l)} disabled={!generated || lineBusy}>
+                            <Printer className="h-3.5 w-3.5" /> Print
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>

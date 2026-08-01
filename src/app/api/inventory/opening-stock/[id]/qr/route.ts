@@ -31,9 +31,15 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const lineId = Number(body.lineId);
   const line = await prisma.openingStockLine.findFirst({
     where: { id: lineId, openingStockId: docId, document: { tenantId: user.tenantId } },
-    include: { document: { select: { docNo: true, warehouse: true, asOnDate: true, businessId: true, branchId: true } } },
+    include: {
+      document: { select: { docNo: true, warehouse: true, asOnDate: true, businessId: true, branchId: true } },
+      product: { select: { qrRequired: true } },
+    },
   });
   if (!line) return NextResponse.json({ ok: false, message: "Line not found." }, { status: 404 });
+  if (!line.product.qrRequired) {
+    return NextResponse.json({ ok: false, message: "This product doesn't require QR tracking — its stock posts automatically on submit." }, { status: 422 });
+  }
 
   const setting = (await prisma.qrCodeSetting.findFirst({ where: { tenantId: user.tenantId, businessId: line.document.businessId, branchId: line.document.branchId } })) ?? (await prisma.qrCodeSetting.create({ data: { tenantId: user.tenantId, businessId: line.document.businessId, branchId: line.document.branchId } }));
   const mode = body.mode === "unique" ? "unique" : body.mode === "shared" ? "shared" : setting.defaultMode;
@@ -44,6 +50,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if (count > MAX_CODES) return NextResponse.json({ ok: false, message: `Too many codes (max ${MAX_CODES}). Use shared mode for large lots.` }, { status: 422 });
 
   try {
+    // maxWait/timeout: unique mode posts one movement per code, sequentially,
+    // against a remote RDS instance — the 5s Prisma default is too tight once
+    // count grows (P2028 expired-transaction errors).
     const codes = await prisma.$transaction(async (tx) => {
       await tx.qrCodeMapping.deleteMany({ where: { sourceType: "OPENING", sourceId: lineId } });
       const start = setting.nextSequence;
@@ -82,7 +91,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         qty, unitRate: rate, sellingRate,
       });
       return made;
-    });
+    }, { maxWait: 10_000, timeout: 30_000 });
     await writeAudit(prisma, user, {
       action: "opening_stock.qr_generate", entity: "OpeningStock", entityId: docId,
       summary: `Generated ${codes.length} QR code(s) for ${line.productName} (${mode})`,

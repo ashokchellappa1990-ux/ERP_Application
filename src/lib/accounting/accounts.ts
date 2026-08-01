@@ -77,16 +77,24 @@ export function purchaseTypeAccount(type: string | null | undefined): string {
   }
 }
 
-/** Seed any missing system accounts for a tenant and return a code → id map. */
+/** Seed any missing system accounts for a tenant and return a code → id map.
+ * Batched via createMany (2 round trips total) rather than one create per
+ * missing account — a fresh tenant with none of the ~45 SYSTEM_ACCOUNTS seeded
+ * yet was doing 45 sequential round trips against the remote RDS instance,
+ * which alone could exceed even a generous interactive-transaction timeout
+ * (observed P2028 "expired transaction" during Load & Dispatch's Post Sales
+ * Invoice — first invoice ever posted for that tenant/business). */
 export async function ensureAccounts(tx: Prisma.TransactionClient, tenantId: number): Promise<Map<string, number>> {
   const existing = await tx.ledgerAccount.findMany({ where: { tenantId }, select: { id: true, code: true } });
   const map = new Map(existing.map((a) => [a.code, a.id]));
-  for (const a of SYSTEM_ACCOUNTS) {
-    if (map.has(a.code)) continue;
-    const created = await tx.ledgerAccount.create({
-      data: { tenantId, code: a.code, name: a.name, type: a.type, group: a.group, normalBalance: a.normalBalance, isSystem: true },
+  const missing = SYSTEM_ACCOUNTS.filter((a) => !map.has(a.code));
+  if (missing.length) {
+    await tx.ledgerAccount.createMany({
+      data: missing.map((a) => ({ tenantId, code: a.code, name: a.name, type: a.type, group: a.group, normalBalance: a.normalBalance, isSystem: true })),
+      skipDuplicates: true,
     });
-    map.set(a.code, created.id);
+    const created = await tx.ledgerAccount.findMany({ where: { tenantId, code: { in: missing.map((a) => a.code) } }, select: { id: true, code: true } });
+    for (const c of created) map.set(c.code, c.id);
   }
   return map;
 }

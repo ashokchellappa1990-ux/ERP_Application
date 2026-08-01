@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { postMovement, addLot, reverseRef } from "@/lib/inventory/ledger";
 
 /** Editor line shape coming from the Quick Stock Entry UI. */
 interface LineInput {
@@ -118,5 +119,45 @@ export async function recomputeProductStock(tx: Prisma.TransactionClient, produc
       where: { id: pid },
       data: { openingQty: Number(agg._sum.qty ?? 0), openingValue: Number(agg._sum.value ?? 0) },
     });
+  }
+}
+
+/**
+ * Products with `qrRequired = false` don't need the manual "Generate QR" step —
+ * their opening-stock lines post straight to the inventory ledger the moment the
+ * document is Submitted. QR-required products still wait for the explicit
+ * Generate action (src/app/api/inventory/opening-stock/[id]/qr/route.ts), since
+ * the ledger posting there is keyed to the generated code itself.
+ *
+ * Idempotent: reverses any prior posting for a line before re-posting, so a
+ * doc that's edited and resubmitted never double-counts. Only touches lines
+ * still `Pending` — once Generated (QR path), a line is left alone.
+ */
+export async function autoPostNonQrLines(
+  tx: Prisma.TransactionClient,
+  opts: { tenantId: number; userId: number; docId: number; businessId: number | null; branchId: number | null; warehouse: string | null; asOnDate: string; docNo: string },
+) {
+  const lines = await tx.openingStockLine.findMany({
+    where: { openingStockId: opts.docId, qrStatus: "Pending", product: { qrRequired: false } },
+    select: { id: true, productId: true, qty: true, purchasePrice: true, mrp: true, batchNo: true, mfgDate: true, expiryDate: true, purchaseDate: true },
+  });
+  for (const l of lines) {
+    await reverseRef(tx, opts.tenantId, "OPENING", l.id);
+    const qty = Number(l.qty);
+    const rate = l.purchasePrice != null ? Number(l.purchasePrice) : l.mrp != null ? Number(l.mrp) : null;
+    const sellingRate = l.mrp != null ? Number(l.mrp) : null;
+    await postMovement(tx, {
+      tenantId: opts.tenantId, businessId: opts.businessId ?? undefined, branchId: opts.branchId ?? undefined,
+      productId: l.productId, txnType: "OPENING", direction: "IN", qty, rate, sellingRate, warehouse: opts.warehouse,
+      batchNo: l.batchNo, mfgDate: l.mfgDate, expiryDate: l.expiryDate,
+      refType: "OPENING", refId: l.id, refNo: opts.docNo, txnDate: opts.asOnDate, createdBy: opts.userId,
+    });
+    await addLot(tx, {
+      tenantId: opts.tenantId, businessId: opts.businessId ?? undefined, branchId: opts.branchId ?? undefined,
+      productId: l.productId, warehouse: opts.warehouse, batchNo: l.batchNo,
+      refType: "OPENING", refId: l.id, refNo: opts.docNo, receivedDate: opts.asOnDate, purchaseDate: l.purchaseDate,
+      mfgDate: l.mfgDate, expiryDate: l.expiryDate, qty, unitRate: rate, sellingRate,
+    });
+    await tx.openingStockLine.update({ where: { id: l.id }, data: { qrStatus: "Not Required", qrGeneratedCount: 0 } });
   }
 }

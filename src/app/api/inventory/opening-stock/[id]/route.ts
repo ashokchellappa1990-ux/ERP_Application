@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { getSessionUser, requestMeta } from "@/lib/auth/session";
 import { requirePermission } from "@/lib/auth/guard";
 import { writeAudit } from "@/lib/audit/log";
-import { buildDocPayload, recomputeProductStock } from "@/lib/inventory/openingStock";
+import { buildDocPayload, recomputeProductStock, autoPostNonQrLines } from "@/lib/inventory/openingStock";
 import { validateBatchTracking } from "@/lib/grn/grnPayload";
 import { reverseRef } from "@/lib/inventory/ledger";
 import type { OpeningStockDetail, OpeningStockStatus } from "@/lib/contracts/openingStock";
@@ -20,7 +20,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
   const doc = await prisma.openingStock.findFirst({
     where: { id: Number(params.id), tenantId: user.tenantId },
-    include: { lines: { orderBy: { id: "asc" } } },
+    include: { lines: { orderBy: { id: "asc" }, include: { product: { select: { qrRequired: true } } } } },
   });
   if (!doc) return NextResponse.json({ ok: false, message: "Document not found." }, { status: 404 });
 
@@ -35,7 +35,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       batchNo: l.batchNo ?? "", mfgDate: l.mfgDate ?? "", expiryDate: l.expiryDate ?? "",
       supplier: l.supplier ?? "", purchaseRef: l.purchaseRef ?? "", purchaseDate: l.purchaseDate ?? "",
       remarks: l.remarks ?? "",
-      qrMode: l.qrMode as "shared" | "unique", qrStatus: l.qrStatus as "Pending" | "Generated", qrGeneratedCount: l.qrGeneratedCount, printedQty: l.printedQty,
+      qrRequired: l.product.qrRequired,
+      qrMode: l.qrMode as "shared" | "unique", qrStatus: l.qrStatus as "Pending" | "Generated" | "Not Required", qrGeneratedCount: l.qrGeneratedCount, printedQty: l.printedQty,
     })),
   };
   return NextResponse.json({ ok: true, data });
@@ -85,7 +86,12 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       // Recompute stock for products on this doc (old + new) so edits stay correct,
       // regardless of whether the doc is being submitted or reverted to draft.
       await recomputeProductStock(tx, Array.from(affected));
-    });
+      if (submit) {
+        await autoPostNonQrLines(tx, { tenantId: user.tenantId, userId: user.id, docId: id, businessId: existing.businessId ?? null, branchId: existing.branchId ?? null, warehouse: header.warehouse, asOnDate: header.asOnDate, docNo: existing.docNo });
+      }
+      // maxWait/timeout: multiple sequential ledger/lot writes against a remote
+      // RDS instance can exceed Prisma's 5s default (P2028) on larger docs.
+    }, { maxWait: 10_000, timeout: 30_000 });
     await writeAudit(prisma, user, {
       action: submit ? "opening_stock.submit" : "opening_stock.update", entity: "OpeningStock", entityId: id,
       summary: `Updated opening stock ${existing.docNo} — ${header.totalQty} qty, ${header.totalValue.toFixed(2)}`,
@@ -116,7 +122,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
       await tx.qrCodeMapping.deleteMany({ where: { sourceType: "OPENING", sourceId: { in: existing.lines.map((l) => l.id) } } });
       await tx.openingStock.delete({ where: { id } });
       await recomputeProductStock(tx, productIds); // drop this doc's contribution
-    });
+    }, { maxWait: 10_000, timeout: 30_000 });
     await writeAudit(prisma, user, {
       action: "opening_stock.delete", entity: "OpeningStock", entityId: id,
       summary: `Deleted opening stock ${existing.docNo}`,

@@ -1471,6 +1471,7 @@ model Tenant {
   generalSettings   GeneralSetting[]
   salesSettings     SalesSetting[]
   purchaseSettings  PurchaseSetting[]
+  dispatchConfigurations DispatchConfiguration[]
   purchaseInvoices  PurchaseInvoice[]
   posSettings       PosSetting[]
   themeSettings     ThemeSetting[]
@@ -2271,7 +2272,10 @@ model OpeningStockLine {
 
   // QR labelling: one shared code for the whole line, or a unique code per piece.
   qrMode           String  @default("shared") @db.VarChar(10) // shared | unique
-  qrStatus         String  @default("Pending") @db.VarChar(20) // Pending | Generated
+  // Pending (awaiting Generate) | Generated (QR-required product, posted via QR
+  // generation) | Not Required (product.qrRequired=false — posted automatically
+  // on submit, see autoPostNonQrLines in src/lib/inventory/openingStock.ts)
+  qrStatus         String  @default("Pending") @db.VarChar(20)
   qrGeneratedCount Int     @default(0)
   printedQty       Int     @default(0)
 
@@ -8511,4 +8515,689 @@ model StockTransferReceiptItem {
   @@index([receiptId])
   @@index([tenantId, productId])
   @@map("stock_transfer_receipt_items")
+}
+
+// ==========================================================================
+// Transport & Vehicle Operations (Phase 1) — manages ONLY the physical
+// movement of vehicles and dispatch execution; never writes InventoryLedger
+// or journal_entries itself. Stock Transfer dispatches call the EXISTING
+// postDispatch() (src/lib/warehouse/dispatch.ts); Customer dispatches call
+// the EXISTING createSaleTx() (src/lib/sales/createSale.ts) — see
+// src/lib/transport/dispatchExecution.ts, the shared docType-discriminated
+// engine. New models here deliberately use plain tenantId/businessId/branchId
+// (no explicit Tenant relation) to match the high-volume operational-table
+// convention (e.g. StockAllocationLot), except DispatchConfiguration which
+// mirrors the PurchaseSetting singleton-config pattern.
+// ==========================================================================
+
+model VehicleMaster {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  vehicleNo    String  @db.VarChar(40)
+  vehicleType  String? @db.VarChar(60)
+  capacity     Decimal @default(0) @db.Decimal(18, 3)
+  capacityUnit String? @db.VarChar(20)
+  transportCompanyId Int?
+  ownerType String @default("Own") @db.VarChar(16) // Own | Hired | Transporter
+  status    String @default("Active") @db.VarChar(16)
+  remarks   String? @db.Text
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@unique([tenantId, vehicleNo])
+  @@index([tenantId, status])
+  @@map("vehicle_master")
+}
+
+model DriverMaster {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  name          String  @db.VarChar(150)
+  licenseNo     String? @db.VarChar(60)
+  licenseExpiry String? @db.VarChar(20)
+  phone         String? @db.VarChar(20)
+  transportCompanyId Int?
+  status    String @default("Active") @db.VarChar(16)
+  remarks   String? @db.Text
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@index([tenantId, status])
+  @@index([transportCompanyId])
+  @@map("driver_master")
+}
+
+model TransportCompany {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  code          String  @db.VarChar(40)
+  name          String  @db.VarChar(150)
+  contactPerson String? @db.VarChar(150)
+  phone         String? @db.VarChar(20)
+  gstin         String? @db.VarChar(20)
+  address       String? @db.VarChar(400)
+  status    String @default("Active") @db.VarChar(16)
+  remarks   String? @db.Text
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+  @@map("transport_company")
+}
+
+model RouteMaster {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  code   String  @db.VarChar(40)
+  name   String  @db.VarChar(150)
+  sourceBranchId      Int?
+  destinationBranchId Int?
+  distanceKm     Decimal? @db.Decimal(18, 2)
+  estimatedHours Decimal? @db.Decimal(10, 2)
+  status    String @default("Active") @db.VarChar(16)
+  remarks   String? @db.Text
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+  @@map("route_master")
+}
+
+model LoadingBay {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  code      String  @db.VarChar(40)
+  name      String  @db.VarChar(150)
+  warehouse String? @db.VarChar(120)
+  capacity  Decimal? @db.Decimal(18, 3)
+  status    String @default("Active") @db.VarChar(16)
+  remarks   String? @db.Text
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@unique([tenantId, code])
+  @@index([tenantId, branchId, status])
+  @@map("loading_bay")
+}
+
+model WeighbridgeMaster {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  code               String  @db.VarChar(40)
+  name               String  @db.VarChar(150)
+  location           String? @db.VarChar(200)
+  capacity           Decimal? @db.Decimal(18, 3)
+  calibrationDueDate String? @db.VarChar(20)
+  status    String @default("Active") @db.VarChar(16)
+  remarks   String? @db.Text
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@unique([tenantId, code])
+  @@index([tenantId, branchId, status])
+  @@map("weighbridge_master")
+}
+
+model DispatchPlanning {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  planningNo     String  @db.VarChar(40)
+  planningDate   String  @db.VarChar(20)
+  dispatchSource String  @default("Sales Order") @db.VarChar(24) // Sales Order | Stock Transfer | Direct | Other
+  referenceType  String? @db.VarChar(30) // SALES_ORDER | TRANSFER_REQUEST
+  referenceId    Int?
+  referenceNo    String? @db.VarChar(60)
+  warehouse      String? @db.VarChar(120)
+  expectedDispatchDate String? @db.VarChar(20)
+  priority       String  @default("Normal") @db.VarChar(12)
+  transportMode  String? @db.VarChar(30)
+  estimatedWeight Decimal @default(0) @db.Decimal(18, 3)
+  estimatedVolume Decimal @default(0) @db.Decimal(18, 3)
+  remarks String? @db.Text
+  status  String  @default("Draft") @db.VarChar(20) // Draft | Approved | Vehicle Pending | Vehicle Assigned | Completed | Cancelled
+  approvedBy     Int?
+  approvedByName String? @db.VarChar(160)
+  approvedAt     DateTime?
+  cancelledAt    DateTime?
+  cancelReason   String? @db.VarChar(300)
+  createdBy     Int?
+  createdByName String? @db.VarChar(160)
+  updatedBy     Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  items DispatchPlanningItem[]
+
+  @@unique([tenantId, planningNo])
+  @@index([tenantId, status])
+  @@index([referenceType, referenceId])
+  @@map("dispatch_planning")
+}
+
+model DispatchPlanningItem {
+  id         Int @id @default(autoincrement())
+  tenantId   Int
+  planningId Int
+  planning   DispatchPlanning @relation(fields: [planningId], references: [id], onDelete: Cascade)
+  productId    Int
+  productName  String  @db.VarChar(250)
+  sku          String? @db.VarChar(60)
+  batchNo      String? @db.VarChar(80)
+  allocationLotId Int?
+  qty     Decimal @default(0) @db.Decimal(18, 3)
+  uom     String? @db.VarChar(20)
+  remarks String? @db.VarChar(300)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([planningId])
+  @@index([tenantId, productId])
+  @@map("dispatch_planning_items")
+}
+
+model DispatchExecution {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  docNo   String @db.VarChar(40)
+  docType String @default("Customer") @db.VarChar(24) // Customer | StockTransfer | PurchaseReturn | SalesReturn | ProductionTransfer | JobWork | VendorDispatch | Others
+  docDate String @db.VarChar(20)
+  dispatchPlanningId Int?
+  sourceRefType String? @db.VarChar(30) // SALES_ORDER | TRANSFER_REQUEST | DIRECT
+  sourceRefId   Int?
+  sourceRefNo   String? @db.VarChar(60)
+  partyType String? @db.VarChar(20) // Customer | Supplier | Branch | Other
+  partyId   Int?
+  partyName String? @db.VarChar(200)
+  deliveryAddress String? @db.VarChar(400)
+  warehouse String? @db.VarChar(120)
+  transportCompanyId  Int?
+  vehicleId           Int?
+  driverId            Int?
+  vehicleGateEntryId  Int?
+  status  String  @default("Draft") @db.VarChar(20) // Draft | Vehicle Assigned | Gate In | Loading | Loaded | Gate Out | Completed | Cancelled
+  isPartial Boolean @default(false)
+  totalQty   Decimal @default(0) @db.Decimal(18, 3)
+  totalValue Decimal @default(0) @db.Decimal(18, 2)
+  remarks String? @db.Text
+  completedAt  DateTime?
+  cancelledAt  DateTime?
+  cancelReason String? @db.VarChar(300)
+  createdBy     Int?
+  createdByName String? @db.VarChar(160)
+  updatedBy     Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  items DispatchExecutionItem[]
+
+  @@unique([tenantId, docType, docNo])
+  @@index([tenantId, docType, status])
+  @@index([sourceRefType, sourceRefId])
+  @@map("dispatch_execution")
+}
+
+model DispatchExecutionItem {
+  id          Int @id @default(autoincrement())
+  tenantId    Int
+  executionId Int
+  execution   DispatchExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  productId   Int
+  productName String  @db.VarChar(250)
+  sku         String? @db.VarChar(60)
+  uom         String? @db.VarChar(20)
+  batchNo     String? @db.VarChar(80)
+  mfgDate     String? @db.VarChar(20)
+  expiryDate  String? @db.VarChar(20)
+  allocationLotId Int?
+  orderedQty    Decimal @default(0) @db.Decimal(18, 3)
+  dispatchedQty Decimal @default(0) @db.Decimal(18, 3)
+  rate  Decimal? @db.Decimal(18, 2)
+  value Decimal  @default(0) @db.Decimal(18, 2)
+  qrCode  String? @db.VarChar(80)
+  remarks String? @db.VarChar(300)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([executionId])
+  @@index([tenantId, productId])
+  @@map("dispatch_execution_items")
+}
+
+model VehicleGateEntry {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  gateEntryNo String @db.VarChar(40)
+  vehicleId   Int
+  driverId    Int?
+  transportCompanyId Int?
+  dispatchPlanningId Int?
+  dispatchExecutionId Int?
+  dispatchType String? @db.VarChar(24)
+  referenceNo  String? @db.VarChar(60)
+  arrivalTime  DateTime?
+  securityOfficer String? @db.VarChar(160)
+  remarks String? @db.Text
+  status  String  @default("Waiting") @db.VarChar(16) // Waiting | Inside Factory | Loading | Completed | Exited
+
+  // Section 1 – Gate Information
+  gate     String? @db.VarChar(60)
+  location String? @db.VarChar(150) // auto-populated from the logged-in user's active branch
+
+  // Section 2/3 – Reference Document (auto-loaded server-side, not client-trusted)
+  referenceType    String? @db.VarChar(30) // Sales Order | Direct Customer Dispatch
+  salesOrderId     Int?
+  customerName     String? @db.VarChar(200)
+  deliveryAddress  String? @db.VarChar(400)
+  transferRequestId Int?
+  sourceWarehouse      String? @db.VarChar(120)
+  destinationWarehouse String? @db.VarChar(120)
+
+  // Section 4 – Transport Details
+  transportMode   String? @db.VarChar(30)
+  vehicleType     String? @db.VarChar(60)
+  trailerNumber   String? @db.VarChar(40)
+  containerNumber String? @db.VarChar(40)
+
+  // Section 5 – Driver Details — captured fresh at the gate (the actual driver
+  // entering may differ from anyone planned earlier), independent of driverId.
+  driverName      String? @db.VarChar(150)
+  driverMobile    String? @db.VarChar(20)
+  driverLicenseNo String? @db.VarChar(60)
+  helperName      String? @db.VarChar(150)
+  helperMobile    String? @db.VarChar(20)
+
+  // Section 6 – Vehicle Details (optional)
+  vehicleCapacity    Decimal? @db.Decimal(18, 3)
+  expectedLoadWeight Decimal? @db.Decimal(18, 3)
+  gpsAvailable       Boolean  @default(false)
+  sealNumber         String?  @db.VarChar(60)
+
+  // Section 7 – Entry Details (optional)
+  purpose          String?   @db.VarChar(200)
+  expectedExitTime DateTime?
+  loadingBayId     Int?
+
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@unique([tenantId, gateEntryNo])
+  @@index([tenantId, status])
+  @@index([dispatchExecutionId])
+  @@map("vehicle_gate_entry")
+}
+
+model PreLoadingWeighment {
+  id           Int    @id @default(autoincrement())
+  tenantId     Int
+  weighmentNo  String @db.VarChar(40)
+  gateEntryId  Int
+  vehicleId    Int
+  tareWeight   Decimal @default(0) @db.Decimal(18, 3)
+  weighDate    String? @db.VarChar(20)
+  weighTime    String? @db.VarChar(10)
+  operator     String? @db.VarChar(160)
+  weighbridgeId Int?
+  photoUrl     String? @db.VarChar(400)
+  remarks      String? @db.Text
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, weighmentNo])
+  @@index([gateEntryId])
+  @@map("pre_loading_weighment")
+}
+
+model LoadingConfirmation {
+  id          Int    @id @default(autoincrement())
+  tenantId    Int
+  loadingNo   String @db.VarChar(40)
+  gateEntryId Int
+  warehouse   String? @db.VarChar(120)
+  loadingBayId Int?
+  supervisor  String? @db.VarChar(160)
+  loadingStart DateTime?
+  loadingEnd   DateTime?
+  packages Int @default(0)
+  pallets  Int @default(0)
+  batchNo      String? @db.VarChar(80)
+  serialNumber String? @db.VarChar(120)
+  sealNumber   String? @db.VarChar(60)
+  remarks String? @db.Text
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, loadingNo])
+  @@index([gateEntryId])
+  @@map("loading_confirmation")
+}
+
+model PostLoadingWeighment {
+  id          Int    @id @default(autoincrement())
+  tenantId    Int
+  gateEntryId Int
+  grossWeight Decimal @default(0) @db.Decimal(18, 3)
+  tareWeight  Decimal @default(0) @db.Decimal(18, 3)
+  netWeight   Decimal @default(0) @db.Decimal(18, 3)
+  weighDate   String? @db.VarChar(20)
+  operator    String? @db.VarChar(160)
+  toleranceExceeded Boolean @default(false)
+  approvalStatus String @default("NotRequired") @db.VarChar(16) // NotRequired | Pending | Approved
+  approvedBy     Int?
+  approvedByName String? @db.VarChar(160)
+  approvedAt     DateTime?
+  remarks String? @db.Text
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([gateEntryId])
+  @@index([tenantId, approvalStatus])
+  @@map("post_loading_weighment")
+}
+
+model GateExit {
+  id           Int    @id @default(autoincrement())
+  tenantId     Int
+  gateExitNo   String @db.VarChar(40)
+  gateEntryId  Int
+  vehicleId    Int
+  exitTime     DateTime?
+  securityOfficer String? @db.VarChar(160)
+  sealVerified Boolean @default(false)
+  remarks String? @db.Text
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, gateExitNo])
+  @@unique([gateEntryId])
+  @@map("gate_exit")
+}
+
+model DeliveryChallan {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  dcNo   String @db.VarChar(40)
+  dcDate String @db.VarChar(20)
+  dispatchExecutionId Int? // legacy — superseded by loadDispatchId, unused going forward
+  loadDispatchId Int?
+  customerId   Int?
+  customerName String? @db.VarChar(200)
+  deliveryAddress String? @db.VarChar(400)
+  totalQty   Decimal @default(0) @db.Decimal(18, 3)
+  totalValue Decimal @default(0) @db.Decimal(18, 2)
+  status     String  @default("Generated") @db.VarChar(16) // Draft | Generated | Printed | Cancelled
+  printedCount Int @default(0)
+  generatedAt  DateTime?
+  cancelledAt  DateTime?
+  remarks String? @db.Text
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, dcNo])
+  @@index([dispatchExecutionId])
+  @@map("delivery_challan")
+}
+
+model VehicleMovementHistory {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  vehicleId  Int
+  dispatchExecutionId Int?
+  gateEntryId Int?
+  eventType String   @db.VarChar(24) // GateIn | PreWeighment | LoadingStart | LoadingEnd | PostWeighment | GateOut
+  eventAt   DateTime
+  actorUserId Int?
+  actorName   String? @db.VarChar(160)
+  remarks     String? @db.VarChar(300)
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, vehicleId, eventAt])
+  @@index([dispatchExecutionId])
+  @@index([gateEntryId])
+  @@map("vehicle_movement_history")
+}
+
+model TransportCost {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  dispatchExecutionId Int? // legacy — superseded by loadDispatchId, unused going forward
+  loadDispatchId Int?
+  transportCompanyId  Int?
+  vehicleId           Int?
+  distance        Decimal @default(0) @db.Decimal(18, 2)
+  freightCharge   Decimal @default(0) @db.Decimal(18, 2)
+  loadingCharge   Decimal @default(0) @db.Decimal(18, 2)
+  unloadingCharge Decimal @default(0) @db.Decimal(18, 2)
+  fuelCharge      Decimal @default(0) @db.Decimal(18, 2)
+  tollCharge      Decimal @default(0) @db.Decimal(18, 2)
+  driverAllowance Decimal @default(0) @db.Decimal(18, 2)
+  helperAllowance Decimal @default(0) @db.Decimal(18, 2)
+  otherCharges    Decimal @default(0) @db.Decimal(18, 2)
+  discount        Decimal @default(0) @db.Decimal(18, 2)
+  gstAmount       Decimal @default(0) @db.Decimal(18, 2)
+  totalCost       Decimal @default(0) @db.Decimal(18, 2)
+  postedToFinance Boolean @default(false) // Phase 2 — GL posting not implemented yet
+  remarks String? @db.Text
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([loadDispatchId])
+  @@map("transport_cost")
+}
+
+// ==========================================================================
+// Load & Dispatch — the single warehouse-execution screen. Absorbs the old
+// Dispatch Execution + Loading Confirmation screens into one full-page flow;
+// Stock Transfer Dispatch (StockTransferDispatch) stays as a backing engine
+// only — Load & Dispatch creates that row internally for docType=StockTransfer
+// and calls the existing postDispatch() at completion (src/lib/warehouse/dispatch.ts).
+// See src/lib/transport/loadDispatch.ts.
+// ==========================================================================
+model LoadDispatch {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  warehouse    String? @db.VarChar(120)
+  dispatchNo   String  @db.VarChar(40)
+  dispatchDate String  @db.VarChar(20)
+  docType String @default("Customer") @db.VarChar(24) // Customer | StockTransfer | PurchaseReturn | SalesReturnPickup | ProductionTransfer | JobWork | Others
+  sourceRefType String? @db.VarChar(30) // SALES_ORDER | TRANSFER_REQUEST | DIRECT
+  sourceRefId   Int?
+  sourceRefNo   String? @db.VarChar(60)
+  // For docType=StockTransfer: the StockTransferDispatch row Load & Dispatch
+  // creates internally (no longer a user-facing screen) — completeLoadDispatch
+  // calls the existing postDispatch() against this id.
+  stockTransferDispatchId Int?
+  partyType String? @db.VarChar(20)
+  partyId   Int?
+  partyName String? @db.VarChar(200)
+  deliveryAddress      String? @db.VarChar(400)
+  destinationWarehouse String? @db.VarChar(120)
+  vehicleGateEntryId Int?
+
+  // Section 3 — Transport Info (auto-loaded from the Vehicle Gate Entry, editable).
+  transportCompanyId Int?
+  vehicleId          Int?
+  vehicleType        String? @db.VarChar(60)
+  driverName         String? @db.VarChar(150)
+  driverMobile       String? @db.VarChar(20)
+  driverLicenseNo    String? @db.VarChar(60)
+  helperName         String? @db.VarChar(150)
+  helperMobile       String? @db.VarChar(20)
+  routeId            Int?
+  sealNumber         String? @db.VarChar(60)
+  trailerNumber      String? @db.VarChar(40)
+  containerNumber    String? @db.VarChar(40)
+
+  // Loading details — folded in from the old LoadingConfirmation screen.
+  loadingBayId Int?
+  supervisor   String? @db.VarChar(160)
+  loadingStart DateTime?
+  loadingEnd   DateTime?
+  packages Int @default(0)
+  pallets  Int @default(0)
+
+  status String @default("Draft") @db.VarChar(30) // Draft | Ready | Loading | Dispatched | Delivery Challan Generated | Sales Invoice Posted | Cancelled
+
+  // Dispatch Summary (computed).
+  totalProducts Int      @default(0)
+  totalQty      Decimal  @default(0) @db.Decimal(18, 3)
+  totalWeight   Decimal? @db.Decimal(18, 3) // best-effort — Product has no shipped weight field yet
+  totalPackages Int      @default(0)
+
+  remarks      String? @db.Text
+  cancelReason String? @db.VarChar(300)
+  startedBy    Int?
+  startedAt    DateTime?
+  completedBy  Int?
+  completedAt  DateTime?
+  // Set the moment Complete Load & Dispatch reduces stock for a Customer
+  // dispatch (see completeLoadDispatch in src/lib/transport/loadDispatch.ts) —
+  // the Sales Invoice posts later without moving inventory again.
+  inventoryPostedAt DateTime?
+  deliveryChallanId Int?
+  saleId            Int?
+  approvedBy        Int?
+
+  // Payment collection intent, captured at creation/edit time and applied when
+  // the Sales Invoice actually posts (Delivery Challan generation, Automatic
+  // mode; or Post Sales Invoice, Manual mode) — see buildPreparedSale() in
+  // src/lib/transport/loadDispatch.ts.
+  paymentMode   String?  @db.VarChar(16) // Full | Partial | Credit
+  paymentAmount Decimal? @db.Decimal(18, 2)
+  paymentMethod String?  @db.VarChar(30) // Cash | Bank Transfer | UPI | Cheque | Card
+  bankId        Int?
+  bankName      String?  @db.VarChar(150)
+  bankAccount   String?  @db.VarChar(60)
+
+  createdBy     Int?
+  createdByName String? @db.VarChar(160)
+  updatedBy     Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  items LoadDispatchItem[]
+
+  @@unique([tenantId, dispatchNo])
+  @@index([tenantId, docType, status])
+  @@index([sourceRefType, sourceRefId])
+  @@map("load_dispatch")
+}
+
+model LoadDispatchItem {
+  id             Int @id @default(autoincrement())
+  tenantId       Int
+  loadDispatchId Int
+  loadDispatch   LoadDispatch @relation(fields: [loadDispatchId], references: [id], onDelete: Cascade)
+  productId   Int
+  productName String  @db.VarChar(250)
+  sku         String? @db.VarChar(60)
+  uom         String? @db.VarChar(20)
+  batchNo     String? @db.VarChar(80)
+  mfgDate     String? @db.VarChar(20)
+  expiryDate  String? @db.VarChar(20)
+  serialNo    String? @db.VarChar(120)
+  allocationLotId Int?
+  allocatedQty  Decimal @default(0) @db.Decimal(18, 3)
+  dispatchedQty Decimal @default(0) @db.Decimal(18, 3)
+  pendingQty    Decimal @default(0) @db.Decimal(18, 3)
+  rate   Decimal? @db.Decimal(18, 2)
+  value  Decimal  @default(0) @db.Decimal(18, 2)
+  weight Decimal? @db.Decimal(18, 3)
+  // Invoice-grade line detail (mirrors SaleLine's shape) so this table can feed
+  // an invoice-style item grid + the actual createSaleTx() posting later.
+  discPct      Decimal? @db.Decimal(9, 2)
+  discAmount   Decimal  @default(0) @db.Decimal(18, 2)
+  taxPct       Decimal? @db.Decimal(9, 2)
+  taxableValue Decimal  @default(0) @db.Decimal(18, 2)
+  taxAmount    Decimal  @default(0) @db.Decimal(18, 2)
+  // COGS resolved when Complete Load & Dispatch consumes stock (Customer
+  // docType) — carried into the SaleLine at invoice time so createSaleTx
+  // doesn't re-consume the same stock a second time.
+  cost    Decimal? @db.Decimal(18, 2)
+  qrCode  String? @db.VarChar(80)
+  remarks String? @db.VarChar(300)
+  status  String  @default("Active") @db.VarChar(16)
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@index([loadDispatchId])
+  @@index([tenantId, productId])
+  @@map("load_dispatch_items")
+}
+
+model DispatchConfiguration {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  businessId Int?
+  branchId   Int?
+
+  config Json // { flags: {...general/DC/invoice toggles...}, transportCost: {...} }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, businessId, branchId])
+  @@map("dispatch_configurations")
 }

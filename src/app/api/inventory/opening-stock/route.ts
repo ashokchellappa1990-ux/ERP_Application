@@ -5,7 +5,7 @@ import { getSessionUser, requestMeta } from "@/lib/auth/session";
 import { getActiveScope, scopeWhere, resolveWriteScope } from "@/lib/auth/scope";
 import { requirePermission } from "@/lib/auth/guard";
 import { writeAudit } from "@/lib/audit/log";
-import { buildDocPayload, recomputeProductStock } from "@/lib/inventory/openingStock";
+import { buildDocPayload, recomputeProductStock, autoPostNonQrLines } from "@/lib/inventory/openingStock";
 import { validateBatchTracking } from "@/lib/grn/grnPayload";
 import { stampTerminal } from "@/lib/pos/terminalContext";
 import { requireTerminalForTxn, terminalListWhere } from "@/lib/pos/terminalGuard";
@@ -81,6 +81,9 @@ export async function POST(req: Request) {
   if (tDenied) return tDenied;
   const stamp = stampTerminal(ctx);
   try {
+    // maxWait/timeout: submitting posts a ledger movement + lot per line
+    // sequentially against a remote RDS instance — the 5s Prisma default was
+    // intermittently too tight and failed with P2028 (expired transaction).
     const docId = await prisma.$transaction(async (tx) => {
       const doc = await tx.openingStock.create({
         data: { ...header, tenantId: user.tenantId, businessId: seg.businessId ?? undefined, branchId: seg.branchId ?? undefined, docNo: "TMP", createdBy: user.id, ...stamp, lines: { create: lines } },
@@ -88,9 +91,12 @@ export async function POST(req: Request) {
       });
       const docNo = `OPN-${String(doc.id).padStart(5, "0")}`;
       await tx.openingStock.update({ where: { id: doc.id }, data: { docNo } });
-      if (submit) await recomputeProductStock(tx, productIds);
+      if (submit) {
+        await recomputeProductStock(tx, productIds);
+        await autoPostNonQrLines(tx, { tenantId: user.tenantId, userId: user.id, docId: doc.id, businessId: seg.businessId ?? null, branchId: seg.branchId ?? null, warehouse: header.warehouse, asOnDate: header.asOnDate, docNo });
+      }
       return doc.id;
-    });
+    }, { maxWait: 10_000, timeout: 30_000 });
     await writeAudit(prisma, user, {
       action: submit ? "opening_stock.submit" : "opening_stock.create", entity: "OpeningStock", entityId: docId,
       summary: `${submit ? "Submitted" : "Drafted"} opening stock — ${header.totalQty} qty, ${header.totalValue.toFixed(2)}`,
