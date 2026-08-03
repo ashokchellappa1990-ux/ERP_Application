@@ -12,21 +12,24 @@ const num = (v: unknown) => (v == null ? 0 : Number(v));
 export interface TransportCostDto {
   transportCompanyId: number | null; vehicleId: number | null; distance: number;
   freightCharge: number; loadingCharge: number; unloadingCharge: number; fuelCharge: number; tollCharge: number;
-  driverAllowance: number; helperAllowance: number; otherCharges: number; discount: number; gstAmount: number;
+  driverAllowance: number; helperAllowance: number; driverBatta: number; vehicleRent: number; transitPass: number;
+  otherCharges: number; discount: number; gstAmount: number;
   totalCost: number; remarks: string | null;
 }
 
 function toDto(r: {
   transportCompanyId: number | null; vehicleId: number | null; distance: unknown;
   freightCharge: unknown; loadingCharge: unknown; unloadingCharge: unknown; fuelCharge: unknown; tollCharge: unknown;
-  driverAllowance: unknown; helperAllowance: unknown; otherCharges: unknown; discount: unknown; gstAmount: unknown;
+  driverAllowance: unknown; helperAllowance: unknown; driverBatta: unknown; vehicleRent: unknown; transitPass: unknown;
+  otherCharges: unknown; discount: unknown; gstAmount: unknown;
   totalCost: unknown; remarks: string | null;
 }): TransportCostDto {
   return {
     transportCompanyId: r.transportCompanyId, vehicleId: r.vehicleId, distance: num(r.distance),
     freightCharge: num(r.freightCharge), loadingCharge: num(r.loadingCharge), unloadingCharge: num(r.unloadingCharge),
     fuelCharge: num(r.fuelCharge), tollCharge: num(r.tollCharge), driverAllowance: num(r.driverAllowance),
-    helperAllowance: num(r.helperAllowance), otherCharges: num(r.otherCharges), discount: num(r.discount),
+    helperAllowance: num(r.helperAllowance), driverBatta: num(r.driverBatta), vehicleRent: num(r.vehicleRent), transitPass: num(r.transitPass),
+    otherCharges: num(r.otherCharges), discount: num(r.discount),
     gstAmount: num(r.gstAmount), totalCost: num(r.totalCost), remarks: r.remarks,
   };
 }
@@ -70,12 +73,13 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   if (!doc) return NextResponse.json({ ok: false, message: "Load & Dispatch not found." }, { status: 404 });
 
   const totalCost = b.freightCharge + b.loadingCharge + b.unloadingCharge + b.fuelCharge + b.tollCharge
-    + b.driverAllowance + b.helperAllowance + b.otherCharges - b.discount + b.gstAmount;
+    + b.driverAllowance + b.helperAllowance + b.driverBatta + b.vehicleRent + b.transitPass + b.otherCharges - b.discount + b.gstAmount;
 
   const data = {
     transportCompanyId: b.transportCompanyId ?? null, vehicleId: b.vehicleId ?? null, distance: b.distance,
     freightCharge: b.freightCharge, loadingCharge: b.loadingCharge, unloadingCharge: b.unloadingCharge,
     fuelCharge: b.fuelCharge, tollCharge: b.tollCharge, driverAllowance: b.driverAllowance, helperAllowance: b.helperAllowance,
+    driverBatta: b.driverBatta, vehicleRent: b.vehicleRent, transitPass: b.transitPass,
     otherCharges: b.otherCharges, discount: b.discount, gstAmount: b.gstAmount, totalCost, remarks: b.remarks ?? null,
     updatedBy: user.id,
   };

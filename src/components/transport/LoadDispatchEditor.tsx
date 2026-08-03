@@ -19,6 +19,10 @@ import type { TransportConfigData } from "@/lib/settings/transportConfigDefaults
 import { buildTaxInvoiceHtml, type TaxInvoiceData } from "@/lib/print/taxInvoiceHtml";
 import { buildWeightSlipHtml, type WeightSlipData } from "@/lib/print/weightSlipHtml";
 import { DEFAULT_RECEIPT } from "@/lib/settings/receiptTemplate";
+import { fieldOn, fieldMust } from "@/lib/settings/docFieldsConfig";
+
+const SCREEN = "load_dispatch";
+const req = (key: string) => (fieldMust(SCREEN, key) ? " *" : "");
 
 type Tone = "neutral" | "primary" | "success" | "warning" | "danger" | "info";
 const STATUS_TONE: Record<string, Tone> = {
@@ -35,13 +39,15 @@ interface EditableItem extends LoadDispatchItemDto { dispatchedQtyInput: string 
 interface TransportCostState {
   transportCompanyId: number | ""; vehicleId: number | ""; distance: string;
   freightCharge: string; loadingCharge: string; unloadingCharge: string; fuelCharge: string; tollCharge: string;
-  driverAllowance: string; helperAllowance: string; otherCharges: string; discount: string; gstAmount: string;
+  driverAllowance: string; helperAllowance: string; driverBatta: string; vehicleRent: string; transitPass: string;
+  otherCharges: string; discount: string; gstAmount: string;
   remarks: string;
 }
 const EMPTY_TC: TransportCostState = {
   transportCompanyId: "", vehicleId: "", distance: "0",
   freightCharge: "0", loadingCharge: "0", unloadingCharge: "0", fuelCharge: "0", tollCharge: "0",
-  driverAllowance: "0", helperAllowance: "0", otherCharges: "0", discount: "0", gstAmount: "0", remarks: "",
+  driverAllowance: "0", helperAllowance: "0", driverBatta: "0", vehicleRent: "0", transitPass: "0",
+  otherCharges: "0", discount: "0", gstAmount: "0", remarks: "",
 };
 
 export function LoadDispatchEditor({ id }: { id: number }) {
@@ -193,7 +199,8 @@ export function LoadDispatchEditor({ id }: { id: number }) {
           transportCompanyId: r.transportCompanyId ?? "", vehicleId: r.vehicleId ?? "", distance: String(r.distance),
           freightCharge: String(r.freightCharge), loadingCharge: String(r.loadingCharge), unloadingCharge: String(r.unloadingCharge),
           fuelCharge: String(r.fuelCharge), tollCharge: String(r.tollCharge), driverAllowance: String(r.driverAllowance),
-          helperAllowance: String(r.helperAllowance), otherCharges: String(r.otherCharges), discount: String(r.discount),
+          helperAllowance: String(r.helperAllowance), driverBatta: String(r.driverBatta ?? 0), vehicleRent: String(r.vehicleRent ?? 0), transitPass: String(r.transitPass ?? 0),
+          otherCharges: String(r.otherCharges), discount: String(r.discount),
           gstAmount: String(r.gstAmount), remarks: r.remarks ?? "",
         });
       }
@@ -202,6 +209,11 @@ export function LoadDispatchEditor({ id }: { id: number }) {
   }, [config?.flags.enableTransportCost, id]);
 
   const canEdit = !!data && EDITABLE_STATUSES.includes(data.status);
+  // Document Field Settings (Settings → Document Field Settings → Load &
+  // Dispatch) — a SectionCard whose every field got disabled shouldn't
+  // render as an empty shell.
+  const transportInfoVisible = fieldOn(SCREEN, "transportCompany") || fieldOn(SCREEN, "vehicleType") || fieldOn(SCREEN, "route") || fieldOn(SCREEN, "sealNumber") || fieldOn(SCREEN, "trailerNumber") || fieldOn(SCREEN, "containerNumber");
+  const driverInfoVisible = fieldOn(SCREEN, "driverName") || fieldOn(SCREEN, "driverMobile") || fieldOn(SCREEN, "driverLicenseNo") || fieldOn(SCREEN, "helperName") || fieldOn(SCREEN, "helperMobile");
 
   const itemErrors = useMemo(() => {
     const errs: Record<number, string> = {};
@@ -315,7 +327,8 @@ export function LoadDispatchEditor({ id }: { id: number }) {
   const tcTotal = useMemo(() => {
     const n = (v: string) => Number(v) || 0;
     return n(tc.freightCharge) + n(tc.loadingCharge) + n(tc.unloadingCharge) + n(tc.fuelCharge) + n(tc.tollCharge)
-      + n(tc.driverAllowance) + n(tc.helperAllowance) + n(tc.otherCharges) - n(tc.discount) + n(tc.gstAmount);
+      + n(tc.driverAllowance) + n(tc.helperAllowance) + n(tc.driverBatta) + n(tc.vehicleRent) + n(tc.transitPass)
+      + n(tc.otherCharges) - n(tc.discount) + n(tc.gstAmount);
   }, [tc]);
 
   async function saveTransportCost() {
@@ -324,7 +337,8 @@ export function LoadDispatchEditor({ id }: { id: number }) {
       transportCompanyId: tc.transportCompanyId || null, vehicleId: tc.vehicleId || null, distance: Number(tc.distance) || 0,
       freightCharge: Number(tc.freightCharge) || 0, loadingCharge: Number(tc.loadingCharge) || 0, unloadingCharge: Number(tc.unloadingCharge) || 0,
       fuelCharge: Number(tc.fuelCharge) || 0, tollCharge: Number(tc.tollCharge) || 0, driverAllowance: Number(tc.driverAllowance) || 0,
-      helperAllowance: Number(tc.helperAllowance) || 0, otherCharges: Number(tc.otherCharges) || 0, discount: Number(tc.discount) || 0,
+      helperAllowance: Number(tc.helperAllowance) || 0, driverBatta: Number(tc.driverBatta) || 0, vehicleRent: Number(tc.vehicleRent) || 0, transitPass: Number(tc.transitPass) || 0,
+      otherCharges: Number(tc.otherCharges) || 0, discount: Number(tc.discount) || 0,
       gstAmount: Number(tc.gstAmount) || 0, remarks: tc.remarks || null,
     };
     const res = await fetch(`/api/warehouse/load-dispatch/${id}/transport-cost`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
@@ -506,7 +520,9 @@ export function LoadDispatchEditor({ id }: { id: number }) {
       </SectionCard>
 
       {/* Transport Information + Driver Information — paired side by side, matching the add page. */}
+      {(transportInfoVisible || driverInfoVisible) && (
       <div className="grid gap-4 lg:grid-cols-2">
+        {transportInfoVisible && (
         <SectionCard
           icon={Truck}
           title="Transport Information"
@@ -514,48 +530,56 @@ export function LoadDispatchEditor({ id }: { id: number }) {
         >
           {x.vehicleGateEntryId && <p className="mb-3 text-2xs text-subtle">Auto-loaded from the linked Vehicle Gate Entry. Click Modify to edit.</p>}
           <div className="grid gap-3 sm:grid-cols-2">
-            <Fld label="Transport Company">
-              <select value={transportCompanyId} disabled={!canEdit || !editingTransport} onChange={(e) => setTransportCompanyId(e.target.value ? Number(e.target.value) : "")} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")}>
-                <option value="">—</option>
-                {companies.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-              </select>
-            </Fld>
+            {fieldOn(SCREEN, "transportCompany") && (
+              <Fld label={`Transport Company${req("transportCompany")}`}>
+                <select value={transportCompanyId} disabled={!canEdit || !editingTransport} onChange={(e) => setTransportCompanyId(e.target.value ? Number(e.target.value) : "")} className={inp}>
+                  <option value="">—</option>
+                  {companies.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+                </select>
+              </Fld>
+            )}
             <Fld label="Vehicle Number">
-              <select value={vehicleId} disabled={!canEdit || !editingTransport} onChange={(e) => setVehicleId(e.target.value ? Number(e.target.value) : "")} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")}>
+              <select value={vehicleId} disabled={!canEdit || !editingTransport} onChange={(e) => setVehicleId(e.target.value ? Number(e.target.value) : "")} className={inp}>
                 <option value="">—</option>
                 {vehicles.map((v) => <option key={v.id} value={v.id}>{v.vehicleNo}</option>)}
               </select>
             </Fld>
-            <Fld label="Vehicle Type"><input value={vehicleType} disabled={!canEdit || !editingTransport} onChange={(e) => setVehicleType(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
-            <Fld label="Route">
-              <select value={routeId} disabled={!canEdit || !editingTransport} onChange={(e) => setRouteId(e.target.value ? Number(e.target.value) : "")} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")}>
-                <option value="">—</option>
-                {routes.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
-              </select>
-            </Fld>
-            <Fld label="Trailer Number"><input value={trailerNumber} disabled={!canEdit} onChange={(e) => setTrailerNumber(e.target.value)} className={cn(inp, !canEdit && "text-subtle")} /></Fld>
-            <Fld label="Container Number"><input value={containerNumber} disabled={!canEdit} onChange={(e) => setContainerNumber(e.target.value)} className={cn(inp, !canEdit && "text-subtle")} /></Fld>
-            <Fld label="Seal Number"><input value={sealNumber} disabled={!canEdit || !editingTransport} onChange={(e) => setSealNumber(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
+            {fieldOn(SCREEN, "vehicleType") && <Fld label={`Vehicle Type${req("vehicleType")}`}><input value={vehicleType} disabled={!canEdit || !editingTransport} onChange={(e) => setVehicleType(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "route") && (
+              <Fld label="Route">
+                <select value={routeId} disabled={!canEdit || !editingTransport} onChange={(e) => setRouteId(e.target.value ? Number(e.target.value) : "")} className={inp}>
+                  <option value="">—</option>
+                  {routes.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+                </select>
+              </Fld>
+            )}
+            {fieldOn(SCREEN, "trailerNumber") && <Fld label="Trailer Number"><input value={trailerNumber} disabled={!canEdit} onChange={(e) => setTrailerNumber(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "containerNumber") && <Fld label="Container Number"><input value={containerNumber} disabled={!canEdit} onChange={(e) => setContainerNumber(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "sealNumber") && <Fld label="Seal Number"><input value={sealNumber} disabled={!canEdit || !editingTransport} onChange={(e) => setSealNumber(e.target.value)} className={inp} /></Fld>}
           </div>
         </SectionCard>
+        )}
 
+        {driverInfoVisible && (
         <SectionCard icon={ClipboardList} title="Driver Information">
           {x.vehicleGateEntryId && <p className="mb-3 text-2xs text-subtle">Auto-loaded from the linked Vehicle Gate Entry. Click Modify (Transport Information) to edit.</p>}
           <div className="grid gap-3 sm:grid-cols-2">
-            <Fld label="Driver Name"><input value={driverName} disabled={!canEdit || !editingTransport} onChange={(e) => setDriverName(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
-            <Fld label="Driver Mobile"><input value={driverMobile} disabled={!canEdit || !editingTransport} onChange={(e) => setDriverMobile(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
-            <Fld label="License Number"><input value={driverLicenseNo} disabled={!canEdit || !editingTransport} onChange={(e) => setDriverLicenseNo(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
-            <Fld label="Helper Name"><input value={helperName} disabled={!canEdit || !editingTransport} onChange={(e) => setHelperName(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
-            <Fld label="Helper Mobile"><input value={helperMobile} disabled={!canEdit || !editingTransport} onChange={(e) => setHelperMobile(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
+            {fieldOn(SCREEN, "driverName") && <Fld label="Driver Name"><input value={driverName} disabled={!canEdit || !editingTransport} onChange={(e) => setDriverName(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "driverMobile") && <Fld label={`Driver Mobile${req("driverMobile")}`}><input value={driverMobile} disabled={!canEdit || !editingTransport} onChange={(e) => setDriverMobile(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "driverLicenseNo") && <Fld label={`License Number${req("driverLicenseNo")}`}><input value={driverLicenseNo} disabled={!canEdit || !editingTransport} onChange={(e) => setDriverLicenseNo(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "helperName") && <Fld label="Helper Name"><input value={helperName} disabled={!canEdit || !editingTransport} onChange={(e) => setHelperName(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "helperMobile") && <Fld label="Helper Mobile"><input value={helperMobile} disabled={!canEdit || !editingTransport} onChange={(e) => setHelperMobile(e.target.value)} className={inp} /></Fld>}
           </div>
         </SectionCard>
+        )}
       </div>
+      )}
 
       {/* Weighment Details — read-only, from the linked Vehicle Gate Entry's
           Pre/Post-Loading Weighment (replaces the old Loading Details section,
           which tracked loading-bay/supervisor/start-end-time/packages/pallets
           — those fields still exist on the record but no longer have UI here). */}
-      {x.vehicleGateEntryId && (
+      {x.vehicleGateEntryId && fieldOn(SCREEN, "weighmentManagement") && (
         <SectionCard icon={Scale} title="Weighment Details">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Fld label="Tare Weight (Empty, In Kgs)"><input readOnly value={weighment.tare != null ? String(weighment.tare) : "Not yet weighed"} className={cn(inp, "cursor-not-allowed bg-surface-2")} /></Fld>
@@ -568,32 +592,35 @@ export function LoadDispatchEditor({ id }: { id: number }) {
         </SectionCard>
       )}
 
-      {/* Transport Cost — only when the Dispatch Configuration flag is on. */}
-      {config?.flags.enableTransportCost && (
+      {/* Transport Cost — only when both the Dispatch Configuration flag AND
+          Document Field Settings allow it. */}
+      {config?.flags.enableTransportCost && fieldOn(SCREEN, "transportCost") && (
         <SectionCard icon={Wallet} title="Transport Cost">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Fld label="Freight Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.freightCharge} onChange={(e) => setTc((p) => ({ ...p, freightCharge: e.target.value }))} className={inp} /></Fld>
-            <Fld label="Loading Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.loadingCharge} onChange={(e) => setTc((p) => ({ ...p, loadingCharge: e.target.value }))} className={inp} /></Fld>
-            <Fld label="Unloading Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.unloadingCharge} onChange={(e) => setTc((p) => ({ ...p, unloadingCharge: e.target.value }))} className={inp} /></Fld>
-            <Fld label="Fuel Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.fuelCharge} onChange={(e) => setTc((p) => ({ ...p, fuelCharge: e.target.value }))} className={inp} /></Fld>
-            <Fld label="Toll Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.tollCharge} onChange={(e) => setTc((p) => ({ ...p, tollCharge: e.target.value }))} className={inp} /></Fld>
-            <Fld label="Driver Allowance"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.driverAllowance} onChange={(e) => setTc((p) => ({ ...p, driverAllowance: e.target.value }))} className={inp} /></Fld>
-            <Fld label="Helper Allowance"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.helperAllowance} onChange={(e) => setTc((p) => ({ ...p, helperAllowance: e.target.value }))} className={inp} /></Fld>
-            <Fld label="Other Charges"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.otherCharges} onChange={(e) => setTc((p) => ({ ...p, otherCharges: e.target.value }))} className={inp} /></Fld>
-            <Fld label="Discount"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.discount} onChange={(e) => setTc((p) => ({ ...p, discount: e.target.value }))} className={inp} /></Fld>
-            <Fld label="GST Amount"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.gstAmount} onChange={(e) => setTc((p) => ({ ...p, gstAmount: e.target.value }))} className={inp} /></Fld>
+            {fieldOn(SCREEN, "freightCharge") && <Fld label="Freight Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.freightCharge} onChange={(e) => setTc((p) => ({ ...p, freightCharge: e.target.value }))} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "loadingCharge") && <Fld label="Loading Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.loadingCharge} onChange={(e) => setTc((p) => ({ ...p, loadingCharge: e.target.value }))} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "unloadingCharge") && <Fld label="Unloading Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.unloadingCharge} onChange={(e) => setTc((p) => ({ ...p, unloadingCharge: e.target.value }))} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "fuelCharge") && <Fld label="Fuel Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.fuelCharge} onChange={(e) => setTc((p) => ({ ...p, fuelCharge: e.target.value }))} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "tollCharge") && <Fld label="Toll Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.tollCharge} onChange={(e) => setTc((p) => ({ ...p, tollCharge: e.target.value }))} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "driverAllowance") && <Fld label="Driver Allowance"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.driverAllowance} onChange={(e) => setTc((p) => ({ ...p, driverAllowance: e.target.value }))} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "helperAllowance") && <Fld label="Helper Allowance"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.helperAllowance} onChange={(e) => setTc((p) => ({ ...p, helperAllowance: e.target.value }))} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "driverBatta") && <Fld label="Driver Batta"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.driverBatta} onChange={(e) => setTc((p) => ({ ...p, driverBatta: e.target.value }))} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "vehicleRent") && <Fld label="Vehicle Rent"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.vehicleRent} onChange={(e) => setTc((p) => ({ ...p, vehicleRent: e.target.value }))} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "transitPass") && <Fld label="Transit Pass"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.transitPass} onChange={(e) => setTc((p) => ({ ...p, transitPass: e.target.value }))} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "otherTransportCharges") && <Fld label="Other Charges"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.otherCharges} onChange={(e) => setTc((p) => ({ ...p, otherCharges: e.target.value }))} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "transportDiscount") && <Fld label="Discount"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.discount} onChange={(e) => setTc((p) => ({ ...p, discount: e.target.value }))} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "transportGst") && <Fld label="GST Amount"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.gstAmount} onChange={(e) => setTc((p) => ({ ...p, gstAmount: e.target.value }))} className={inp} /></Fld>}
             <Fld label="Total Transport Cost"><input value={fmt.money(tcTotal)} disabled className={cn(inp, "font-semibold text-foreground")} /></Fld>
           </div>
-          <div className="mt-3"><Fld label="Remarks"><textarea value={tc.remarks} disabled={!config.flags.allowCostEditing} onChange={(e) => setTc((p) => ({ ...p, remarks: e.target.value }))} rows={2} className={cn(inp, "h-auto py-2")} /></Fld></div>
           {config.flags.allowCostEditing && (
             <div className="mt-3 flex justify-end"><Button variant="outline" size="md" onClick={saveTransportCost} disabled={tcSaving}><Save className="h-4 w-4" /> {tcSaving ? "Saving…" : "Save Transport Cost"}</Button></div>
           )}
         </SectionCard>
       )}
 
-      {(x.remarks || x.cancelReason) && (
+      {((x.remarks && fieldOn(SCREEN, "remarks")) || x.cancelReason) && (
         <div className="grid gap-4 sm:grid-cols-2">
-          {x.remarks && <NoteCard title="Remarks" body={x.remarks} />}
+          {x.remarks && fieldOn(SCREEN, "remarks") && <NoteCard title="Remarks" body={x.remarks} />}
           {x.cancelReason && <NoteCard title="Cancellation Reason" body={x.cancelReason} />}
         </div>
       )}
@@ -662,7 +689,7 @@ function Kpi({ label, value, icon: Icon, sub }: { label: string; value: string; 
   );
 }
 
-const inp = "h-9 w-full rounded-md border border-border-strong bg-surface px-2.5 text-sm text-foreground focus:border-primary focus:outline-none disabled:opacity-70";
+const inp = "h-9 w-full rounded-md border border-border-strong bg-surface px-2.5 text-sm text-foreground focus:border-primary focus:outline-none disabled:cursor-not-allowed disabled:bg-surface-2";
 function Fld({ label, children }: { label: string; children: React.ReactNode }) { return <div><label className="mb-1 block text-2xs font-semibold text-muted">{label}</label>{children}</div>; }
 function KV({ k, v, strong, custom }: { k: string; v: string; strong?: boolean; custom?: React.ReactNode }) {
   return (

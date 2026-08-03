@@ -9048,6 +9048,11 @@ model TransportCost {
   tollCharge      Decimal @default(0) @db.Decimal(18, 2)
   driverAllowance Decimal @default(0) @db.Decimal(18, 2)
   helperAllowance Decimal @default(0) @db.Decimal(18, 2)
+  // Distinct from driverAllowance ("Driver Allowance (Bata)") — a separate
+  // line item per explicit user request, not a rename/duplicate.
+  driverBatta     Decimal @default(0) @db.Decimal(18, 2)
+  vehicleRent     Decimal @default(0) @db.Decimal(18, 2)
+  transitPass     Decimal @default(0) @db.Decimal(18, 2)
   otherCharges    Decimal @default(0) @db.Decimal(18, 2)
   discount        Decimal @default(0) @db.Decimal(18, 2)
   gstAmount       Decimal @default(0) @db.Decimal(18, 2)

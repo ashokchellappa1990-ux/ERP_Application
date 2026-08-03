@@ -67,12 +67,53 @@ const vehicleGateEntryFields: DocFieldDef[] = [
   { key: "itemDetails", label: "Item Details Section", mandatoryable: false, group: "Items" },
 ];
 
+// Load & Dispatch — field keys match DirectLoadDispatchForm.tsx's state names
+// (the "New Vehicle Entry → Dispatch" screen) where a matching field exists;
+// LoadDispatchEditor.tsx (the full view/edit screen) doesn't consume this
+// config yet — same enabled-by-default fallback applies there via fieldOn's
+// default parameter, so nothing breaks, it's just not wired up as show/hide yet.
+const loadDispatchFields: DocFieldDef[] = [
+  { key: "transportCompany", label: "Transport Company", mandatoryable: true, group: "Transport Details" },
+  { key: "vehicleType", label: "Vehicle Type", mandatoryable: true, group: "Transport Details" },
+  { key: "route", label: "Route", mandatoryable: false, group: "Transport Details" },
+  { key: "sealNumber", label: "Seal Number", mandatoryable: false, group: "Transport Details" },
+  { key: "trailerNumber", label: "Trailer Number", mandatoryable: false, group: "Transport Details" },
+  { key: "containerNumber", label: "Container Number", mandatoryable: false, group: "Transport Details" },
+  { key: "driverName", label: "Driver Name", mandatoryable: false, group: "Driver Details" },
+  { key: "driverMobile", label: "Driver Mobile", mandatoryable: true, group: "Driver Details" },
+  { key: "driverLicenseNo", label: "Driver License No.", mandatoryable: true, group: "Driver Details" },
+  { key: "helperName", label: "Helper Name", mandatoryable: false, group: "Driver Details" },
+  { key: "helperMobile", label: "Helper Mobile", mandatoryable: false, group: "Driver Details" },
+  { key: "weighmentManagement", label: "Weighment Management Section", mandatoryable: false, group: "Weighment" },
+  { key: "loadingBay", label: "Loading Bay", mandatoryable: false, group: "Loading Details" },
+  { key: "supervisor", label: "Supervisor", mandatoryable: false, group: "Loading Details" },
+  { key: "packages", label: "Packages", mandatoryable: false, group: "Loading Details" },
+  { key: "pallets", label: "Pallets", mandatoryable: false, group: "Loading Details" },
+  { key: "transportCost", label: "Transport Cost Section", mandatoryable: false, group: "Other" },
+  { key: "freightCharge", label: "Freight Charge", mandatoryable: false, group: "Transport Cost" },
+  { key: "loadingCharge", label: "Loading Charge", mandatoryable: false, group: "Transport Cost" },
+  { key: "unloadingCharge", label: "Unloading Charge", mandatoryable: false, group: "Transport Cost" },
+  { key: "fuelCharge", label: "Fuel Charge", mandatoryable: false, group: "Transport Cost" },
+  { key: "tollCharge", label: "Toll Charge", mandatoryable: false, group: "Transport Cost" },
+  { key: "driverAllowance", label: "Driver Allowance (Bata)", mandatoryable: false, group: "Transport Cost" },
+  { key: "helperAllowance", label: "Helper Allowance", mandatoryable: false, group: "Transport Cost" },
+  { key: "driverBatta", label: "Driver Batta", mandatoryable: false, group: "Transport Cost" },
+  { key: "vehicleRent", label: "Vehicle Rent", mandatoryable: false, group: "Transport Cost" },
+  { key: "transitPass", label: "Transit Pass", mandatoryable: false, group: "Transport Cost" },
+  { key: "otherTransportCharges", label: "Other Charges", mandatoryable: false, group: "Transport Cost" },
+  { key: "transportDiscount", label: "Discount", mandatoryable: false, group: "Transport Cost" },
+  { key: "transportGst", label: "GST Amount", mandatoryable: false, group: "Transport Cost" },
+  { key: "paymentCollection", label: "Payment Collection Section", mandatoryable: false, group: "Other" },
+  { key: "remarks", label: "Remarks", mandatoryable: false, group: "Other" },
+];
+
 export const DOC_SCREENS: DocScreen[] = [
   { key: "sales_order", label: "Sales Order", module: "sales", feature: "order", fields: [...salesFields, ...FEATURES] },
   { key: "sales_invoice", label: "Sales Invoice", module: "sales", feature: "invoice", fields: [...salesFields, ...FEATURES] },
   { key: "purchase_order", label: "Purchase Order", module: "purchase", feature: "order", fields: [...purchaseFields, ...FEATURES] },
   { key: "purchase_invoice", label: "Purchase Invoice", module: "purchase", feature: "invoice", fields: [...purchaseFields, ...FEATURES] },
   { key: "vehicle_gate_entry", label: "Vehicle Gate Entry", module: "transport", feature: "gate_entry", fields: vehicleGateEntryFields },
+  { key: "load_dispatch", label: "Load & Dispatch", module: "transport", feature: "load_dispatch", fields: loadDispatchFields },
 ];
 
 /** Keys that are configurable meta-fields (everything else on a form always shows). */

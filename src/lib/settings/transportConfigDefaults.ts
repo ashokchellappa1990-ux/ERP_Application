@@ -22,6 +22,18 @@ export const DEFAULT_DISPATCH_CONFIG: TransportConfigData = {
     defaultReferenceType: "", // "" | Sales Order | Direct Customer Dispatch
     // Gate Entry No auto-numbering prefix — e.g. "GATE" -> GATE-00001.
     gateEntryPrefix: "GATE",
+    // Load & Dispatch No auto-numbering prefix — e.g. "LD" -> LD-00001
+    // (docType-specific suffixes like -ST/-PR/-SR still append after this).
+    dispatchNoPrefix: "LD",
+    // Vehicle Gate Entry's own Item Details section — None hides it entirely,
+    // Single limits it to exactly one product (picking a new one replaces the
+    // old), Multiple keeps the existing repeatable-row behavior.
+    itemCaptureMode: "Multiple", // None | Single | Multiple
+    // Weighment Management's Post-Loading Weight — Both shows the Capture
+    // Later/Capture Now toggle so the user picks per dispatch; CaptureLater/
+    // CaptureNow force one behavior and hide the toggle entirely (CaptureNow
+    // still shows the gross-weight input directly, just without the tabs).
+    postLoadWeightCaptureMode: "Both", // Both | CaptureLater | CaptureNow
   },
   flags: {
     // When on, the preloaded Dispatch/Reference Type above is shown disabled —
@@ -29,6 +41,11 @@ export const DEFAULT_DISPATCH_CONFIG: TransportConfigData = {
     // value they're free to change.
     lockDefaultDispatchType: false,
     lockDefaultReferenceType: false,
+    // When off (the default), Vehicle Gate Entry's Item Details captures only
+    // the product name — quantity isn't known yet at gate time for bulk
+    // material dispatches; it gets derived later from the Post-Loading
+    // Weighment's net weight on the Load & Dispatch screen instead.
+    captureQtyAtGate: false,
     // General
     enableDispatchPlanning: true,
     enableDispatchExecution: true,

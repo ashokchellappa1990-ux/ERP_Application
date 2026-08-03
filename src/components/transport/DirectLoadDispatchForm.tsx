@@ -13,7 +13,12 @@ import { AppLoader } from "@/components/ui/AppLoader";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { BankPicker, emptyBank, type BankValue } from "@/components/finance/BankPicker";
+import { fieldOn, fieldMust } from "@/lib/settings/docFieldsConfig";
+import { buildTaxInvoiceHtml, type TaxInvoiceData } from "@/lib/print/taxInvoiceHtml";
+import { DEFAULT_RECEIPT } from "@/lib/settings/receiptTemplate";
 
+const SCREEN = "load_dispatch";
+const req = (key: string) => (fieldMust(SCREEN, key) ? " *" : "");
 const n = (v: unknown) => Number(v) || 0;
 const r2 = (v: number) => Math.round((Number(v) || 0) * 100) / 100;
 
@@ -73,6 +78,9 @@ export function DirectLoadDispatchForm() {
   const [prefillLoading, setPrefillLoading] = useState(!!prefillGateEntryId);
 
   const [dispatchDate, setDispatchDate] = useState(new Date().toISOString().slice(0, 10));
+  // Loading Unit — read-only, sourced from the logged-in user's own active
+  // business/branch scope (same source GateEntryEditor.tsx uses for Location).
+  const [loadingUnit, setLoadingUnit] = useState("");
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerName, setCustomerName] = useState("");
   const [customerQuery, setCustomerQuery] = useState("");
@@ -107,10 +115,36 @@ export function DirectLoadDispatchForm() {
 
   // ---- Weighment Management (Pre-Loading read-only + Post-Loading now/later) ----
   const [postWeightTiming, setPostWeightTiming] = useState<"now" | "later">("later");
+  // Dispatch Configuration's Weighment Capture setting — "Both" keeps the
+  // user-facing Later/Now toggle, "CaptureLater"/"CaptureNow" force one
+  // behavior and hide the toggle (see the effect below that pins postWeightTiming).
+  const [postWeightCaptureMode, setPostWeightCaptureMode] = useState<"Both" | "CaptureLater" | "CaptureNow">("Both");
   const [postGrossWeight, setPostGrossWeight] = useState("");
   const [postOperator, setPostOperator] = useState("");
   const tareWeight = preWeighment && preWeighment.length ? preWeighment[0].tareWeight : null;
   const postNetWeight = tareWeight != null ? r2(n(postGrossWeight) - tareWeight) : null;
+
+  useEffect(() => {
+    if (postWeightCaptureMode === "CaptureLater") setPostWeightTiming("later");
+    else if (postWeightCaptureMode === "CaptureNow") setPostWeightTiming("now");
+  }, [postWeightCaptureMode]);
+
+  // Once the vehicle is actually weighed (Post-Loading Weight, "Capture Now"),
+  // the resulting net weight (In Kgs) IS the dispatched quantity for a
+  // single-item bulk-material load — push it into that item's qty so the
+  // taxable/tax/net-amount totals below recalculate automatically. Only
+  // applies to the common single-line case; multi-item dispatches are left
+  // for manual entry since the net weight doesn't split across them.
+  useEffect(() => {
+    if (postWeightTiming !== "now" || postNetWeight == null) return;
+    setLines((prev) => {
+      if (prev.length !== 1 || !prev[0].productId) return prev;
+      const isTon = (prev[0].uom || "").toLowerCase() === "ton";
+      const qty = String(r2(isTon ? postNetWeight / 1000 : postNetWeight));
+      if (prev[0].qty === qty) return prev;
+      return [{ ...prev[0], qty }];
+    });
+  }, [postNetWeight, postWeightTiming]);
 
   // ---- Transport Cost (posted separately after create) ----
   const [freightCharge, setFreightCharge] = useState("");
@@ -120,13 +154,15 @@ export function DirectLoadDispatchForm() {
   const [tollCharge, setTollCharge] = useState("");
   const [driverAllowance, setDriverAllowance] = useState("");
   const [helperAllowance, setHelperAllowance] = useState("");
+  const [driverBatta, setDriverBatta] = useState("");
+  const [vehicleRent, setVehicleRent] = useState("");
+  const [transitPass, setTransitPass] = useState("");
   const [otherCharges, setOtherCharges] = useState("");
   const [tcDiscount, setTcDiscount] = useState("");
   const [tcGst, setTcGst] = useState("");
-  const [tcRemarks, setTcRemarks] = useState("");
   const totalTransportCost = r2(
     n(freightCharge) + n(loadingCharge) + n(unloadingCharge) + n(fuelCharge) + n(tollCharge) +
-    n(driverAllowance) + n(helperAllowance) + n(otherCharges) - n(tcDiscount) + n(tcGst)
+    n(driverAllowance) + n(helperAllowance) + n(driverBatta) + n(vehicleRent) + n(transitPass) + n(otherCharges) - n(tcDiscount) + n(tcGst)
   );
 
   // ---- Payment Collection (mirrors B2bInvoiceForm) ----
@@ -149,6 +185,24 @@ export function DirectLoadDispatchForm() {
       if (c.ok) setCompanies(c.rows.map((x: { id: number; name: string }) => ({ id: x.id, label: x.name })));
       if (v.ok) setVehicles(v.rows.map((x: { id: number; vehicleNo: string; vehicleType: string | null }) => ({ id: x.id, label: x.vehicleNo, vehicleType: x.vehicleType })));
     });
+    // Loading Unit — the logged-in user's own active business/branch scope.
+    fetch("/api/system/scope", { cache: "no-store" }).then((r) => r.json()).then((j) => {
+      if (!j.ok) return;
+      const branchIds: number[] | null = j.active?.branchIds ?? null;
+      if (branchIds === null) { setLoadingUnit("All branches"); return; }
+      if (branchIds.length === 1) {
+        const b = (j.branches ?? []).find((x: { id: number; name: string }) => x.id === branchIds[0]);
+        setLoadingUnit(b?.name ?? "");
+      } else {
+        setLoadingUnit(`${branchIds.length} branches`);
+      }
+    }).catch(() => {});
+    // Weighment Capture mode — Dispatch Configuration's Post-Loading Weight setting.
+    fetch("/api/settings/dispatch-config", { cache: "no-store" }).then((r) => r.json()).then((j) => {
+      if (!j.ok) return;
+      const m = j.config?.fields?.postLoadWeightCaptureMode;
+      if (m === "Both" || m === "CaptureLater" || m === "CaptureNow") setPostWeightCaptureMode(m);
+    }).catch(() => {});
   }, []);
 
   // ---- Prefill from a Vehicle Gate Entry passed in via ?gateEntryId= (e.g. the
@@ -179,10 +233,13 @@ export function DirectLoadDispatchForm() {
             try {
               const pj = await fetch(`/api/pos/products?q=${encodeURIComponent(it.sku || it.productName)}`, { cache: "no-store" }).then((r) => r.json());
               hit = pj.ok ? (pj.products as ProductHit[]).find((p) => p.id === it.productId) ?? pj.products?.[0] : undefined;
-            } catch { /* best effort per line — falls back to qty-only, rate/tax left blank */ }
+            } catch { /* best effort per line — falls back to product-only, rate/tax left blank */ }
             return {
+              // Qty is no longer captured at the gate (Item Details there is
+              // name-only) — left at 0 here; the Weighment Management "Capture
+              // Now" net weight fills it in once the vehicle is actually weighed.
               ...blankLine(i), productId: it.productId, productName: it.productName, sku: it.sku || hit?.sku || "", uom: it.uom || hit?.uom || "",
-              qty: String(it.qty), rate: hit?.price != null ? String(hit.price) : "", taxPct: hit?.gst != null ? String(hit.gst) : "",
+              qty: "0", rate: hit?.price != null ? String(hit.price) : "", taxPct: hit?.gst != null ? String(hit.gst) : "",
               batchTracked: !!(hit?.batchTracked || hit?.invBatch || hit?.invMfg || hit?.invExpiry),
             };
           }));
@@ -293,6 +350,10 @@ export function DirectLoadDispatchForm() {
     [vehicles],
   );
 
+  // Driver Details as a whole only makes sense to show if at least one of its
+  // fields is enabled — otherwise it'd render as an empty card.
+  const driverDetailsVisible = fieldOn(SCREEN, "driverName") || fieldOn(SCREEN, "driverMobile") || fieldOn(SCREEN, "driverLicenseNo") || fieldOn(SCREEN, "helperName") || fieldOn(SCREEN, "helperMobile");
+
   const totals = useMemo(() => {
     let subtotal = 0, discTotal = 0, taxable = 0, tax = 0;
     for (const l of lines) {
@@ -353,7 +414,7 @@ export function DirectLoadDispatchForm() {
       const id = j.id as number;
 
       // Transport Cost — only fire a second request if at least one charge was entered.
-      const tcHasValue = [freightCharge, loadingCharge, unloadingCharge, fuelCharge, tollCharge, driverAllowance, helperAllowance, otherCharges, tcDiscount, tcGst].some((v) => n(v) > 0);
+      const tcHasValue = [freightCharge, loadingCharge, unloadingCharge, fuelCharge, tollCharge, driverAllowance, helperAllowance, driverBatta, vehicleRent, transitPass, otherCharges, tcDiscount, tcGst].some((v) => n(v) > 0);
       if (tcHasValue) {
         try {
           await fetch(`/api/warehouse/load-dispatch/${id}/transport-cost`, {
@@ -362,8 +423,9 @@ export function DirectLoadDispatchForm() {
               transportCompanyId: transportCompanyId || null, vehicleId: vehicleId || null,
               freightCharge: n(freightCharge), loadingCharge: n(loadingCharge), unloadingCharge: n(unloadingCharge),
               fuelCharge: n(fuelCharge), tollCharge: n(tollCharge), driverAllowance: n(driverAllowance),
-              helperAllowance: n(helperAllowance), otherCharges: n(otherCharges), discount: n(tcDiscount), gstAmount: n(tcGst),
-              remarks: tcRemarks || null,
+              helperAllowance: n(helperAllowance), driverBatta: n(driverBatta), vehicleRent: n(vehicleRent), transitPass: n(transitPass),
+              otherCharges: n(otherCharges), discount: n(tcDiscount), gstAmount: n(tcGst),
+              remarks: null,
             }),
           });
         } catch { /* best effort — dispatch itself already succeeded */ }
@@ -403,13 +465,27 @@ export function DirectLoadDispatchForm() {
     setDcId(j.deliveryChallanId ?? null);
     return j.deliveryChallanId ?? null;
   }
+  // Prints the same "Delivery Note" template as the Load & Dispatch view
+  // page's own "Print DC" button (buildTaxInvoiceHtml + the print-data
+  // route's deliveryNote) — previously this navigated to the old, plainer
+  // /transport/delivery-challan/[id] page instead of matching that template.
   async function handlePrintDc() {
     if (createdId == null) return;
     setActionBusy("dc");
     try {
-      const id = await ensureDeliveryChallan(createdId);
-      if (id) router.push(`/transport/delivery-challan/${id}`);
-      else toast.success("Delivery Challan generated — Sales Invoice was posted automatically.");
+      await ensureDeliveryChallan(createdId);
+      const dataRes = await fetch(`/api/warehouse/load-dispatch/${createdId}/print-data`, { cache: "no-store" }).then((r) => r.json());
+      if (dataRes?.ok && dataRes.deliveryNote) {
+        const html = buildTaxInvoiceHtml(dataRes.deliveryNote as TaxInvoiceData, { title: "Delivery Note", footerNote: DEFAULT_RECEIPT.footerNote });
+        const w = window.open("", "_blank", "width=900,height=800");
+        if (w) { w.document.write(html); w.document.close(); }
+      } else {
+        toast.success(postStage === "invoiced" ? "Delivery Challan generated — Sales Invoice was posted automatically." : "Delivery Challan generated.");
+      }
+      // Once the print window has opened (or there's nothing to print), the
+      // popup's job is done — move on to the view page with the now-updated
+      // status instead of leaving the "Dispatch Created" popup sitting open.
+      router.push(`/warehouse/transfer/load-dispatch/${createdId}`);
     } catch (e) { toast.error(e instanceof Error ? e.message : "Could not generate the Delivery Challan."); }
     setActionBusy("");
   }
@@ -449,6 +525,7 @@ export function DirectLoadDispatchForm() {
       <SectionCard icon={Users} title="Customer &amp; Delivery" allowOverflow>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Fld label="Dispatch Date"><input type="date" value={dispatchDate} onChange={(e) => setDispatchDate(e.target.value)} className={inp} /></Fld>
+          <Fld label="Loading Unit"><input readOnly value={loadingUnit || "—"} className={cn(inp, "cursor-not-allowed bg-surface-2")} /></Fld>
           <div className="relative">
             <label className="mb-1 block text-2xs font-semibold text-muted">Customer</label>
             <input value={customerQuery} onChange={(e) => onCustomerQuery(e.target.value)} placeholder="Search customer master…" className={inp} />
@@ -462,10 +539,102 @@ export function DirectLoadDispatchForm() {
               </div>
             )}
           </div>
-          <div />
         </div>
         <div className="mt-3"><Fld label="Delivery Address"><textarea value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} rows={2} className={cn(inp, "h-auto py-2")} /></Fld></div>
       </SectionCard>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <SectionCard icon={Truck} title="Transport Details" allowOverflow>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {fieldOn(SCREEN, "transportCompany") && <Fld label={`Transport Company${req("transportCompany")}`}><select value={transportCompanyId} onChange={(e) => setTransportCompanyId(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">—</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select></Fld>}
+            <Fld label="Vehicle Number">
+              <select
+                value={vehicleId}
+                onChange={(e) => {
+                  const id = e.target.value ? Number(e.target.value) : "";
+                  setVehicleId(id);
+                  const v = vehicles.find((x) => x.id === id);
+                  if (v?.vehicleType) setVehicleType(v.vehicleType);
+                  if (id) matchGateEntryForVehicle(id);
+                }}
+                className={inp}
+              >
+                <option value="">Select vehicle…</option>
+                {vehicles.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
+              </select>
+            </Fld>
+            <div>
+              <label className="mb-1 block text-2xs font-semibold text-muted">Vehicle Gate Entry Reference</label>
+              {gateMatching ? (
+                <div className="flex h-9 items-center rounded-md border border-border-strong bg-surface-2 px-2.5 text-sm text-muted"><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Matching…</div>
+              ) : vehicleGateEntryId ? (
+                <div className="flex h-9 items-center justify-between rounded-md border border-border-strong bg-primary-subtle/40 px-2.5 text-sm">
+                  <span className="font-mono font-semibold text-primary">{linkedGateNo}</span>
+                  <button onClick={clearGateEntry} className="text-2xs font-semibold text-danger hover:underline">Unlink</button>
+                </div>
+              ) : (
+                <div className="flex h-9 items-center rounded-md border border-dashed border-border bg-surface-2 px-2.5 text-2xs text-subtle">Select a customer to auto-load a gate entry, if any.</div>
+              )}
+            </div>
+            {fieldOn(SCREEN, "vehicleType") && (
+              <Fld label={`Vehicle Type${req("vehicleType")}`}>
+                <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} className={inp}>
+                  <option value="">Select type…</option>
+                  {vehicleTypeOpts.map((t) => <option key={t} value={t}>{t}</option>)}
+                  {vehicleType && !vehicleTypeOpts.includes(vehicleType) && <option value={vehicleType}>{vehicleType}</option>}
+                </select>
+              </Fld>
+            )}
+            {fieldOn(SCREEN, "sealNumber") && <Fld label="Seal Number"><input value={sealNumber} onChange={(e) => setSealNumber(e.target.value)} className={inp} /></Fld>}
+          </div>
+        </SectionCard>
+
+        {fieldOn(SCREEN, "weighmentManagement") && (
+        <SectionCard icon={Scale} title="Weighment Management" allowOverflow>
+          {!vehicleGateEntryId ? (
+            <p className="text-2xs text-subtle">No Vehicle Gate Entry matched for this customer yet — weighment capture becomes available once one is linked.</p>
+          ) : (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Fld label="Pre-Loading Tare Weight (In Kgs)">
+                  <input readOnly value={preWeighmentLoading ? "Loading…" : tareWeight != null ? String(tareWeight) : "Not yet weighed"} className={cn(inp, "cursor-not-allowed bg-surface-2 font-semibold text-foreground")} />
+                </Fld>
+                <Fld label="Weighed On">
+                  <input readOnly value={preWeighmentLoading ? "" : preWeighment?.[0] ? `${preWeighment[0].weighDate ?? "—"}${preWeighment[0].weighTime ? ` ${preWeighment[0].weighTime}` : ""}` : "—"} className={cn(inp, "cursor-not-allowed bg-surface-2")} />
+                </Fld>
+                <Fld label="Weighing Operator">
+                  <input readOnly value={preWeighment?.[0]?.operator ?? "—"} className={cn(inp, "cursor-not-allowed bg-surface-2")} />
+                </Fld>
+                <Fld label="Gate Entry Reference">
+                  <input readOnly value={linkedGateNo} className={cn(inp, "cursor-not-allowed bg-surface-2 font-mono")} />
+                </Fld>
+              </div>
+              {postWeightCaptureMode === "Both" && (
+                <div className="mt-3">
+                  <label className="mb-1 block text-2xs font-semibold text-muted">Post-Loading Weight</label>
+                  <div className="inline-flex w-full overflow-hidden rounded-md border border-border text-2xs">
+                    {([["later", "Capture Later"], ["now", "Capture Now"]] as const).map(([m, lbl]) => (
+                      <button key={m} type="button" onClick={() => setPostWeightTiming(m)} className={cn("flex-1 px-2 py-1.5 font-semibold transition", postWeightTiming === m ? "bg-primary text-white" : "bg-surface text-muted hover:text-foreground")}>{lbl}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {postWeightTiming === "now" && (
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <Fld label="Post-Loading Gross Weight (In Kgs) *"><input type="number" min={0} step="0.001" value={postGrossWeight} onChange={(e) => setPostGrossWeight(e.target.value)} className={inp} /></Fld>
+                  <Fld label="Operator"><input value={postOperator} onChange={(e) => setPostOperator(e.target.value)} className={inp} /></Fld>
+                  <div className="sm:col-span-2 flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-xs">
+                    <span className="text-muted">Net Weight (In Kgs)</span>
+                    <span className="font-bold tabular-nums text-primary">{postNetWeight != null ? postNetWeight.toLocaleString() : "—"}</span>
+                  </div>
+                  <p className="sm:col-span-2 text-2xs text-subtle">Net weight is loaded into the item&apos;s quantity below automatically, and the taxable/tax/net-amount totals recalculate from it.</p>
+                </div>
+              )}
+            </>
+          )}
+        </SectionCard>
+        )}
+      </div>
 
       <SectionCard icon={PackagePlus} title="Items" allowOverflow>
         <div className="relative mb-3">
@@ -551,120 +720,40 @@ export function DirectLoadDispatchForm() {
         </div>
       </SectionCard>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <SectionCard icon={Truck} title="Transport Details" allowOverflow>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Fld label="Transport Company"><select value={transportCompanyId} onChange={(e) => setTransportCompanyId(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">—</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select></Fld>
-            <Fld label="Vehicle Number">
-              <select
-                value={vehicleId}
-                onChange={(e) => {
-                  const id = e.target.value ? Number(e.target.value) : "";
-                  setVehicleId(id);
-                  const v = vehicles.find((x) => x.id === id);
-                  if (v?.vehicleType) setVehicleType(v.vehicleType);
-                  if (id) matchGateEntryForVehicle(id);
-                }}
-                className={inp}
-              >
-                <option value="">Select vehicle…</option>
-                {vehicles.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
-              </select>
-            </Fld>
-            <div>
-              <label className="mb-1 block text-2xs font-semibold text-muted">Vehicle Gate Entry Reference</label>
-              {gateMatching ? (
-                <div className="flex h-9 items-center rounded-md border border-border-strong bg-surface-2 px-2.5 text-sm text-muted"><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Matching…</div>
-              ) : vehicleGateEntryId ? (
-                <div className="flex h-9 items-center justify-between rounded-md border border-border-strong bg-primary-subtle/40 px-2.5 text-sm">
-                  <span className="font-mono font-semibold text-primary">{linkedGateNo}</span>
-                  <button onClick={clearGateEntry} className="text-2xs font-semibold text-danger hover:underline">Unlink</button>
-                </div>
-              ) : (
-                <div className="flex h-9 items-center rounded-md border border-dashed border-border bg-surface-2 px-2.5 text-2xs text-subtle">Select a customer to auto-load a gate entry, if any.</div>
-              )}
-            </div>
-            <Fld label="Vehicle Type">
-              <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} className={inp}>
-                <option value="">Select type…</option>
-                {vehicleTypeOpts.map((t) => <option key={t} value={t}>{t}</option>)}
-                {vehicleType && !vehicleTypeOpts.includes(vehicleType) && <option value={vehicleType}>{vehicleType}</option>}
-              </select>
-            </Fld>
-            <Fld label="Seal Number"><input value={sealNumber} onChange={(e) => setSealNumber(e.target.value)} className={inp} /></Fld>
-          </div>
-        </SectionCard>
-
-        <SectionCard icon={Users} title="Driver Details" allowOverflow>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Fld label="Driver Name"><input value={driverName} onChange={(e) => setDriverName(e.target.value)} className={inp} /></Fld>
-            <Fld label="Driver Mobile"><input value={driverMobile} onChange={(e) => setDriverMobile(e.target.value)} className={inp} /></Fld>
-            <Fld label="License Number"><input value={driverLicenseNo} onChange={(e) => setDriverLicenseNo(e.target.value)} className={inp} /></Fld>
-            <Fld label="Helper Name"><input value={helperName} onChange={(e) => setHelperName(e.target.value)} className={inp} /></Fld>
-            <Fld label="Helper Mobile"><input value={helperMobile} onChange={(e) => setHelperMobile(e.target.value)} className={inp} /></Fld>
-          </div>
-        </SectionCard>
-      </div>
-
-      <SectionCard icon={Truck} title="Transport Cost" allowOverflow>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Fld label="Freight Charge"><input type="number" value={freightCharge} onChange={(e) => setFreightCharge(e.target.value)} className={inp} /></Fld>
-          <Fld label="Loading Charge"><input type="number" value={loadingCharge} onChange={(e) => setLoadingCharge(e.target.value)} className={inp} /></Fld>
-          <Fld label="Unloading Charge"><input type="number" value={unloadingCharge} onChange={(e) => setUnloadingCharge(e.target.value)} className={inp} /></Fld>
-          <Fld label="Fuel Charge"><input type="number" value={fuelCharge} onChange={(e) => setFuelCharge(e.target.value)} className={inp} /></Fld>
-          <Fld label="Toll Charge"><input type="number" value={tollCharge} onChange={(e) => setTollCharge(e.target.value)} className={inp} /></Fld>
-          <Fld label="Driver Allowance (Bata)"><input type="number" value={driverAllowance} onChange={(e) => setDriverAllowance(e.target.value)} className={inp} /></Fld>
-          <Fld label="Helper Allowance"><input type="number" value={helperAllowance} onChange={(e) => setHelperAllowance(e.target.value)} className={inp} /></Fld>
-          <Fld label="Other Charges"><input type="number" value={otherCharges} onChange={(e) => setOtherCharges(e.target.value)} className={inp} /></Fld>
-          <Fld label="Discount"><input type="number" value={tcDiscount} onChange={(e) => setTcDiscount(e.target.value)} className={inp} /></Fld>
-          <Fld label="GST Amount"><input type="number" value={tcGst} onChange={(e) => setTcGst(e.target.value)} className={inp} /></Fld>
-          <Fld label="Total Transport Cost"><input readOnly value={totalTransportCost.toFixed(2)} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>
+      {driverDetailsVisible && (
+      <SectionCard icon={Users} title="Driver Details" allowOverflow>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {fieldOn(SCREEN, "driverName") && <Fld label="Driver Name"><input value={driverName} onChange={(e) => setDriverName(e.target.value)} className={inp} /></Fld>}
+          {fieldOn(SCREEN, "driverMobile") && <Fld label={`Driver Mobile${req("driverMobile")}`}><input value={driverMobile} onChange={(e) => setDriverMobile(e.target.value)} className={inp} /></Fld>}
+          {fieldOn(SCREEN, "driverLicenseNo") && <Fld label={`License Number${req("driverLicenseNo")}`}><input value={driverLicenseNo} onChange={(e) => setDriverLicenseNo(e.target.value)} className={inp} /></Fld>}
+          {fieldOn(SCREEN, "helperName") && <Fld label="Helper Name"><input value={helperName} onChange={(e) => setHelperName(e.target.value)} className={inp} /></Fld>}
+          {fieldOn(SCREEN, "helperMobile") && <Fld label="Helper Mobile"><input value={helperMobile} onChange={(e) => setHelperMobile(e.target.value)} className={inp} /></Fld>}
         </div>
-        <div className="mt-3"><Fld label="Remarks"><textarea value={tcRemarks} onChange={(e) => setTcRemarks(e.target.value)} rows={2} className={cn(inp, "h-auto py-2")} /></Fld></div>
-        <p className="mt-2 text-2xs text-subtle">Saved separately after the dispatch is created — left blank/zero, it won&apos;t be saved at all.</p>
       </SectionCard>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <SectionCard icon={Scale} title="Weighment Management" allowOverflow>
-          {!vehicleGateEntryId ? (
-            <p className="text-2xs text-subtle">No Vehicle Gate Entry matched for this customer yet — weighment capture becomes available once one is linked.</p>
-          ) : (
-            <>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Fld label="Pre-Loading Tare Weight (In Kgs)">
-                  <input readOnly value={preWeighmentLoading ? "Loading…" : tareWeight != null ? String(tareWeight) : "Not yet weighed"} className={cn(inp, "cursor-not-allowed bg-surface-2 font-semibold text-foreground")} />
-                </Fld>
-                <Fld label="Weighed On">
-                  <input readOnly value={preWeighmentLoading ? "" : preWeighment?.[0] ? `${preWeighment[0].weighDate ?? "—"}${preWeighment[0].weighTime ? ` ${preWeighment[0].weighTime}` : ""}` : "—"} className={cn(inp, "cursor-not-allowed bg-surface-2")} />
-                </Fld>
-                <Fld label="Weighing Operator">
-                  <input readOnly value={preWeighment?.[0]?.operator ?? "—"} className={cn(inp, "cursor-not-allowed bg-surface-2")} />
-                </Fld>
-                <Fld label="Gate Entry Reference">
-                  <input readOnly value={linkedGateNo} className={cn(inp, "cursor-not-allowed bg-surface-2 font-mono")} />
-                </Fld>
-              </div>
-              <div className="mt-3">
-                <label className="mb-1 block text-2xs font-semibold text-muted">Post-Loading Weight</label>
-                <div className="inline-flex w-full overflow-hidden rounded-md border border-border text-2xs">
-                  {([["later", "Capture Later"], ["now", "Capture Now"]] as const).map(([m, lbl]) => (
-                    <button key={m} type="button" onClick={() => setPostWeightTiming(m)} className={cn("flex-1 px-2 py-1.5 font-semibold transition", postWeightTiming === m ? "bg-primary text-white" : "bg-surface text-muted hover:text-foreground")}>{lbl}</button>
-                  ))}
-                </div>
-              </div>
-              {postWeightTiming === "now" && (
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <Fld label="Post-Loading Gross Weight (In Kgs) *"><input type="number" min={0} step="0.001" value={postGrossWeight} onChange={(e) => setPostGrossWeight(e.target.value)} className={inp} /></Fld>
-                  <Fld label="Operator"><input value={postOperator} onChange={(e) => setPostOperator(e.target.value)} className={inp} /></Fld>
-                  <div className="sm:col-span-2 flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-xs">
-                    <span className="text-muted">Net Weight (In Kgs)</span>
-                    <span className="font-bold tabular-nums text-primary">{postNetWeight != null ? postNetWeight.toLocaleString() : "—"}</span>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+        {fieldOn(SCREEN, "transportCost") && (
+        <SectionCard icon={Truck} title="Transport Cost" allowOverflow>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {fieldOn(SCREEN, "freightCharge") && <Fld label="Freight Charge"><input type="number" value={freightCharge} onChange={(e) => setFreightCharge(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "loadingCharge") && <Fld label="Loading Charge"><input type="number" value={loadingCharge} onChange={(e) => setLoadingCharge(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "unloadingCharge") && <Fld label="Unloading Charge"><input type="number" value={unloadingCharge} onChange={(e) => setUnloadingCharge(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "fuelCharge") && <Fld label="Fuel Charge"><input type="number" value={fuelCharge} onChange={(e) => setFuelCharge(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "tollCharge") && <Fld label="Toll Charge"><input type="number" value={tollCharge} onChange={(e) => setTollCharge(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "driverAllowance") && <Fld label="Driver Allowance (Bata)"><input type="number" value={driverAllowance} onChange={(e) => setDriverAllowance(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "helperAllowance") && <Fld label="Helper Allowance"><input type="number" value={helperAllowance} onChange={(e) => setHelperAllowance(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "driverBatta") && <Fld label="Driver Batta"><input type="number" value={driverBatta} onChange={(e) => setDriverBatta(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "vehicleRent") && <Fld label="Vehicle Rent"><input type="number" value={vehicleRent} onChange={(e) => setVehicleRent(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "transitPass") && <Fld label="Transit Pass"><input type="number" value={transitPass} onChange={(e) => setTransitPass(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "otherTransportCharges") && <Fld label="Other Charges"><input type="number" value={otherCharges} onChange={(e) => setOtherCharges(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "transportDiscount") && <Fld label="Discount"><input type="number" value={tcDiscount} onChange={(e) => setTcDiscount(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "transportGst") && <Fld label="GST Amount"><input type="number" value={tcGst} onChange={(e) => setTcGst(e.target.value)} className={inp} /></Fld>}
+            <Fld label="Total Transport Cost"><input readOnly value={totalTransportCost.toFixed(2)} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>
+          </div>
+          <p className="mt-2 text-2xs text-subtle">Saved separately after the dispatch is created — left blank/zero, it won&apos;t be saved at all.</p>
         </SectionCard>
+        )}
 
         <SectionCard icon={IndianRupee} title="Payment Collection" allowOverflow>
           <div className="grid gap-3">
@@ -692,9 +781,11 @@ export function DirectLoadDispatchForm() {
         </SectionCard>
       </div>
 
+      {fieldOn(SCREEN, "remarks") && (
       <SectionCard icon={PackagePlus} title="Remarks">
         <textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} rows={2} className={cn(inp, "h-auto py-2")} />
       </SectionCard>
+      )}
 
       <div className="flex items-center justify-end gap-2">
         <Button size="lg" onClick={save} disabled={submitting}>{submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Create Dispatch</Button>

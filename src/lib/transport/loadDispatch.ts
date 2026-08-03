@@ -33,13 +33,16 @@ const num = (v: unknown) => (v == null ? 0 : Number(v));
 const r2 = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
 const r3 = (n: number) => Math.round((Number(n) || 0) * 1000) / 1000;
 
-const DOC_PREFIX: Record<string, string> = {
-  Customer: "LD", StockTransfer: "LD-ST", PurchaseReturn: "LD-PR", SalesReturnPickup: "LD-SR",
-  ProductionTransfer: "LD-PT", JobWork: "LD-JW", Others: "LD-OT",
+// docType-specific suffix appended after the configurable base prefix
+// (Dispatch Configuration's fields.dispatchNoPrefix, default "LD") — e.g.
+// base "LD" + StockTransfer -> "LD-ST-00001".
+const DOC_SUFFIX: Record<string, string> = {
+  Customer: "", StockTransfer: "-ST", PurchaseReturn: "-PR", SalesReturnPickup: "-SR",
+  ProductionTransfer: "-PT", JobWork: "-JW", Others: "-OT",
 };
 
-async function assignDispatchNo(tx: Prisma.TransactionClient, docType: string, id: number) {
-  const prefix = DOC_PREFIX[docType] ?? "LD";
+async function assignDispatchNo(tx: Prisma.TransactionClient, docType: string, id: number, basePrefix: string) {
+  const prefix = `${basePrefix || "LD"}${DOC_SUFFIX[docType] ?? ""}`;
   const dispatchNo = `${prefix}-${String(id).padStart(5, "0")}`;
   await tx.loadDispatch.update({ where: { id }, data: { dispatchNo } });
   return dispatchNo;
@@ -68,6 +71,7 @@ export async function loadFromSalesOrder(scope: ActiveScope, user: Actor, input:
   if (!so) throw new Error("Sales Order not found.");
   const remaining = so.items.filter((it) => num(it.qty) - num(it.deliveredQty) > 0.001);
   if (!remaining.length) throw new Error("This Sales Order has nothing left to dispatch.");
+  const cfg = await getDispatchConfig(user);
 
   const totalQty = remaining.reduce((s, it) => s + (num(it.qty) - num(it.deliveredQty)), 0);
   const totalValue = remaining.reduce((s, it) => {
@@ -106,7 +110,7 @@ export async function loadFromSalesOrder(scope: ActiveScope, user: Actor, input:
       },
       select: { id: true },
     });
-    await assignDispatchNo(tx, "Customer", doc.id);
+    await assignDispatchNo(tx, "Customer", doc.id, cfg.fields.dispatchNoPrefix);
     return doc.id;
   }, { maxWait: 10_000, timeout: 30_000 });
   await writeAudit(prisma, user, { action: "load_dispatch.create", entity: "LoadDispatch", entityId: id, summary: `Loaded Customer dispatch from Sales Order ${so.docNo}`, businessId: scope.businessId ?? null, branchId: scope.branchId ?? null });
@@ -202,7 +206,7 @@ export async function createDirectCustomerDispatch(scope: ActiveScope, user: Act
       },
       select: { id: true },
     });
-    await assignDispatchNo(tx, "Customer", doc.id);
+    await assignDispatchNo(tx, "Customer", doc.id, cfg.fields.dispatchNoPrefix);
     // The physical vehicle flow (Gate Entry → Loading) ends once its dispatch is
     // recorded here — flip the linked Gate Entry straight to Completed so the
     // Vehicle Gate Entry list reflects that this reference is done.
@@ -226,6 +230,7 @@ export interface LoadFromTransferRequestInput { transferRequestId: number; dispa
 export async function loadFromTransferRequest(scope: ActiveScope, user: Actor, input: LoadFromTransferRequestInput) {
   const { header, items } = await loadRequestForDispatch(scope, input.transferRequestId);
   if (!items.length) throw new Error("Nothing available to dispatch for this transfer request.");
+  const cfg = await getDispatchConfig(user);
 
   const std = await createDispatch(scope, user, {
     dispatchType: "Transfer Request Based", dispatchDate: input.dispatchDate, referenceId: input.transferRequestId,
@@ -263,7 +268,7 @@ export async function loadFromTransferRequest(scope: ActiveScope, user: Actor, i
       },
       select: { id: true },
     });
-    await assignDispatchNo(tx, "StockTransfer", doc.id);
+    await assignDispatchNo(tx, "StockTransfer", doc.id, cfg.fields.dispatchNoPrefix);
     return doc.id;
   }, { maxWait: 10_000, timeout: 30_000 });
   await writeAudit(prisma, user, { action: "load_dispatch.create", entity: "LoadDispatch", entityId: id, summary: `Loaded Stock Transfer dispatch from ${header.referenceNo}`, businessId: scope.businessId ?? null, branchId: scope.branchId ?? null });
@@ -280,6 +285,7 @@ export interface OtherDispatchInput {
 /** Phase-1 physical tracking only — no stock-moving engine exists yet for
  * these docTypes (matches the original Transport module's scope decision). */
 export async function createOtherDispatch(scope: ActiveScope, user: Actor, input: OtherDispatchInput) {
+  const cfg = await getDispatchConfig(user);
   const items = input.items ?? [];
   const productIds = Array.from(new Set(items.map((i) => i.productId)));
   const prods = productIds.length ? await prisma.product.findMany({ where: { id: { in: productIds }, tenantId: scope.tenantId }, select: { id: true, name: true, sku: true, baseUom: true } }) : [];
@@ -305,7 +311,7 @@ export async function createOtherDispatch(scope: ActiveScope, user: Actor, input
       },
       select: { id: true },
     });
-    await assignDispatchNo(tx, input.docType, doc.id);
+    await assignDispatchNo(tx, input.docType, doc.id, cfg.fields.dispatchNoPrefix);
     return doc.id;
   }, { maxWait: 10_000, timeout: 30_000 });
   await writeAudit(prisma, user, { action: "load_dispatch.create", entity: "LoadDispatch", entityId: id, summary: `${input.docType} dispatch created (physical tracking only)`, businessId: scope.businessId ?? null, branchId: scope.branchId ?? null });

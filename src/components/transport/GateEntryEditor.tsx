@@ -54,6 +54,12 @@ export function GateEntryEditor() {
   const [referenceType, setReferenceType] = useState<"Sales Order" | "Direct Customer Dispatch" | "">("");
   const [lockDispatchType, setLockDispatchType] = useState(false);
   const [lockReferenceType, setLockReferenceType] = useState(false);
+  // Item Details capture mode + whether Qty is even asked for — configured in
+  // Settings → Dispatch Configuration → Vehicle Gate Entry Defaults. Quantity
+  // is off by default: for bulk-material dispatches it isn't known at gate
+  // time, only once the vehicle is actually weighed on Load & Dispatch.
+  const [itemCaptureMode, setItemCaptureMode] = useState<"None" | "Single" | "Multiple">("Multiple");
+  const [captureQtyAtGate, setCaptureQtyAtGate] = useState(false);
   const [soQuery, setSoQuery] = useState("");
   const [soHits, setSoHits] = useState<SalesOrderHit[] | null>(null);
   const [salesOrderId, setSalesOrderId] = useState<number | "">("");
@@ -129,6 +135,9 @@ export function GateEntryEditor() {
       if (rt) setReferenceType(rt);
       setLockDispatchType(!!j.config?.flags?.lockDefaultDispatchType);
       setLockReferenceType(!!j.config?.flags?.lockDefaultReferenceType);
+      const icm = j.config?.fields?.itemCaptureMode;
+      if (icm === "None" || icm === "Single" || icm === "Multiple") setItemCaptureMode(icm);
+      setCaptureQtyAtGate(!!j.config?.flags?.captureQtyAtGate);
     }).catch(() => {});
     const masters = loadMasters();
     const bays = fetch("/api/transport/masters/loading-bay?status=Active", { cache: "no-store" }).then((r) => r.json()).then((lb) => { if (lb.ok) setLoadingBays(lb.rows.map((x: { id: number; name: string }) => ({ id: x.id, label: x.name }))); }).catch(() => {});
@@ -191,12 +200,10 @@ export function GateEntryEditor() {
   const searchProducts = async (q: string) => { if (!q.trim()) { setProductHits(null); return; } try { const j = await fetch(`/api/pos/products?q=${encodeURIComponent(q.trim())}`, { cache: "no-store" }).then((r) => r.json()); if (j.ok) setProductHits(j.products ?? []); } catch { setProductHits(null); } };
   const onPq = (v: string) => { setPq(v); if (prodTimer.current) clearTimeout(prodTimer.current); if (!v.trim()) { setProductHits(null); return; } prodTimer.current = setTimeout(() => searchProducts(v), 250); };
   const addItem = (p: ProductHit) => {
-    setItems((prev) => {
-      const idx = prev.findIndex((l) => !l.qty || Number(l.qty) <= 0);
-      const line: ItemLine = { id: `${p.id}-${Math.random().toString(36).slice(2, 7)}`, productId: p.id, productName: p.name, sku: p.sku ?? "", uom: p.uom ?? "", qty: "1" };
-      if (idx !== -1) { const next = [...prev]; next[idx] = line; return next; }
-      return [...prev, line];
-    });
+    const line: ItemLine = { id: `${p.id}-${Math.random().toString(36).slice(2, 7)}`, productId: p.id, productName: p.name, sku: p.sku ?? "", uom: p.uom ?? "", qty: "1" };
+    // Single mode: picking a product replaces whatever was there — the
+    // section only ever tracks one item at a time.
+    setItems((prev) => (itemCaptureMode === "Single" ? [line] : [...prev, line]));
     setPq(""); setProductHits(null);
   };
   const updItem = (id: string, qty: string) => setItems((p) => p.map((l) => (l.id === id ? { ...l, qty } : l)));
@@ -242,7 +249,10 @@ export function GateEntryEditor() {
           gpsAvailable, sealNumber: sealNumber || null,
           purpose: purpose || null, expectedExitTime: expectedExitTime ? new Date(expectedExitTime).toISOString() : null,
           loadingBayId: loadingBayId || null, remarks: remarks || null,
-          items: items.filter((l) => Number(l.qty) > 0).map((l) => ({ productId: l.productId, productName: l.productName, sku: l.sku || null, uom: l.uom || null, qty: Number(l.qty) })),
+          // Qty is only meaningful when Capture Quantity at Gate is on — otherwise
+          // this section captures product name only, and 1 is just a non-zero
+          // placeholder the schema requires (no downstream use makes sense of it).
+          items: items.map((l) => ({ productId: l.productId, productName: l.productName, sku: l.sku || null, uom: l.uom || null, qty: captureQtyAtGate ? Number(l.qty) || 0 : 1 })),
         }),
       });
       const j = await res.json().catch(() => ({}));
@@ -392,9 +402,13 @@ export function GateEntryEditor() {
         </div>
       </SectionCard>
 
-      {fieldOn(SCREEN, "itemDetails") && (
+      {fieldOn(SCREEN, "itemDetails") && itemCaptureMode !== "None" && (
       <SectionCard icon={Boxes} title="Item Details (optional)" allowOverflow>
-        <p className="mb-3 text-2xs text-subtle">What the vehicle is expected to carry — informational only at this stage, no stock/allocation impact.</p>
+        <p className="mb-3 text-2xs text-subtle">
+          {itemCaptureMode === "Single" ? "The single product " : "What the vehicle is expected to carry — "}
+          {captureQtyAtGate ? "captured here, informational only at this stage — no stock/allocation impact." : "captured by name only — quantity is derived later from the Post-Loading Weighment's net weight on Load & Dispatch."}
+        </p>
+        {(itemCaptureMode !== "Single" || items.length === 0) && (
         <div className="relative mb-3 max-w-md">
           <input value={pq} onChange={(e) => onPq(e.target.value)} placeholder="Search product to add…" className={inp} />
           {productHits !== null && (productHits.length ? (
@@ -408,24 +422,25 @@ export function GateEntryEditor() {
             </div>
           ) : <div className="absolute z-20 mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted shadow-lg">No products matched.</div>)}
         </div>
+        )}
         {items.length > 0 && (
           <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full table-fixed text-sm">
               <colgroup>
                 <col className="w-auto" />
                 <col className="w-24" />
-                <col className="w-32" />
+                {captureQtyAtGate && <col className="w-32" />}
                 <col className="w-12" />
               </colgroup>
               <thead><tr className="border-b border-border bg-surface-2 text-left text-2xs font-semibold uppercase tracking-wider text-subtle">
-                <th className="px-3 py-2">Product</th><th className="px-3 py-2">UOM</th><th className="px-3 py-2 text-right">Qty</th><th className="px-3 py-2" />
+                <th className="px-3 py-2">Product</th><th className="px-3 py-2">UOM</th>{captureQtyAtGate && <th className="px-3 py-2 text-right">Qty</th>}<th className="px-3 py-2" />
               </tr></thead>
               <tbody>
                 {items.map((l) => (
                   <tr key={l.id} className="border-b border-border last:border-0">
                     <td className="px-3 py-1.5"><div className="truncate font-medium text-foreground">{l.productName}</div>{l.sku ? <div className="truncate text-2xs text-subtle">{l.sku}</div> : null}</td>
                     <td className="px-3 py-1.5 text-2xs text-muted">{l.uom || "—"}</td>
-                    <td className="px-3 py-1.5"><input type="number" min={0} value={l.qty} onChange={(e) => updItem(l.id, e.target.value.slice(0, 10))} className="h-8 w-full rounded-md border border-border-strong bg-surface px-2 text-right text-sm text-foreground focus:border-primary focus:outline-none" /></td>
+                    {captureQtyAtGate && <td className="px-3 py-1.5"><input type="number" min={0} value={l.qty} onChange={(e) => updItem(l.id, e.target.value.slice(0, 10))} className="h-8 w-full rounded-md border border-border-strong bg-surface px-2 text-right text-sm text-foreground focus:border-primary focus:outline-none" /></td>}
                     <td className="px-3 py-1.5 text-center"><button onClick={() => removeItem(l.id)} className="text-subtle hover:text-danger"><X className="h-4 w-4" /></button></td>
                   </tr>
                 ))}

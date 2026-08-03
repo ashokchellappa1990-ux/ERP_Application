@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Truck, Save, Loader2, Settings, FileText, Receipt, Coins } from "lucide-react";
+import { Truck, Save, Loader2, Settings, FileText, Receipt, Coins, Scale } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Switch } from "@/components/ui/Switch";
 import { Input } from "@/components/ui/Input";
@@ -77,6 +77,18 @@ const REFERENCE_TYPE_OPTS = [
   { value: "", label: "— No preload —" },
   { value: "Sales Order", label: "Sales Order" },
   { value: "Direct Customer Dispatch", label: "Direct Customer Dispatch" },
+];
+
+const ITEM_CAPTURE_OPTS = [
+  { value: "None", label: "None — hide Item Details" },
+  { value: "Single", label: "Single Product" },
+  { value: "Multiple", label: "Multiple Products" },
+];
+
+const POST_LOAD_WEIGHT_OPTS = [
+  { value: "Both", label: "Both — let the user choose per dispatch" },
+  { value: "CaptureLater", label: "By Default Capture Later" },
+  { value: "CaptureNow", label: "By Default Capture Now" },
 ];
 
 const TRANSPORT_COST_METHOD_OPTS = [
@@ -158,8 +170,33 @@ export function DispatchSettings() {
         </Grid>
         <Grid>
           <Input label="Gate Entry No Prefix" value={field("gateEntryPrefix")} onChange={(e) => setField("gateEntryPrefix", e.target.value)} placeholder="GATE" />
+          <Input label="Load & Dispatch No Prefix" value={field("dispatchNoPrefix")} onChange={(e) => setField("dispatchNoPrefix", e.target.value)} placeholder="LD" />
         </Grid>
-        <p className="text-2xs text-muted">Auto-generated as {`{prefix}-00001`}, {`{prefix}-00002`}, … whenever Gate Entry No is left as the suggested value.</p>
+        <p className="text-2xs text-muted">Auto-generated as {`{prefix}-00001`}, {`{prefix}-00002`}, … whenever Gate Entry No is left as the suggested value; Load & Dispatch numbers the same way (StockTransfer/PurchaseReturn/etc. append their own suffix after this prefix).</p>
+
+        <div className="mt-4 border-t border-border pt-4">
+          <p className="mb-3 text-sm font-semibold text-foreground">Item Capture on Vehicle Gate Entry</p>
+          <Grid>
+            <Select
+              label="Product Capture"
+              options={ITEM_CAPTURE_OPTS}
+              value={field("itemCaptureMode") || "Multiple"}
+              onChange={(e) => setField("itemCaptureMode", e.target.value)}
+            />
+            <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2.5">
+              <span className="text-sm font-medium text-foreground">Capture Quantity at Gate</span>
+              <Switch checked={flag("captureQtyAtGate")} onChange={(v) => setFlag("captureQtyAtGate", v)} aria-label="Capture quantity at gate" />
+            </label>
+          </Grid>
+          <p className="text-2xs text-muted">Controls the Item Details section on the New Vehicle Gate Entry screen — None hides it, Single limits it to exactly one product, Multiple allows several. When Capture Quantity is off (the default), only the product name is captured — quantity is derived later from the Post-Loading Weighment&apos;s net weight on the Load &amp; Dispatch screen.</p>
+        </div>
+      </Section>
+
+      <Section icon={Scale} title="Weighment Capture">
+        <Grid>
+          <Select label="Post-Loading Weight" options={POST_LOAD_WEIGHT_OPTS} value={field("postLoadWeightCaptureMode") || "Both"} onChange={(e) => setField("postLoadWeightCaptureMode", e.target.value)} />
+        </Grid>
+        <p className="text-2xs text-muted">Controls Weighment Management&apos;s Post-Loading Weight on the Load &amp; Dispatch screen. &quot;Both&quot; shows a Capture Later / Capture Now toggle so the user picks per dispatch. &quot;By Default Capture Later&quot;/&quot;By Default Capture Now&quot; force one behavior and hide the toggle — Capture Now still shows the gross-weight field directly, just without the tabs.</p>
       </Section>
 
       <Section icon={FileText} title="Delivery Challan">
