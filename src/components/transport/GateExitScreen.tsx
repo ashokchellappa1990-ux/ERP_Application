@@ -99,7 +99,7 @@ export function GateExitScreen() {
 
       {exitTarget && (
         <GateExitModal
-          row={{ id: exitTarget.id, gateEntryNo: exitTarget.gateEntryNo, vehicleId: 0, vehicleNo: exitTarget.vehicleNo, driverId: null, driverName: null, transportCompanyId: null, transportCompanyName: null, dispatchPlanningId: null, dispatchExecutionId: null, dispatchType: null, referenceNo: null, arrivalTime: null, securityOfficer: null, remarks: null, status: "Completed", createdAt: "" }}
+          row={{ id: exitTarget.id, gateEntryNo: exitTarget.gateEntryNo, vehicleId: 0, vehicleNo: exitTarget.vehicleNo, driverId: null, driverName: null, transportCompanyId: null, transportCompanyName: null, dispatchPlanningId: null, dispatchExecutionId: null, dispatchType: null, referenceNo: null, customerName: null, arrivalTime: null, securityOfficer: null, remarks: null, status: "Completed", createdAt: "", loadDispatchId: null, loadDispatchStatus: null, dispatchDate: null, totalQty: null, totalValue: null, invoiceNo: null, paymentStatus: null, productName: null, preLoadWeight: null, postLoadWeight: null, netWeight: null, saleType: null, saleOutstanding: null }}
           onClose={() => setExitTarget(null)}
           onSaved={(warning) => { setExitTarget(null); load(); if (warning) toast.warning(warning); else toast.success("Vehicle exited."); }}
         />

@@ -22,6 +22,10 @@ export type DispatchExecutionStatus = "Draft" | "Vehicle Assigned" | "Gate In" |
 export type GateEntryStatus = "Waiting" | "Inside Factory" | "Loading" | "Completed" | "Exited";
 export type WeighmentApprovalStatus = "NotRequired" | "Pending" | "Approved";
 
+/** Vehicle Type master list — used by Vehicle Master, and read-only elsewhere
+ * (Gate Entry, Load & Dispatch) once a Vehicle Number is picked. */
+export const VEHICLE_TYPE_OPTS = ["Truck 10W", "Truck 12W", "Truck 16W", "Tipper 407", "Tipper 3U", "Tractor", "Tata ACE", "Ashok Leyland Dost"] as const;
+
 /* ------------------------------------------------------------- masters */
 const masterBase = {
   status: z.enum(["Active", "Inactive"]).default("Active"),
@@ -224,6 +228,16 @@ export const gateEntryInput = z.object({
   purpose: z.string().trim().max(200).optional().nullable(),
   expectedExitTime: z.string().trim().optional().nullable(),
   loadingBayId: z.coerce.number().int().positive().optional().nullable(),
+  // Item Details (optional) — what the vehicle is expected to carry; purely
+  // informational at this stage, no allocation/stock/GL implication.
+  items: z.array(z.object({
+    productId: z.coerce.number().int().positive(),
+    productName: z.string().trim().max(250).optional(),
+    sku: z.string().trim().max(60).optional().nullable(),
+    uom: z.string().trim().max(40).optional().nullable(),
+    qty: z.coerce.number().min(0),
+    remarks: z.string().trim().max(300).optional().nullable(),
+  })).optional(),
 });
 /** Gate Entry's own Dispatch Type picker — a friendly-labelled subset of
  * DISPATCH_DOC_TYPES (values stay consistent with Dispatch Execution's docType). */

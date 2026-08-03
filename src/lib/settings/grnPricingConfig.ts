@@ -33,6 +33,11 @@ export const grnFieldMust = (k: string) => !!DEFAULT_GRN_PRICING_CONFIG[k]?.mand
 export function setGrnField(k: string, patch: Partial<GrnFieldSetting>) {
   DEFAULT_GRN_PRICING_CONFIG[k] = { ...{ enabled: true, mandatory: false }, ...DEFAULT_GRN_PRICING_CONFIG[k], ...patch };
 }
+/** Hydrate the singleton from a persisted config (DB row). */
+export function applyGrnConfig(stored: Partial<Record<string, GrnFieldSetting>> | null | undefined) {
+  if (!stored) return;
+  for (const f of GRN_LINE_FIELDS) if (stored[f.key]) setGrnField(f.key, stored[f.key]!);
+}
 
 /* ----------------------------------------------- category behaviour ---- */
 export interface CategoryRule {

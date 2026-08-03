@@ -1472,6 +1472,7 @@ model Tenant {
   salesSettings     SalesSetting[]
   purchaseSettings  PurchaseSetting[]
   dispatchConfigurations DispatchConfiguration[]
+  documentFieldConfigs   DocumentFieldConfig[]
   purchaseInvoices  PurchaseInvoice[]
   posSettings       PosSetting[]
   themeSettings     ThemeSetting[]
@@ -8863,10 +8864,32 @@ model VehicleGateEntry {
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
 
+  items VehicleGateEntryItem[]
+
   @@unique([tenantId, gateEntryNo])
   @@index([tenantId, status])
   @@index([dispatchExecutionId])
   @@map("vehicle_gate_entry")
+}
+
+/// Item/qty detail captured at the gate — what the vehicle is expected to
+/// carry, before any allocation/dispatch/invoice exists. Purely informational
+/// (no stock/GL posting); Load & Dispatch's own item entry is independent.
+model VehicleGateEntryItem {
+  id          Int @id @default(autoincrement())
+  tenantId    Int
+  gateEntryId Int
+  gateEntry   VehicleGateEntry @relation(fields: [gateEntryId], references: [id], onDelete: Cascade)
+  productId   Int
+  productName String  @db.VarChar(250)
+  sku         String? @db.VarChar(60)
+  uom         String? @db.VarChar(40)
+  qty         Decimal @default(0) @db.Decimal(18, 3)
+  remarks     String? @db.VarChar(300)
+  createdAt   DateTime @default(now())
+
+  @@index([gateEntryId])
+  @@map("vehicle_gate_entry_items")
 }
 
 model PreLoadingWeighment {
@@ -9200,4 +9223,24 @@ model DispatchConfiguration {
 
   @@unique([tenantId, businessId, branchId])
   @@map("dispatch_configurations")
+}
+
+/// Document Field Settings — screen-wise field enable/mandatory toggles (Sales
+/// Order/Invoice, Purchase Order/Invoice, Vehicle Gate Entry), GRN batch-pricing
+/// field settings, and the company GST flags, all edited on one settings page.
+/// Same scoped-JSON-blob pattern as DispatchConfiguration/GeneralSetting.
+model DocumentFieldConfig {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  businessId Int?
+  branchId   Int?
+
+  config Json // { screens: DocFieldsConfig, grn: Record<string,GrnFieldSetting>, company: CompanyConfig }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, businessId, branchId])
+  @@map("document_field_configs")
 }

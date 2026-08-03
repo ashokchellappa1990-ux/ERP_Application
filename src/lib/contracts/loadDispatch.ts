@@ -206,6 +206,10 @@ export interface LoadDispatchDetail {
   deliveryChallanId: number | null; saleId: number | null;
   paymentMode: "Full" | "Partial" | "Credit" | null; paymentAmount: number | null; paymentMethod: string | null;
   bankId: number | null; bankName: string | null; bankAccount: string | null;
+  // Once the Sales Invoice has posted — the invoice's own Cash/Card/UPI/Split/Credit
+  // sale type, and its outstanding balance (total − amountPaid), read straight
+  // off the Sale row rather than guessed from LoadDispatch's own payment intent.
+  saleInvoiceNo: string | null; saleType: string | null; saleOutstanding: number | null;
   createdByName: string | null; createdAt: string; updatedAt: string;
   items: LoadDispatchItemDto[];
 }

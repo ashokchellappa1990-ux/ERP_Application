@@ -16,8 +16,19 @@ export const DEFAULT_DISPATCH_CONFIG: TransportConfigData = {
     weightTolerancePct: "2",
     salesInvoicePostingMethod: "Manual", // Automatic | Manual
     transportCostMethod: "Manual", // Fixed | Per KM | Per KG | Per Ton | Per Trip | Manual
+    // Vehicle Gate Entry preloads these two on the add screen (blank = no
+    // preload, user picks as before) so most users never have to touch them.
+    defaultDispatchType: "", // "" | Customer | StockTransfer | PurchaseReturn | ... (DispatchDocType)
+    defaultReferenceType: "", // "" | Sales Order | Direct Customer Dispatch
+    // Gate Entry No auto-numbering prefix — e.g. "GATE" -> GATE-00001.
+    gateEntryPrefix: "GATE",
   },
   flags: {
+    // When on, the preloaded Dispatch/Reference Type above is shown disabled —
+    // the user sees it but can't change it. When off, it's just a starting
+    // value they're free to change.
+    lockDefaultDispatchType: false,
+    lockDefaultReferenceType: false,
     // General
     enableDispatchPlanning: true,
     enableDispatchExecution: true,

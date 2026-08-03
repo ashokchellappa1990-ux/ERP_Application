@@ -21,7 +21,10 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const doc = await prisma.loadDispatch.findFirst({ where: { ...sw, id: Number(params.id), deletedAt: null }, include: { items: { orderBy: { id: "asc" } } } });
   if (!doc) return NextResponse.json({ ok: false, message: "Load & Dispatch not found." }, { status: 404 });
 
-  const vehicle = doc.vehicleId ? await prisma.vehicleMaster.findFirst({ where: { id: doc.vehicleId }, select: { vehicleNo: true } }) : null;
+  const [vehicle, sale] = await Promise.all([
+    doc.vehicleId ? prisma.vehicleMaster.findFirst({ where: { id: doc.vehicleId }, select: { vehicleNo: true } }) : Promise.resolve(null),
+    doc.saleId ? prisma.sale.findFirst({ where: { id: doc.saleId, tenantId: user.tenantId }, select: { invoiceNo: true, paymentMode: true, total: true, amountPaid: true } }) : Promise.resolve(null),
+  ]);
 
   const data: LoadDispatchDetail = {
     id: doc.id, dispatchNo: doc.dispatchNo, dispatchDate: doc.dispatchDate, docType: doc.docType as LoadDispatchDetail["docType"],
@@ -42,6 +45,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     deliveryChallanId: doc.deliveryChallanId, saleId: doc.saleId,
     paymentMode: doc.paymentMode as LoadDispatchDetail["paymentMode"], paymentAmount: doc.paymentAmount != null ? num(doc.paymentAmount) : null,
     paymentMethod: doc.paymentMethod, bankId: doc.bankId, bankName: doc.bankName, bankAccount: doc.bankAccount,
+    saleInvoiceNo: sale?.invoiceNo ?? null, saleType: sale?.paymentMode ?? null,
+    saleOutstanding: sale ? num(sale.total) - num(sale.amountPaid) : null,
     createdByName: doc.createdByName, createdAt: doc.createdAt.toISOString(), updatedAt: doc.updatedAt.toISOString(),
     items: doc.items.map((it) => ({
       id: it.id, productId: it.productId, productName: it.productName, sku: it.sku, uom: it.uom,

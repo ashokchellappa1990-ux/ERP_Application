@@ -3,16 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Truck, ArrowLeft, ShieldCheck, FileText, Save, Loader2, Users, PackageSearch, ClipboardList, Plus, X, CheckCircle2, Scale } from "lucide-react";
+import { Truck, ArrowLeft, ShieldCheck, FileText, Save, Loader2, Users, PackageSearch, ClipboardList, Plus, X, CheckCircle2, Scale, Boxes } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SectionCard } from "@/components/ui/SectionCard";
+import { AppLoader } from "@/components/ui/AppLoader";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
-import { GATE_ENTRY_DISPATCH_TYPES } from "@/lib/contracts/transport";
+import { GATE_ENTRY_DISPATCH_TYPES, VEHICLE_TYPE_OPTS } from "@/lib/contracts/transport";
+import { fieldOn, fieldMust } from "@/lib/settings/docFieldsConfig";
+
+const SCREEN = "vehicle_gate_entry";
+const req = (key: string) => (fieldMust(SCREEN, key) ? " *" : "");
 
 const TRANSPORT_MODES = ["", "Road", "Rail", "Air", "Courier", "Own Vehicle", "Third Party"];
 
 interface Opt { id: number; label: string }
+interface VehicleOpt extends Opt { vehicleType: string | null }
+interface ProductHit { id: number; name: string; sku?: string; uom?: string }
+interface ItemLine { id: string; productId: number; productName: string; sku: string; uom: string; qty: string }
 interface SalesOrderHit { id: number; docNo: string; customerName: string }
 interface TransferRequestHit { id: number; requestNo: string; sourceWarehouse: string | null; destinationWarehouse: string | null }
 interface CustomerHit { id: number; name: string; phone: string | null; address: string | null }
@@ -24,9 +32,13 @@ export function GateEntryEditor() {
   const toast = useToast();
   const [saving, setSaving] = useState(false);
   const [savedId, setSavedId] = useState<number | null>(null);
+  // Blocks the whole form until every initial fetch (masters, next gate entry
+  // number, Dispatch Configuration preload, scope/location) has resolved —
+  // avoids the page rendering with fields still saying "Loading…" one by one.
+  const [pageLoading, setPageLoading] = useState(true);
 
   // Masters for dropdowns.
-  const [vehicles, setVehicles] = useState<Opt[]>([]);
+  const [vehicles, setVehicles] = useState<VehicleOpt[]>([]);
   const [companies, setCompanies] = useState<Opt[]>([]);
   const [loadingBays, setLoadingBays] = useState<Opt[]>([]);
   const [driverMasters, setDriverMasters] = useState<{ id: number; name: string; phone: string | null; licenseNo: string | null }[]>([]);
@@ -40,6 +52,8 @@ export function GateEntryEditor() {
   // Section 2 – Dispatch Information + Reference Document (merged into one card)
   const [dispatchType, setDispatchType] = useState("");
   const [referenceType, setReferenceType] = useState<"Sales Order" | "Direct Customer Dispatch" | "">("");
+  const [lockDispatchType, setLockDispatchType] = useState(false);
+  const [lockReferenceType, setLockReferenceType] = useState(false);
   const [soQuery, setSoQuery] = useState("");
   const [soHits, setSoHits] = useState<SalesOrderHit[] | null>(null);
   const [salesOrderId, setSalesOrderId] = useState<number | "">("");
@@ -87,22 +101,40 @@ export function GateEntryEditor() {
   const [loadingBayId, setLoadingBayId] = useState<number | "">("");
   const [remarks, setRemarks] = useState("");
 
+  // Item Details (optional) — what the vehicle is expected to carry.
+  const [items, setItems] = useState<ItemLine[]>([]);
+  const [pq, setPq] = useState("");
+  const [productHits, setProductHits] = useState<ProductHit[] | null>(null);
+
   const loadMasters = () => {
-    Promise.all([
+    return Promise.all([
       fetch("/api/transport/masters/vehicle?status=Active", { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
       fetch("/api/transport/masters/transport-company?status=Active", { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
     ]).then(([v, c]) => {
-      if (v.ok) setVehicles(v.rows.map((x: { id: number; vehicleNo: string }) => ({ id: x.id, label: x.vehicleNo })));
+      if (v.ok) setVehicles(v.rows.map((x: { id: number; vehicleNo: string; vehicleType: string | null }) => ({ id: x.id, label: x.vehicleNo, vehicleType: x.vehicleType })));
       if (c.ok) setCompanies(c.rows.map((x: { id: number; name: string }) => ({ id: x.id, label: x.name })));
     });
   };
 
   useEffect(() => {
-    loadMasters();
-    fetch("/api/transport/masters/loading-bay?status=Active", { cache: "no-store" }).then((r) => r.json()).then((lb) => { if (lb.ok) setLoadingBays(lb.rows.map((x: { id: number; name: string }) => ({ id: x.id, label: x.name }))); }).catch(() => {});
-    fetch("/api/transport/masters/driver?status=Active", { cache: "no-store" }).then((r) => r.json()).then((d) => { if (d.ok) setDriverMasters(d.rows.map((x: { id: number; name: string; phone: string | null; licenseNo: string | null }) => ({ id: x.id, name: x.name, phone: x.phone, licenseNo: x.licenseNo }))); }).catch(() => {});
+    const nextNumber = fetch("/api/transport/gate-entry/next-number", { cache: "no-store" }).then((r) => r.json()).then((j) => { if (j.ok) setGateEntryNo(j.nextNo); }).catch(() => {});
+    // Preload Dispatch Type / Reference Type from Dispatch Configuration so
+    // most users never have to pick them; lock flags make the preload
+    // non-changeable rather than just a starting value.
+    const dispatchConfig = fetch("/api/settings/dispatch-config", { cache: "no-store" }).then((r) => r.json()).then((j) => {
+      if (!j.ok) return;
+      const dt = j.config?.fields?.defaultDispatchType;
+      const rt = j.config?.fields?.defaultReferenceType;
+      if (dt) setDispatchType(dt);
+      if (rt) setReferenceType(rt);
+      setLockDispatchType(!!j.config?.flags?.lockDefaultDispatchType);
+      setLockReferenceType(!!j.config?.flags?.lockDefaultReferenceType);
+    }).catch(() => {});
+    const masters = loadMasters();
+    const bays = fetch("/api/transport/masters/loading-bay?status=Active", { cache: "no-store" }).then((r) => r.json()).then((lb) => { if (lb.ok) setLoadingBays(lb.rows.map((x: { id: number; name: string }) => ({ id: x.id, label: x.name }))); }).catch(() => {});
+    const drivers = fetch("/api/transport/masters/driver?status=Active", { cache: "no-store" }).then((r) => r.json()).then((d) => { if (d.ok) setDriverMasters(d.rows.map((x: { id: number; name: string; phone: string | null; licenseNo: string | null }) => ({ id: x.id, name: x.name, phone: x.phone, licenseNo: x.licenseNo }))); }).catch(() => {});
     // Location — same source as the app's top bar (active business/branch scope).
-    fetch("/api/system/scope", { cache: "no-store" }).then((r) => r.json()).then((j) => {
+    const scope = fetch("/api/system/scope", { cache: "no-store" }).then((r) => r.json()).then((j) => {
       if (!j.ok) return;
       const branchIds: number[] | null = j.active?.branchIds ?? null;
       if (branchIds === null) { setLocation("All branches"); return; }
@@ -113,6 +145,7 @@ export function GateEntryEditor() {
         setLocation(`${branchIds.length} branches`);
       }
     }).catch(() => {});
+    Promise.allSettled([nextNumber, dispatchConfig, masters, bays, drivers, scope]).finally(() => setPageLoading(false));
   }, []);
 
   const soTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -154,6 +187,21 @@ export function GateEntryEditor() {
     setTrHits(null); setTrQuery(hit.requestNo);
   };
 
+  const prodTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchProducts = async (q: string) => { if (!q.trim()) { setProductHits(null); return; } try { const j = await fetch(`/api/pos/products?q=${encodeURIComponent(q.trim())}`, { cache: "no-store" }).then((r) => r.json()); if (j.ok) setProductHits(j.products ?? []); } catch { setProductHits(null); } };
+  const onPq = (v: string) => { setPq(v); if (prodTimer.current) clearTimeout(prodTimer.current); if (!v.trim()) { setProductHits(null); return; } prodTimer.current = setTimeout(() => searchProducts(v), 250); };
+  const addItem = (p: ProductHit) => {
+    setItems((prev) => {
+      const idx = prev.findIndex((l) => !l.qty || Number(l.qty) <= 0);
+      const line: ItemLine = { id: `${p.id}-${Math.random().toString(36).slice(2, 7)}`, productId: p.id, productName: p.name, sku: p.sku ?? "", uom: p.uom ?? "", qty: "1" };
+      if (idx !== -1) { const next = [...prev]; next[idx] = line; return next; }
+      return [...prev, line];
+    });
+    setPq(""); setProductHits(null);
+  };
+  const updItem = (id: string, qty: string) => setItems((p) => p.map((l) => (l.id === id ? { ...l, qty } : l)));
+  const removeItem = (id: string) => setItems((p) => p.filter((l) => l.id !== id));
+
   const pickDriverMaster = (id: number | "") => {
     setDriverMasterId(id);
     const d = driverMasters.find((x) => x.id === id);
@@ -162,6 +210,18 @@ export function GateEntryEditor() {
 
   async function save() {
     if (!vehicleId) { toast.error("Vehicle Number is required."); return; }
+    const checks: [string, boolean, string][] = [
+      ["securityOfficer", !securityOfficer.trim(), "Security Officer"],
+      ["transportCompany", !transportCompanyId, "Transport Company"],
+      ["transportMode", !transportMode, "Transport Mode"],
+      ["vehicleType", !vehicleType, "Vehicle Type"],
+      ["driverMobile", !driverMobile.trim(), "Driver Mobile"],
+      ["driverLicenseNo", !driverLicenseNo.trim(), "Driver License No."],
+      ["deliveryAddress", dispatchType === "Customer" && referenceType === "Direct Customer Dispatch" && !deliveryAddress.trim(), "Delivery Address"],
+    ];
+    for (const [key, missing, label] of checks) {
+      if (fieldOn(SCREEN, key) && fieldMust(SCREEN, key) && missing) { toast.error(`${label} is required.`); return; }
+    }
     setSaving(true);
     try {
       const res = await fetch("/api/transport/gate-entry", {
@@ -182,6 +242,7 @@ export function GateEntryEditor() {
           gpsAvailable, sealNumber: sealNumber || null,
           purpose: purpose || null, expectedExitTime: expectedExitTime ? new Date(expectedExitTime).toISOString() : null,
           loadingBayId: loadingBayId || null, remarks: remarks || null,
+          items: items.filter((l) => Number(l.qty) > 0).map((l) => ({ productId: l.productId, productName: l.productName, sku: l.sku || null, uom: l.uom || null, qty: Number(l.qty) })),
         }),
       });
       const j = await res.json().catch(() => ({}));
@@ -189,6 +250,8 @@ export function GateEntryEditor() {
       else { toast.error(j.message || "Could not save the gate entry."); setSaving(false); }
     } catch { toast.error("Network error — could not save."); setSaving(false); }
   }
+
+  if (pageLoading) return <div className="py-16"><AppLoader label="Loading gate entry form…" /></div>;
 
   return (
     <div className="space-y-4">
@@ -203,29 +266,46 @@ export function GateEntryEditor() {
 
       <SectionCard icon={ShieldCheck} title="Gate Information" allowOverflow>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Fld label="Gate Entry No"><input value={gateEntryNo} onChange={(e) => setGateEntryNo(e.target.value)} placeholder="Leave blank to auto-generate" className={inp} /></Fld>
+          <Fld label="Gate Entry No"><input value={gateEntryNo} onChange={(e) => setGateEntryNo(e.target.value)} placeholder="Auto-generating…" className={inp} /></Fld>
           <Fld label="Entry Date &amp; Time"><input type="datetime-local" value={entryDateTime} onChange={(e) => setEntryDateTime(e.target.value)} className={inp} /></Fld>
-          <Fld label="Security Officer"><input value={securityOfficer} onChange={(e) => setSecurityOfficer(e.target.value)} className={inp} /></Fld>
-          <Fld label="Location"><input value={location} disabled placeholder="Loading…" className={cn(inp, "text-subtle")} /></Fld>
+          {fieldOn(SCREEN, "securityOfficer") && <Fld label={`Security Officer${req("securityOfficer")}`}><input value={securityOfficer} onChange={(e) => setSecurityOfficer(e.target.value)} className={inp} /></Fld>}
+          {fieldOn(SCREEN, "location") && <Fld label="Location"><input value={location} disabled placeholder="Loading…" className={cn(inp, "text-subtle")} /></Fld>}
         </div>
       </SectionCard>
 
       <SectionCard icon={FileText} title="Dispatch Information &amp; Reference Document" allowOverflow>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Fld label="Dispatch Type (optional)">
-            <select value={dispatchType} onChange={(e) => { setDispatchType(e.target.value); setReferenceType(""); }} className={inp}>
+            <select value={dispatchType} disabled={lockDispatchType} onChange={(e) => { setDispatchType(e.target.value); setReferenceType(""); }} className={cn(inp, lockDispatchType && "cursor-not-allowed text-subtle")}>
               <option value="">—</option>
               {GATE_ENTRY_DISPATCH_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
+            {lockDispatchType && <p className="mt-1 text-2xs text-subtle">Locked by Dispatch Configuration.</p>}
           </Fld>
           {dispatchType === "Customer" && (
             <Fld label="Reference Type">
-              <select value={referenceType} onChange={(e) => setReferenceType(e.target.value as typeof referenceType)} className={inp}>
+              <select value={referenceType} disabled={lockReferenceType} onChange={(e) => setReferenceType(e.target.value as typeof referenceType)} className={cn(inp, lockReferenceType && "cursor-not-allowed text-subtle")}>
                 <option value="">—</option>
                 <option value="Sales Order">Sales Order</option>
                 <option value="Direct Customer Dispatch">Direct Customer Dispatch</option>
               </select>
+              {lockReferenceType && <p className="mt-1 text-2xs text-subtle">Locked by Dispatch Configuration.</p>}
             </Fld>
+          )}
+          {dispatchType === "Customer" && referenceType === "Direct Customer Dispatch" && (
+            <div className="relative">
+              <label className="mb-1 block text-2xs font-semibold text-muted">Customer</label>
+              <input value={customerQuery} onChange={(e) => onCustomerQuery(e.target.value)} placeholder="Search customer master…" className={inp} />
+              {customerHits !== null && (
+                <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border bg-card shadow-lg">
+                  {customerHits.length ? customerHits.map((h) => (
+                    <button key={h.id} onClick={() => pickCustomer(h)} className="block w-full border-b border-border px-3 py-2 text-left text-sm last:border-0 hover:bg-primary-subtle/40">
+                      <span className="font-medium text-foreground">{h.name}</span>{h.phone ? <span className="text-2xs text-subtle"> — {h.phone}</span> : null}
+                    </button>
+                  )) : <div className="px-3 py-2 text-sm text-muted">No matching customers.</div>}
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -245,27 +325,14 @@ export function GateEntryEditor() {
               )}
             </div>
             <Fld label="Customer"><input value={customerName} disabled className={cn(inp, "text-subtle")} /></Fld>
-            <div className="sm:col-span-2"><Fld label="Delivery Address"><textarea value={deliveryAddress} disabled rows={2} className={cn(inp, "h-auto py-2 text-subtle")} /></Fld></div>
-            <p className="text-2xs text-subtle sm:col-span-2">Customer and delivery address are loaded automatically from the selected Sales Order.</p>
+            <p className="text-2xs text-subtle sm:col-span-2">Customer is loaded automatically from the selected Sales Order.</p>
           </div>
         )}
 
-        {dispatchType === "Customer" && referenceType === "Direct Customer Dispatch" && (
-          <div className="mt-3 grid gap-3 border-t border-border pt-3 sm:grid-cols-2">
-            <div className="relative">
-              <label className="mb-1 block text-2xs font-semibold text-muted">Customer</label>
-              <input value={customerQuery} onChange={(e) => onCustomerQuery(e.target.value)} placeholder="Search customer master…" className={inp} />
-              {customerHits !== null && (
-                <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border bg-card shadow-lg">
-                  {customerHits.length ? customerHits.map((h) => (
-                    <button key={h.id} onClick={() => pickCustomer(h)} className="block w-full border-b border-border px-3 py-2 text-left text-sm last:border-0 hover:bg-primary-subtle/40">
-                      <span className="font-medium text-foreground">{h.name}</span>{h.phone ? <span className="text-2xs text-subtle"> — {h.phone}</span> : null}
-                    </button>
-                  )) : <div className="px-3 py-2 text-sm text-muted">No matching customers.</div>}
-                </div>
-              )}
-            </div>
-            <div><Fld label="Delivery Address"><textarea value={deliveryAddress} disabled={deliveryAddressLocked} onChange={(e) => setDeliveryAddress(e.target.value)} rows={2} className={cn(inp, "h-auto py-2")} /></Fld></div>
+        {dispatchType === "Customer" && referenceType === "Direct Customer Dispatch" && fieldOn(SCREEN, "deliveryAddress") && (
+          <div className="mt-3 border-t border-border pt-3">
+            <Fld label={`Delivery Address${fieldMust(SCREEN, "deliveryAddress") ? " *" : " (optional)"}`}><textarea value={deliveryAddress} disabled={deliveryAddressLocked} onChange={(e) => setDeliveryAddress(e.target.value)} rows={2} placeholder="Only needed if delivery differs from the customer's usual address" className={cn(inp, "h-auto py-2 max-w-md")} /></Fld>
+            {!fieldMust(SCREEN, "deliveryAddress") && <p className="mt-1 text-2xs text-subtle">Customer name is enough for a direct dispatch — address is optional.</p>}
           </div>
         )}
 
@@ -290,63 +357,125 @@ export function GateEntryEditor() {
 
       <SectionCard icon={Truck} title="Transport Details" allowOverflow>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {fieldOn(SCREEN, "transportCompany") && (
           <div>
-            <label className="mb-1 block text-2xs font-semibold text-muted">Transport Company</label>
+            <label className="mb-1 block text-2xs font-semibold text-muted">Transport Company{req("transportCompany")}</label>
             <div className="flex gap-1.5">
               <select value={transportCompanyId} onChange={(e) => setTransportCompanyId(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">—</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select>
               <button type="button" title="Add new transport company" onClick={() => setAddCompanyOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border-strong bg-surface text-muted hover:border-primary hover:text-primary"><Plus className="h-4 w-4" /></button>
             </div>
           </div>
-          <Fld label="Transport Mode"><select value={transportMode} onChange={(e) => setTransportMode(e.target.value)} className={inp}>{TRANSPORT_MODES.map((t) => <option key={t} value={t}>{t || "—"}</option>)}</select></Fld>
-          <Fld label="Vehicle Type"><input value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} placeholder="e.g. Truck, Trailer" className={inp} /></Fld>
+          )}
+          {fieldOn(SCREEN, "transportMode") && <Fld label={`Transport Mode${req("transportMode")}`}><select value={transportMode} onChange={(e) => setTransportMode(e.target.value)} className={inp}>{TRANSPORT_MODES.map((t) => <option key={t} value={t}>{t || "—"}</option>)}</select></Fld>}
           <div>
             <label className="mb-1 block text-2xs font-semibold text-muted">Vehicle Number *</label>
             <div className="flex gap-1.5">
-              <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">Select vehicle…</option>{vehicles.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}</select>
+              <select
+                value={vehicleId}
+                onChange={(e) => {
+                  const id = e.target.value ? Number(e.target.value) : "";
+                  setVehicleId(id);
+                  const v = vehicles.find((x) => x.id === id);
+                  if (v?.vehicleType) setVehicleType(v.vehicleType);
+                }}
+                className={inp}
+              >
+                <option value="">Select vehicle…</option>
+                {vehicles.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
+              </select>
               <button type="button" title="Add new vehicle" onClick={() => setAddVehicleOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border-strong bg-surface text-muted hover:border-primary hover:text-primary"><Plus className="h-4 w-4" /></button>
             </div>
           </div>
-          <Fld label="Trailer Number (optional)"><input value={trailerNumber} onChange={(e) => setTrailerNumber(e.target.value)} className={inp} /></Fld>
-          <Fld label="Container Number (optional)"><input value={containerNumber} onChange={(e) => setContainerNumber(e.target.value)} className={inp} /></Fld>
+          {fieldOn(SCREEN, "vehicleType") && <Fld label={`Vehicle Type${req("vehicleType")}`}><select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} className={inp}><option value="">— Select —</option>{VEHICLE_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></Fld>}
+          {fieldOn(SCREEN, "trailerNumber") && <Fld label="Trailer Number (optional)"><input value={trailerNumber} onChange={(e) => setTrailerNumber(e.target.value)} className={inp} /></Fld>}
+          {fieldOn(SCREEN, "containerNumber") && <Fld label="Container Number (optional)"><input value={containerNumber} onChange={(e) => setContainerNumber(e.target.value)} className={inp} /></Fld>}
         </div>
       </SectionCard>
+
+      {fieldOn(SCREEN, "itemDetails") && (
+      <SectionCard icon={Boxes} title="Item Details (optional)" allowOverflow>
+        <p className="mb-3 text-2xs text-subtle">What the vehicle is expected to carry — informational only at this stage, no stock/allocation impact.</p>
+        <div className="relative mb-3 max-w-md">
+          <input value={pq} onChange={(e) => onPq(e.target.value)} placeholder="Search product to add…" className={inp} />
+          {productHits !== null && (productHits.length ? (
+            <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border bg-card shadow-lg">
+              {productHits.map((p) => (
+                <button key={p.id} onClick={() => addItem(p)} className="flex w-full items-center justify-between gap-2 border-b border-border px-3 py-2 text-left text-sm last:border-0 hover:bg-primary-subtle/40">
+                  <span className="min-w-0"><span className="block font-medium text-foreground">{p.name}</span><span className="block text-2xs text-subtle">{p.sku || "—"}</span></span>
+                  <Plus className="h-3.5 w-3.5 text-primary" />
+                </button>
+              ))}
+            </div>
+          ) : <div className="absolute z-20 mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted shadow-lg">No products matched.</div>)}
+        </div>
+        {items.length > 0 && (
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <table className="w-full table-fixed text-sm">
+              <colgroup>
+                <col className="w-auto" />
+                <col className="w-24" />
+                <col className="w-32" />
+                <col className="w-12" />
+              </colgroup>
+              <thead><tr className="border-b border-border bg-surface-2 text-left text-2xs font-semibold uppercase tracking-wider text-subtle">
+                <th className="px-3 py-2">Product</th><th className="px-3 py-2">UOM</th><th className="px-3 py-2 text-right">Qty</th><th className="px-3 py-2" />
+              </tr></thead>
+              <tbody>
+                {items.map((l) => (
+                  <tr key={l.id} className="border-b border-border last:border-0">
+                    <td className="px-3 py-1.5"><div className="truncate font-medium text-foreground">{l.productName}</div>{l.sku ? <div className="truncate text-2xs text-subtle">{l.sku}</div> : null}</td>
+                    <td className="px-3 py-1.5 text-2xs text-muted">{l.uom || "—"}</td>
+                    <td className="px-3 py-1.5"><input type="number" min={0} value={l.qty} onChange={(e) => updItem(l.id, e.target.value.slice(0, 10))} className="h-8 w-full rounded-md border border-border-strong bg-surface px-2 text-right text-sm text-foreground focus:border-primary focus:outline-none" /></td>
+                    <td className="px-3 py-1.5 text-center"><button onClick={() => removeItem(l.id)} className="text-subtle hover:text-danger"><X className="h-4 w-4" /></button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+      )}
 
       <SectionCard icon={Users} title="Driver Details" allowOverflow>
         <p className="mb-3 text-2xs text-subtle">Captured fresh at the gate — the actual driver entering may differ from anyone planned earlier.</p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Fld label="Known Driver (optional)"><select value={driverMasterId} onChange={(e) => pickDriverMaster(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">— Enter manually below —</option>{driverMasters.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select></Fld>
+          {fieldOn(SCREEN, "driverMaster") && <Fld label="Known Driver (optional)"><select value={driverMasterId} onChange={(e) => pickDriverMaster(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">— Enter manually below —</option>{driverMasters.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select></Fld>}
           <Fld label="Driver Name"><input value={driverName} onChange={(e) => setDriverName(e.target.value)} className={inp} /></Fld>
-          <Fld label="Mobile Number (optional)"><input value={driverMobile} onChange={(e) => setDriverMobile(e.target.value)} className={inp} /></Fld>
-          <Fld label="License Number (optional)"><input value={driverLicenseNo} onChange={(e) => setDriverLicenseNo(e.target.value)} className={inp} /></Fld>
-          <Fld label="Helper Name (optional)"><input value={helperName} onChange={(e) => setHelperName(e.target.value)} className={inp} /></Fld>
-          <Fld label="Helper Mobile (optional)"><input value={helperMobile} onChange={(e) => setHelperMobile(e.target.value)} className={inp} /></Fld>
+          {fieldOn(SCREEN, "driverMobile") && <Fld label={`Mobile Number${req("driverMobile")}`}><input value={driverMobile} onChange={(e) => setDriverMobile(e.target.value)} className={inp} /></Fld>}
+          {fieldOn(SCREEN, "driverLicenseNo") && <Fld label={`License Number${req("driverLicenseNo")}`}><input value={driverLicenseNo} onChange={(e) => setDriverLicenseNo(e.target.value)} className={inp} /></Fld>}
+          {fieldOn(SCREEN, "helperName") && <Fld label="Helper Name (optional)"><input value={helperName} onChange={(e) => setHelperName(e.target.value)} className={inp} /></Fld>}
+          {fieldOn(SCREEN, "helperMobile") && <Fld label="Helper Mobile (optional)"><input value={helperMobile} onChange={(e) => setHelperMobile(e.target.value)} className={inp} /></Fld>}
         </div>
       </SectionCard>
 
+      {(fieldOn(SCREEN, "vehicleCapacity") || fieldOn(SCREEN, "expectedLoadWeight") || fieldOn(SCREEN, "sealNumber") || fieldOn(SCREEN, "gpsAvailable")) && (
       <SectionCard icon={PackageSearch} title="Vehicle Details (optional)" allowOverflow>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Fld label="Vehicle Capacity"><input type="number" value={vehicleCapacity} onChange={(e) => setVehicleCapacity(e.target.value)} className={inp} /></Fld>
-          <Fld label="Expected Load Weight"><input type="number" value={expectedLoadWeight} onChange={(e) => setExpectedLoadWeight(e.target.value)} className={inp} /></Fld>
-          <Fld label="Seal Number (if applicable)"><input value={sealNumber} onChange={(e) => setSealNumber(e.target.value)} className={inp} /></Fld>
-          <label className="flex items-end gap-2 pb-2 text-sm font-medium text-foreground"><input type="checkbox" checked={gpsAvailable} onChange={(e) => setGpsAvailable(e.target.checked)} className="h-4 w-4 rounded border-border-strong" /> GPS Available</label>
+          {fieldOn(SCREEN, "vehicleCapacity") && <Fld label="Vehicle Capacity"><input type="number" value={vehicleCapacity} onChange={(e) => setVehicleCapacity(e.target.value)} className={inp} /></Fld>}
+          {fieldOn(SCREEN, "expectedLoadWeight") && <Fld label="Expected Load Weight"><input type="number" value={expectedLoadWeight} onChange={(e) => setExpectedLoadWeight(e.target.value)} className={inp} /></Fld>}
+          {fieldOn(SCREEN, "sealNumber") && <Fld label="Seal Number (if applicable)"><input value={sealNumber} onChange={(e) => setSealNumber(e.target.value)} className={inp} /></Fld>}
+          {fieldOn(SCREEN, "gpsAvailable") && <label className="flex items-end gap-2 pb-2 text-sm font-medium text-foreground"><input type="checkbox" checked={gpsAvailable} onChange={(e) => setGpsAvailable(e.target.checked)} className="h-4 w-4 rounded border-border-strong" /> GPS Available</label>}
         </div>
       </SectionCard>
+      )}
 
+      {(fieldOn(SCREEN, "purpose") || fieldOn(SCREEN, "expectedExitTime") || fieldOn(SCREEN, "loadingBay") || fieldOn(SCREEN, "remarks")) && (
       <SectionCard icon={ClipboardList} title="Entry Details (optional)" allowOverflow>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Fld label="Purpose"><input value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="e.g. Loading, Delivery, Inspection" className={inp} /></Fld>
-          <Fld label="Expected Exit Time"><input type="datetime-local" value={expectedExitTime} onChange={(e) => setExpectedExitTime(e.target.value)} className={inp} /></Fld>
-          <Fld label="Loading Bay"><select value={loadingBayId} onChange={(e) => setLoadingBayId(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">—</option>{loadingBays.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}</select></Fld>
+          {fieldOn(SCREEN, "purpose") && <Fld label="Purpose"><input value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="e.g. Loading, Delivery, Inspection" className={inp} /></Fld>}
+          {fieldOn(SCREEN, "expectedExitTime") && <Fld label="Expected Exit Time"><input type="datetime-local" value={expectedExitTime} onChange={(e) => setExpectedExitTime(e.target.value)} className={inp} /></Fld>}
+          {fieldOn(SCREEN, "loadingBay") && <Fld label="Loading Bay"><select value={loadingBayId} onChange={(e) => setLoadingBayId(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">—</option>{loadingBays.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}</select></Fld>}
         </div>
-        <div className="mt-3"><Fld label="Remarks"><textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} rows={2} className={cn(inp, "h-auto py-2")} /></Fld></div>
+        {fieldOn(SCREEN, "remarks") && <div className="mt-3"><Fld label="Remarks"><textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} rows={2} className={cn(inp, "h-auto py-2")} /></Fld></div>}
       </SectionCard>
+      )}
 
       <div className="flex items-center justify-end gap-2">
         <Button size="lg" onClick={save} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Record Gate Entry</Button>
       </div>
 
       {addCompanyOpen && <AddTransportCompanyModal onClose={() => setAddCompanyOpen(false)} onAdded={(row) => { setCompanies((p) => [{ id: row.id, label: row.name }, ...p]); setTransportCompanyId(row.id); setAddCompanyOpen(false); }} />}
-      {addVehicleOpen && <AddVehicleModal onClose={() => setAddVehicleOpen(false)} onAdded={(row) => { setVehicles((p) => [{ id: row.id, label: row.vehicleNo }, ...p]); setVehicleId(row.id); setAddVehicleOpen(false); }} />}
+      {addVehicleOpen && <AddVehicleModal onClose={() => setAddVehicleOpen(false)} onAdded={(row) => { setVehicles((p) => [{ id: row.id, label: row.vehicleNo, vehicleType: row.vehicleType ?? null }, ...p]); setVehicleId(row.id); if (row.vehicleType) setVehicleType(row.vehicleType); setAddVehicleOpen(false); }} />}
       {savedId != null && (
         <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
@@ -406,7 +535,7 @@ function AddTransportCompanyModal({ onClose, onAdded }: { onClose: () => void; o
   );
 }
 
-function AddVehicleModal({ onClose, onAdded }: { onClose: () => void; onAdded: (row: { id: number; vehicleNo: string }) => void }) {
+function AddVehicleModal({ onClose, onAdded }: { onClose: () => void; onAdded: (row: { id: number; vehicleNo: string; vehicleType: string | null }) => void }) {
   const toast = useToast();
   const [vehicleNo, setVehicleNo] = useState("");
   const [vehicleType, setVehicleType] = useState("");
@@ -432,7 +561,7 @@ function AddVehicleModal({ onClose, onAdded }: { onClose: () => void; onAdded: (
         </div>
         <div className="space-y-3 p-5">
           <Fld label="Vehicle Number *"><input value={vehicleNo} onChange={(e) => setVehicleNo(e.target.value)} className={inp} /></Fld>
-          <Fld label="Vehicle Type"><input value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} placeholder="e.g. Truck, Trailer" className={inp} /></Fld>
+          <Fld label="Vehicle Type"><select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} className={inp}><option value="">— Select —</option>{VEHICLE_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></Fld>
         </div>
         <div className="flex items-center justify-end gap-2 border-t border-border bg-surface-2 px-5 py-3">
           <Button variant="ghost" size="md" onClick={onClose}>Cancel</Button>

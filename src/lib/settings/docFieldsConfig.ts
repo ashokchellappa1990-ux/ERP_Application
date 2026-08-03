@@ -4,8 +4,8 @@
  * (Sales Order/Invoice, Purchase Order/Invoice) read this to show/hide fields and
  * enforce required-ness. Mutable singleton (Settings screen edits it in-session).
  */
-export interface DocFieldDef { key: string; label: string; mandatoryable: boolean; gst?: boolean; group: "Fields" | "Discount" | "Taxes" }
-export interface DocScreen { key: string; label: string; module: "sales" | "purchase"; feature: string; fields: DocFieldDef[] }
+export interface DocFieldDef { key: string; label: string; mandatoryable: boolean; gst?: boolean; group: string }
+export interface DocScreen { key: string; label: string; module: string; feature: string; fields: DocFieldDef[] }
 
 const FEATURES: DocFieldDef[] = [
   { key: "tax", label: "Tax Column", mandatoryable: false, gst: true, group: "Taxes" },
@@ -33,11 +33,46 @@ const purchaseFields: DocFieldDef[] = [
   { key: "attachments", label: "Attachments / File Upload", mandatoryable: false, group: "Fields" },
 ];
 
+// Vehicle Gate Entry — field keys match GateEntryEditor.tsx's own state names 1:1
+// so the settings screen can drive that form's show/hide + required-ness directly.
+// Core identifiers (Vehicle Number, Entry Date & Time, Location, Gate Entry No)
+// aren't listed — those always show, mirroring how Vehicle Number/Buyer etc.
+// aren't optional on the commercial docs above.
+// Dispatch Type / Reference Type are NOT here — those are handled by Dispatch
+// Configuration's own default-value + lock mechanism (a preload/changeability
+// concern, not a show/hide one — hiding them would break this form's
+// downstream conditional sections).
+const vehicleGateEntryFields: DocFieldDef[] = [
+  { key: "securityOfficer", label: "Security Officer", mandatoryable: true, group: "Gate Information" },
+  { key: "location", label: "Location (Branch)", mandatoryable: false, group: "Gate Information" },
+  { key: "deliveryAddress", label: "Delivery Address (Direct Customer Dispatch)", mandatoryable: true, group: "Dispatch & Reference" },
+  { key: "transportCompany", label: "Transport Company", mandatoryable: true, group: "Transport Details" },
+  { key: "transportMode", label: "Transport Mode", mandatoryable: true, group: "Transport Details" },
+  { key: "vehicleType", label: "Vehicle Type", mandatoryable: true, group: "Transport Details" },
+  { key: "trailerNumber", label: "Trailer Number", mandatoryable: false, group: "Transport Details" },
+  { key: "containerNumber", label: "Container Number", mandatoryable: false, group: "Transport Details" },
+  { key: "driverMaster", label: "Known Driver Picker", mandatoryable: false, group: "Driver Details" },
+  { key: "driverMobile", label: "Driver Mobile", mandatoryable: true, group: "Driver Details" },
+  { key: "driverLicenseNo", label: "Driver License No.", mandatoryable: true, group: "Driver Details" },
+  { key: "helperName", label: "Helper Name", mandatoryable: false, group: "Driver Details" },
+  { key: "helperMobile", label: "Helper Mobile", mandatoryable: false, group: "Driver Details" },
+  { key: "vehicleCapacity", label: "Vehicle Capacity", mandatoryable: false, group: "Vehicle Details" },
+  { key: "expectedLoadWeight", label: "Expected Load Weight", mandatoryable: false, group: "Vehicle Details" },
+  { key: "gpsAvailable", label: "GPS Available", mandatoryable: false, group: "Vehicle Details" },
+  { key: "sealNumber", label: "Seal Number", mandatoryable: false, group: "Vehicle Details" },
+  { key: "purpose", label: "Purpose", mandatoryable: false, group: "Entry Details" },
+  { key: "expectedExitTime", label: "Expected Exit Time", mandatoryable: false, group: "Entry Details" },
+  { key: "loadingBay", label: "Loading Bay", mandatoryable: false, group: "Entry Details" },
+  { key: "remarks", label: "Remarks", mandatoryable: false, group: "Entry Details" },
+  { key: "itemDetails", label: "Item Details Section", mandatoryable: false, group: "Items" },
+];
+
 export const DOC_SCREENS: DocScreen[] = [
   { key: "sales_order", label: "Sales Order", module: "sales", feature: "order", fields: [...salesFields, ...FEATURES] },
   { key: "sales_invoice", label: "Sales Invoice", module: "sales", feature: "invoice", fields: [...salesFields, ...FEATURES] },
   { key: "purchase_order", label: "Purchase Order", module: "purchase", feature: "order", fields: [...purchaseFields, ...FEATURES] },
   { key: "purchase_invoice", label: "Purchase Invoice", module: "purchase", feature: "invoice", fields: [...purchaseFields, ...FEATURES] },
+  { key: "vehicle_gate_entry", label: "Vehicle Gate Entry", module: "transport", feature: "gate_entry", fields: vehicleGateEntryFields },
 ];
 
 /** Keys that are configurable meta-fields (everything else on a form always shows). */
@@ -77,4 +112,17 @@ export function fieldMust(screen: string | null, key: string, fallback = false):
 export function setFieldSetting(screen: string, key: string, patch: Partial<FieldSetting>) {
   const sc = DEFAULT_DOC_FIELDS_CONFIG[screen] ?? (DEFAULT_DOC_FIELDS_CONFIG[screen] = {});
   sc[key] = { ...{ enabled: true, mandatory: false }, ...sc[key], ...patch };
+}
+
+/** Hydrate the singleton from a persisted config (DB row) — merges onto the
+ * current defaults per screen/field so newly-added screens/fields not present
+ * in an older saved row still get sensible defaults, mirroring how
+ * DispatchConfiguration's mergeConfig deep-merges onto DEFAULT_DISPATCH_CONFIG. */
+export function applyDocFieldsConfig(stored: Partial<DocFieldsConfig> | null | undefined) {
+  if (!stored) return;
+  for (const s of DOC_SCREENS) {
+    const storedScreen = stored[s.key];
+    if (!storedScreen) continue;
+    for (const f of s.fields) if (storedScreen[f.key]) setFieldSetting(s.key, f.key, storedScreen[f.key]);
+  }
 }

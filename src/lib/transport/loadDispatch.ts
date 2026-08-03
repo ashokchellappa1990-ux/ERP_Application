@@ -522,7 +522,11 @@ async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc): 
   // existing B2B Sales Invoice screen (src/components/sales/B2bInvoiceForm.tsx).
   const mode = doc.paymentMode ?? "Credit";
   const amountPaid = mode === "Full" ? total : mode === "Partial" ? r2(Math.min(num(doc.paymentAmount), total)) : 0;
-  const paymentStatus = amountPaid <= 0 ? "Unpaid" : amountPaid >= total ? "Paid" : "Partial";
+  // "Credit" (not "Unpaid") for the zero-paid case — matches the vocabulary
+  // Sale.paymentStatus actually uses everywhere else (Paid | Partial | Credit,
+  // see prepareSale in src/lib/sales/createSale.ts) and what the Accounts
+  // Receivable screen's API filters on (paymentStatus in [Credit, Partial]).
+  const paymentStatus = amountPaid <= 0 ? "Credit" : amountPaid >= total ? "Paid" : "Partial";
   const method = doc.paymentMethod || "Cash";
   const payments = amountPaid > 0 ? [{ mode: method, amount: amountPaid, reference: null }] : [];
 

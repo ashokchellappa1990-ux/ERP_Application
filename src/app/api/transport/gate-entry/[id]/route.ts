@@ -37,7 +37,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const entry = await prisma.vehicleGateEntry.findFirst({ where: { ...sw, id: Number(params.id), deletedAt: null } });
   if (!entry) return NextResponse.json({ ok: false, message: "Gate entry not found." }, { status: 404 });
 
-  const [vehicle, driver, company, plan, preWeighment, loading, postWeighment, gateExit] = await Promise.all([
+  const [vehicle, driver, company, plan, preWeighment, loading, postWeighment, gateExit, items] = await Promise.all([
     prisma.vehicleMaster.findFirst({ where: { id: entry.vehicleId }, select: { id: true, vehicleNo: true, vehicleType: true } }),
     entry.driverId ? prisma.driverMaster.findFirst({ where: { id: entry.driverId }, select: { id: true, name: true, phone: true } }) : null,
     entry.transportCompanyId ? prisma.transportCompany.findFirst({ where: { id: entry.transportCompanyId }, select: { id: true, name: true } }) : null,
@@ -46,6 +46,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     prisma.loadingConfirmation.findFirst({ where: { gateEntryId: entry.id, tenantId: user.tenantId }, orderBy: { id: "desc" } }),
     prisma.postLoadingWeighment.findFirst({ where: { gateEntryId: entry.id, tenantId: user.tenantId } }),
     prisma.gateExit.findFirst({ where: { gateEntryId: entry.id, tenantId: user.tenantId } }),
+    prisma.vehicleGateEntryItem.findMany({ where: { gateEntryId: entry.id }, orderBy: { id: "asc" } }),
   ]);
 
   return NextResponse.json({
@@ -69,6 +70,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       loadingConfirmation: loading ? { id: loading.id, loadingNo: loading.loadingNo, loadingStart: loading.loadingStart?.toISOString() ?? null, loadingEnd: loading.loadingEnd?.toISOString() ?? null } : null,
       postWeighment: postWeighment ? { id: postWeighment.id, grossWeight: Number(postWeighment.grossWeight), netWeight: Number(postWeighment.netWeight), toleranceExceeded: postWeighment.toleranceExceeded, approvalStatus: postWeighment.approvalStatus } : null,
       gateExit: gateExit ? { id: gateExit.id, gateExitNo: gateExit.gateExitNo, exitTime: gateExit.exitTime?.toISOString() ?? null, sealVerified: gateExit.sealVerified } : null,
+      items: items.map((i) => ({ id: i.id, productId: i.productId, productName: i.productName, sku: i.sku, uom: i.uom, qty: Number(i.qty), remarks: i.remarks })),
     },
   });
 }

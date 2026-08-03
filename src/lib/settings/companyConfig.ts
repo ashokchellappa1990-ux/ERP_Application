@@ -20,3 +20,8 @@ export const DEFAULT_COMPANY_CONFIG: CompanyConfig = {
 
 export const companyFlag = (id: keyof CompanyConfig) => !!DEFAULT_COMPANY_CONFIG[id];
 export function setCompanyFlag(id: keyof CompanyConfig, v: boolean) { DEFAULT_COMPANY_CONFIG[id] = v; }
+/** Hydrate the singleton from a persisted config (DB row). */
+export function applyCompanyConfig(stored: Partial<CompanyConfig> | null | undefined) {
+  if (!stored) return;
+  (Object.keys(DEFAULT_COMPANY_CONFIG) as (keyof CompanyConfig)[]).forEach((k) => { if (stored[k] != null) setCompanyFlag(k, !!stored[k]); });
+}

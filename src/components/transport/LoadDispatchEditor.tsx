@@ -92,12 +92,21 @@ export function LoadDispatchEditor({ id }: { id: number }) {
 
   const [savingDraft, setSavingDraft] = useState(false);
   const [actionBusy, setActionBusy] = useState<string | null>(null);
-  const [printBusy, setPrintBusy] = useState<"invoice" | "weight-slip" | null>(null);
+  const [printBusy, setPrintBusy] = useState<"invoice" | "weight-slip" | "dc" | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
 
   const [tc, setTc] = useState<TransportCostState>(EMPTY_TC);
   const [tcSaving, setTcSaving] = useState(false);
+
+  // Weighment Details — read-only, sourced from the linked Vehicle Gate
+  // Entry's Pre/Post-Loading Weighment records (same tables the physical
+  // gate/weighbridge chain already writes to — nothing new is posted here).
+  const [weighment, setWeighment] = useState<{ tare: number | null; gross: number | null; net: number | null; weighDate: string | null }>({ tare: null, gross: null, net: null, weighDate: null });
+  // Blocks the whole page (not just the KPI tile) until the weighment lookup
+  // — sourced from a linked Vehicle Gate Entry — has actually resolved, so the
+  // page never briefly renders with a blank Weighment Details section.
+  const [weighmentLoading, setWeighmentLoading] = useState(false);
 
   const applyDataToForm = useCallback((d: LoadDispatchDetail) => {
     setTransportCompanyId(d.transportCompanyId ?? "");
@@ -149,6 +158,29 @@ export function LoadDispatchEditor({ id }: { id: number }) {
       if (cfg.ok) setConfig(cfg.config);
     })();
   }, []);
+
+  // Weighment Details — only if a Vehicle Gate Entry is linked.
+  useEffect(() => {
+    if (!data?.vehicleGateEntryId) return;
+    const gateEntryId = data.vehicleGateEntryId;
+    setWeighmentLoading(true);
+    (async () => {
+      try {
+        const [preJ, postJ] = await Promise.all([
+          fetch(`/api/transport/pre-weighment?gateEntryId=${gateEntryId}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
+          fetch(`/api/transport/post-weighment?gateEntryId=${gateEntryId}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
+        ]);
+        const pre = preJ.ok ? preJ.rows?.[0] : null;
+        const post = postJ.ok ? postJ.rows?.[0] : null;
+        setWeighment({
+          tare: pre ? Number(pre.tareWeight) : (post ? Number(post.tareWeight) : null),
+          gross: post ? Number(post.grossWeight) : null,
+          net: post ? Number(post.netWeight) : null,
+          weighDate: post?.weighDate ?? pre?.weighDate ?? null,
+        });
+      } catch { /* best effort */ } finally { setWeighmentLoading(false); }
+    })();
+  }, [data?.vehicleGateEntryId]);
 
   // Transport Cost — only relevant once the flag is known to be on.
   useEffect(() => {
@@ -252,19 +284,21 @@ export function LoadDispatchEditor({ id }: { id: number }) {
   // reading the same data (Sale + Vehicle Gate Entry + weighments + transport
   // cost) assembled server-side by the print-data route. Both templates' saved
   // title/footerNote (Settings → Invoice Template) are fetched alongside.
-  async function printDocument(kind: "invoice" | "weight-slip") {
+  async function printDocument(kind: "invoice" | "weight-slip" | "dc") {
     setPrintBusy(kind);
     try {
       const [dataRes, tplRes] = await Promise.all([
         fetch(`/api/warehouse/load-dispatch/${id}/print-data`, { cache: "no-store" }).then((r) => r.json()),
-        fetch(`/api/settings/invoice-template?type=${kind === "invoice" ? "B2B_T2" : "WEIGHT_SLIP"}`, { cache: "no-store" }).then((r) => r.json()),
+        kind === "dc" ? Promise.resolve(null) : fetch(`/api/settings/invoice-template?type=${kind === "invoice" ? "B2B_T2" : "WEIGHT_SLIP"}`, { cache: "no-store" }).then((r) => r.json()),
       ]);
       if (!dataRes?.ok) { toast.error(dataRes?.message || "Could not load print data."); return; }
       const tpl = tplRes?.ok ? { title: tplRes.template.title, footerNote: tplRes.template.footerNote } : DEFAULT_RECEIPT;
       const html = kind === "invoice"
         ? (dataRes.taxInvoice ? buildTaxInvoiceHtml(dataRes.taxInvoice as TaxInvoiceData, tpl) : null)
+        : kind === "dc"
+        ? (dataRes.deliveryNote ? buildTaxInvoiceHtml(dataRes.deliveryNote as TaxInvoiceData, { title: "Delivery Note", footerNote: DEFAULT_RECEIPT.footerNote }) : null)
         : (dataRes.weightSlip ? buildWeightSlipHtml(dataRes.weightSlip as WeightSlipData, tpl) : null);
-      if (!html) { toast.error(kind === "invoice" ? "No Sales Invoice has been posted for this dispatch yet." : "No Vehicle Gate Entry / weighment is linked to this dispatch."); return; }
+      if (!html) { toast.error(kind === "invoice" ? "No Sales Invoice has been posted for this dispatch yet." : kind === "dc" ? "No Delivery Challan has been generated for this dispatch yet." : "No Vehicle Gate Entry / weighment is linked to this dispatch."); return; }
       const w = window.open("", "_blank", "width=900,height=800");
       if (!w) return;
       w.document.write(html); w.document.close();
@@ -300,7 +334,7 @@ export function LoadDispatchEditor({ id }: { id: number }) {
     else toast.error(j.message || "Could not save the transport cost.");
   }
 
-  if (loading) return <div className="py-16"><AppLoader label="Loading dispatch…" /></div>;
+  if (loading || weighmentLoading) return <div className="py-16"><AppLoader label="Loading dispatch…" /></div>;
   if (!data) return <div className="py-16 text-center text-sm text-muted">Load & Dispatch not found. <Link href="/warehouse/transfer/load-dispatch" className="font-semibold text-primary hover:underline">Back to list</Link></div>;
 
   const x = data;
@@ -322,16 +356,15 @@ export function LoadDispatchEditor({ id }: { id: number }) {
           <p className="mt-1 text-xs text-subtle">{x.partyName || x.sourceRefNo || "—"}{x.warehouse ? ` · ${x.warehouse}` : ""} — {x.items.length} item(s), {fmt.qty(x.totalQty)} qty.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {x.docType === "Customer" && (
-            <>
-              <Button variant="outline" size="md" onClick={() => printDocument("invoice")} disabled={printBusy != null} title={x.saleId ? "Print the Tax Invoice (Template 2)" : "Available once a Sales Invoice has been posted"}>
-                <Printer className="h-4 w-4" /> {printBusy === "invoice" ? "Preparing…" : "Print Invoice"}
-              </Button>
-              <Button variant="outline" size="md" onClick={() => printDocument("weight-slip")} disabled={printBusy != null} title={x.vehicleGateEntryId ? "Print the Weight Slip" : "Available once a Vehicle Gate Entry is linked"}>
-                <Scale className="h-4 w-4" /> {printBusy === "weight-slip" ? "Preparing…" : "Print Weight Slip"}
-              </Button>
-            </>
-          )}
+          <Button variant="secondary" size="md" onClick={() => printDocument("dc")} disabled={printBusy != null || !x.deliveryChallanId} title={x.deliveryChallanId ? "Print the Delivery Challan" : "Available once a Delivery Challan has been generated"}>
+            <FileText className="h-4 w-4" /> {printBusy === "dc" ? "Preparing…" : "Print DC"}
+          </Button>
+          <Button variant="accent" size="md" onClick={() => printDocument("weight-slip")} disabled={printBusy != null || !x.vehicleGateEntryId} title={x.vehicleGateEntryId ? "Print the Weight Slip" : "Available once a Vehicle Gate Entry is linked"}>
+            <Scale className="h-4 w-4" /> {printBusy === "weight-slip" ? "Preparing…" : "Print Weight Slip"}
+          </Button>
+          <Button variant="primary" size="md" onClick={() => printDocument("invoice")} disabled={printBusy != null || !x.saleId} title={x.saleId ? "Print the Tax Invoice (Template 2)" : "Available once a Sales Invoice has been posted"}>
+            <Printer className="h-4 w-4" /> {printBusy === "invoice" ? "Preparing…" : "Print Invoice"}
+          </Button>
           <Link href="/warehouse/transfer/load-dispatch"><Button variant="outline" size="md"><ArrowLeft className="h-4 w-4" /> Back</Button></Link>
         </div>
       </div>
@@ -342,9 +375,18 @@ export function LoadDispatchEditor({ id }: { id: number }) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Kpi label="Total Products" value={String(x.totalProducts)} icon={Boxes} />
         <Kpi label="Total Quantity" value={fmt.qty(x.totalQty)} icon={Layers} />
-        {/* Product has no weight field yet, so this is best-effort until that's added. */}
-        <Kpi label="Total Weight" value={x.totalWeight != null ? String(x.totalWeight) : "—"} icon={Truck} />
-        <Kpi label="Total Packages" value={String(x.totalPackages)} icon={ClipboardList} />
+        <Kpi label="Total Value (Incl. GST)" value={fmt.money(itemTotals.grandTotal)} icon={Receipt} />
+        <Kpi
+          label="Net Weight"
+          value={weighment.net != null ? `${weighment.net} kg` : "—"}
+          icon={Scale}
+          sub={weighment.tare != null || weighment.gross != null ? (
+            <>
+              {weighment.tare != null && <span>Empty {weighment.tare} kg</span>}
+              {weighment.gross != null && <span>{weighment.tare != null ? " · " : ""}Post Load {weighment.gross} kg</span>}
+            </>
+          ) : undefined}
+        />
       </div>
 
       {/* Section 1 — Dispatch Information */}
@@ -356,6 +398,20 @@ export function LoadDispatchEditor({ id }: { id: number }) {
           <KV k="Reference Number" v={x.sourceRefNo ?? "—"} />
           <KV k="Warehouse" v={x.warehouse ?? "—"} />
           <KV k="Status" v="" custom={<Badge tone={STATUS_TONE[x.status] ?? "neutral"}>{x.status}</Badge>} />
+          {x.saleId && (
+            <>
+              <KV k="Sale Type" v={x.saleType ?? "—"} />
+              <KV
+                k="Outstanding Balance"
+                v=""
+                custom={
+                  x.saleOutstanding != null && x.saleOutstanding > 0.005
+                    ? <span className="font-semibold text-danger">{fmt.money(x.saleOutstanding)}</span>
+                    : <Badge tone="success">Fully Paid</Badge>
+                }
+              />
+            </>
+          )}
         </div>
       </SectionCard>
 
@@ -379,65 +435,7 @@ export function LoadDispatchEditor({ id }: { id: number }) {
         </div>
       </SectionCard>
 
-      {/* Section 3 — Transport Information */}
-      <SectionCard
-        icon={Truck}
-        title="Transport Information"
-        action={x.vehicleGateEntryId && !editingTransport && canEdit ? <button type="button" onClick={() => setEditingTransport(true)} className="text-2xs font-semibold text-primary hover:underline">Modify</button> : undefined}
-      >
-        {x.vehicleGateEntryId && <p className="mb-3 text-2xs text-subtle">Auto-loaded from the linked Vehicle Gate Entry. Click Modify to edit.</p>}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Fld label="Transport Company">
-            <select value={transportCompanyId} disabled={!canEdit || !editingTransport} onChange={(e) => setTransportCompanyId(e.target.value ? Number(e.target.value) : "")} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")}>
-              <option value="">—</option>
-              {companies.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-            </select>
-          </Fld>
-          <Fld label="Vehicle Number">
-            <select value={vehicleId} disabled={!canEdit || !editingTransport} onChange={(e) => setVehicleId(e.target.value ? Number(e.target.value) : "")} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")}>
-              <option value="">—</option>
-              {vehicles.map((v) => <option key={v.id} value={v.id}>{v.vehicleNo}</option>)}
-            </select>
-          </Fld>
-          <Fld label="Vehicle Type"><input value={vehicleType} disabled={!canEdit || !editingTransport} onChange={(e) => setVehicleType(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
-          <Fld label="Driver Name"><input value={driverName} disabled={!canEdit || !editingTransport} onChange={(e) => setDriverName(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
-          <Fld label="Driver Mobile"><input value={driverMobile} disabled={!canEdit || !editingTransport} onChange={(e) => setDriverMobile(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
-          <Fld label="License Number"><input value={driverLicenseNo} disabled={!canEdit || !editingTransport} onChange={(e) => setDriverLicenseNo(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
-          <Fld label="Helper Name"><input value={helperName} disabled={!canEdit || !editingTransport} onChange={(e) => setHelperName(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
-          <Fld label="Helper Mobile"><input value={helperMobile} disabled={!canEdit || !editingTransport} onChange={(e) => setHelperMobile(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
-          <Fld label="Route">
-            <select value={routeId} disabled={!canEdit || !editingTransport} onChange={(e) => setRouteId(e.target.value ? Number(e.target.value) : "")} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")}>
-              <option value="">—</option>
-              {routes.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
-            </select>
-          </Fld>
-          <Fld label="Seal Number"><input value={sealNumber} disabled={!canEdit || !editingTransport} onChange={(e) => setSealNumber(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
-        </div>
-      </SectionCard>
-
-      {/* Loading Details — remaining fields of loadDispatchUpdateInput; not
-          sourced from the Gate Entry, so always editable while the doc is
-          Draft/Ready/Loading (no separate Modify gate needed here). */}
-      <SectionCard icon={ClipboardList} title="Loading Details">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Fld label="Loading Bay">
-            <select value={loadingBayId} disabled={!canEdit} onChange={(e) => setLoadingBayId(e.target.value ? Number(e.target.value) : "")} className={cn(inp, !canEdit && "text-subtle")}>
-              <option value="">—</option>
-              {bays.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
-            </select>
-          </Fld>
-          <Fld label="Supervisor"><input value={supervisor} disabled={!canEdit} onChange={(e) => setSupervisor(e.target.value)} className={cn(inp, !canEdit && "text-subtle")} /></Fld>
-          <Fld label="Trailer Number"><input value={trailerNumber} disabled={!canEdit} onChange={(e) => setTrailerNumber(e.target.value)} className={cn(inp, !canEdit && "text-subtle")} /></Fld>
-          <Fld label="Container Number"><input value={containerNumber} disabled={!canEdit} onChange={(e) => setContainerNumber(e.target.value)} className={cn(inp, !canEdit && "text-subtle")} /></Fld>
-          <Fld label="Loading Start"><input type="datetime-local" value={loadingStart} disabled={!canEdit} onChange={(e) => setLoadingStart(e.target.value)} className={cn(inp, !canEdit && "text-subtle")} /></Fld>
-          <Fld label="Loading End"><input type="datetime-local" value={loadingEnd} disabled={!canEdit} onChange={(e) => setLoadingEnd(e.target.value)} className={cn(inp, !canEdit && "text-subtle")} /></Fld>
-          <Fld label="Packages"><input type="number" min={0} value={packages} disabled={!canEdit} onChange={(e) => setPackages(e.target.value)} className={cn(inp, !canEdit && "text-subtle")} /></Fld>
-          <Fld label="Pallets"><input type="number" min={0} value={pallets} disabled={!canEdit} onChange={(e) => setPallets(e.target.value)} className={cn(inp, !canEdit && "text-subtle")} /></Fld>
-        </div>
-        <div className="mt-3"><Fld label="Remarks"><textarea value={remarks} disabled={!canEdit} onChange={(e) => setRemarks(e.target.value)} rows={2} className={cn(inp, "h-auto py-2", !canEdit && "text-subtle")} /></Fld></div>
-      </SectionCard>
-
-      {/* Section 4 — Product Load & Dispatch */}
+      {/* Product Load & Dispatch — right after Customer/Destination */}
       <SectionCard icon={Boxes} title="Product Load & Dispatch">
         {canEdit && (
           <div className="mb-3 rounded-xl border border-border bg-surface-2 p-3">
@@ -507,6 +505,69 @@ export function LoadDispatchEditor({ id }: { id: number }) {
         )}
       </SectionCard>
 
+      {/* Transport Information + Driver Information — paired side by side, matching the add page. */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <SectionCard
+          icon={Truck}
+          title="Transport Information"
+          action={x.vehicleGateEntryId && !editingTransport && canEdit ? <button type="button" onClick={() => setEditingTransport(true)} className="text-2xs font-semibold text-primary hover:underline">Modify</button> : undefined}
+        >
+          {x.vehicleGateEntryId && <p className="mb-3 text-2xs text-subtle">Auto-loaded from the linked Vehicle Gate Entry. Click Modify to edit.</p>}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Fld label="Transport Company">
+              <select value={transportCompanyId} disabled={!canEdit || !editingTransport} onChange={(e) => setTransportCompanyId(e.target.value ? Number(e.target.value) : "")} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")}>
+                <option value="">—</option>
+                {companies.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+              </select>
+            </Fld>
+            <Fld label="Vehicle Number">
+              <select value={vehicleId} disabled={!canEdit || !editingTransport} onChange={(e) => setVehicleId(e.target.value ? Number(e.target.value) : "")} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")}>
+                <option value="">—</option>
+                {vehicles.map((v) => <option key={v.id} value={v.id}>{v.vehicleNo}</option>)}
+              </select>
+            </Fld>
+            <Fld label="Vehicle Type"><input value={vehicleType} disabled={!canEdit || !editingTransport} onChange={(e) => setVehicleType(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
+            <Fld label="Route">
+              <select value={routeId} disabled={!canEdit || !editingTransport} onChange={(e) => setRouteId(e.target.value ? Number(e.target.value) : "")} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")}>
+                <option value="">—</option>
+                {routes.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+              </select>
+            </Fld>
+            <Fld label="Trailer Number"><input value={trailerNumber} disabled={!canEdit} onChange={(e) => setTrailerNumber(e.target.value)} className={cn(inp, !canEdit && "text-subtle")} /></Fld>
+            <Fld label="Container Number"><input value={containerNumber} disabled={!canEdit} onChange={(e) => setContainerNumber(e.target.value)} className={cn(inp, !canEdit && "text-subtle")} /></Fld>
+            <Fld label="Seal Number"><input value={sealNumber} disabled={!canEdit || !editingTransport} onChange={(e) => setSealNumber(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
+          </div>
+        </SectionCard>
+
+        <SectionCard icon={ClipboardList} title="Driver Information">
+          {x.vehicleGateEntryId && <p className="mb-3 text-2xs text-subtle">Auto-loaded from the linked Vehicle Gate Entry. Click Modify (Transport Information) to edit.</p>}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Fld label="Driver Name"><input value={driverName} disabled={!canEdit || !editingTransport} onChange={(e) => setDriverName(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
+            <Fld label="Driver Mobile"><input value={driverMobile} disabled={!canEdit || !editingTransport} onChange={(e) => setDriverMobile(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
+            <Fld label="License Number"><input value={driverLicenseNo} disabled={!canEdit || !editingTransport} onChange={(e) => setDriverLicenseNo(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
+            <Fld label="Helper Name"><input value={helperName} disabled={!canEdit || !editingTransport} onChange={(e) => setHelperName(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
+            <Fld label="Helper Mobile"><input value={helperMobile} disabled={!canEdit || !editingTransport} onChange={(e) => setHelperMobile(e.target.value)} className={cn(inp, (!canEdit || !editingTransport) && "text-subtle")} /></Fld>
+          </div>
+        </SectionCard>
+      </div>
+
+      {/* Weighment Details — read-only, from the linked Vehicle Gate Entry's
+          Pre/Post-Loading Weighment (replaces the old Loading Details section,
+          which tracked loading-bay/supervisor/start-end-time/packages/pallets
+          — those fields still exist on the record but no longer have UI here). */}
+      {x.vehicleGateEntryId && (
+        <SectionCard icon={Scale} title="Weighment Details">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Fld label="Tare Weight (Empty, In Kgs)"><input readOnly value={weighment.tare != null ? String(weighment.tare) : "Not yet weighed"} className={cn(inp, "cursor-not-allowed bg-surface-2")} /></Fld>
+            <Fld label="Gross Weight (Post Load, In Kgs)"><input readOnly value={weighment.gross != null ? String(weighment.gross) : "Not yet weighed"} className={cn(inp, "cursor-not-allowed bg-surface-2")} /></Fld>
+            <Fld label="Net Weight (In Kgs)"><input readOnly value={weighment.net != null ? String(weighment.net) : "—"} className={cn(inp, "cursor-not-allowed bg-surface-2 font-semibold text-foreground")} /></Fld>
+          </div>
+          {weighment.gross == null && (
+            <p className="mt-2 text-2xs text-subtle">Post-Loading weight not captured yet — record it from Transport &amp; Vehicle Operations → Post Loading Weighment.</p>
+          )}
+        </SectionCard>
+      )}
+
       {/* Transport Cost — only when the Dispatch Configuration flag is on. */}
       {config?.flags.enableTransportCost && (
         <SectionCard icon={Wallet} title="Transport Cost">
@@ -558,9 +619,14 @@ export function LoadDispatchEditor({ id }: { id: number }) {
             {canEdit && <Button size="md" onClick={() => doAction("complete")} disabled={!!actionBusy || !itemsValid}><CheckCircle2 className="h-4 w-4" /> {actionBusy === "complete" ? "Working…" : "Complete Load & Dispatch"}</Button>}
             {cancellable && !cancelOpen && <Button variant="danger" size="md" onClick={() => setCancelOpen(true)} disabled={!!actionBusy}><XCircle className="h-4 w-4" /> Cancel</Button>}
             {showDeliveryChallan && <Button size="md" onClick={doDeliveryChallan} disabled={!!actionBusy}><FileText className="h-4 w-4" /> {actionBusy === "delivery-challan" ? "Working…" : "Delivery Challan"}</Button>}
-            {x.deliveryChallanId && <Link href={`/transport/delivery-challan/${x.deliveryChallanId}`}><Button variant="outline" size="md"><FileText className="h-4 w-4" /> Print Delivery Challan</Button></Link>}
             {showPostInvoice && <Button size="md" onClick={doPostInvoice} disabled={!!actionBusy}><Receipt className="h-4 w-4" /> {actionBusy === "post-invoice" ? "Working…" : "Post Sales Invoice"}</Button>}
           </div>
+        </div>
+      )}
+
+      {(actionBusy === "delivery-challan" || actionBusy === "post-invoice") && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur-sm">
+          <AppLoader label={actionBusy === "delivery-challan" ? "Generating Delivery Challan…" : "Posting Sales Invoice…"} />
         </div>
       )}
     </div>
@@ -586,11 +652,12 @@ function StatusTimeline({ status }: { status: string }) {
   );
 }
 
-function Kpi({ label, value, icon: Icon }: { label: string; value: string; icon: typeof Boxes }) {
+function Kpi({ label, value, icon: Icon, sub }: { label: string; value: string; icon: typeof Boxes; sub?: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
       <div className="mb-1 flex items-center gap-1.5 text-2xs font-bold uppercase tracking-wide text-subtle"><Icon className="h-3.5 w-3.5 text-primary" /> {label}</div>
       <div className="text-lg font-bold tabular-nums text-foreground">{value}</div>
+      {sub && <div className="mt-0.5 flex flex-wrap gap-x-1 text-2xs text-subtle">{sub}</div>}
     </div>
   );
 }

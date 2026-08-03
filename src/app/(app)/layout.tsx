@@ -2,6 +2,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { SessionProvider } from "@/components/auth/SessionProvider";
 import { ScopeProvider } from "@/components/scope/ScopeProvider";
 import { GeneralConfigLoader } from "@/components/settings/GeneralConfigProvider";
+import { DocumentFieldsConfigLoader } from "@/components/settings/DocumentFieldsConfigLoader";
 
 /**
  * Layout for all authenticated console routes. Wraps pages in the session
@@ -17,6 +18,7 @@ export default function ConsoleLayout({
     <SessionProvider>
       <ScopeProvider>
         <GeneralConfigLoader />
+        <DocumentFieldsConfigLoader />
         <AppShell>{children}</AppShell>
       </ScopeProvider>
     </SessionProvider>

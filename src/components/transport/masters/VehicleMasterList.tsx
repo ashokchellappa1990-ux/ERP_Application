@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { AppLoader } from "@/components/ui/AppLoader";
 import { useToast } from "@/components/ui/Toast";
-import { vehicleInput, type VehicleInput } from "@/lib/contracts/transport";
+import { vehicleInput, VEHICLE_TYPE_OPTS, type VehicleInput } from "@/lib/contracts/transport";
 
 interface Row extends VehicleInput { id: number }
 interface CompanyOption { id: number; name: string }
@@ -126,7 +126,7 @@ function VehicleModal({ mode, id, companies, onClose, onSaved }: { mode: "add" |
           {loading ? <AppLoader label="Loading…" size="sm" /> : (
             <div className="grid gap-3 sm:grid-cols-2">
               <div><label className={lbl}>Vehicle No *</label><input value={f.vehicleNo} onChange={(e) => set("vehicleNo", e.target.value)} className={inp} />{errors.vehicleNo && <p className={errTxt}>{errors.vehicleNo}</p>}</div>
-              <div><label className={lbl}>Vehicle Type</label><input value={f.vehicleType ?? ""} onChange={(e) => set("vehicleType", e.target.value)} className={inp} /></div>
+              <div><label className={lbl}>Vehicle Type</label><select value={f.vehicleType ?? ""} onChange={(e) => set("vehicleType", e.target.value)} className={inp}><option value="">— Select —</option>{VEHICLE_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
               <div><label className={lbl}>Capacity</label><input type="number" value={f.capacity} onChange={(e) => set("capacity", Number(e.target.value) || 0)} className={inp} /></div>
               <div><label className={lbl}>Capacity Unit</label><input value={f.capacityUnit ?? ""} onChange={(e) => set("capacityUnit", e.target.value)} className={inp} /></div>
               <div><label className={lbl}>Owner Type</label><select value={f.ownerType} onChange={(e) => set("ownerType", e.target.value as VehicleInput["ownerType"])} className={inp}><option value="Own">Own</option><option value="Hired">Hired</option><option value="Transporter">Transporter</option></select></div>

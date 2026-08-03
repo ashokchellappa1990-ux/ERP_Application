@@ -11,12 +11,19 @@ const adapter = new PrismaMariaDb({
   database: process.env.DB_NAME ?? "onepos",
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  // Kept small: on serverless (Vercel), every concurrent invocation/cold start
-  // opens its own pool, so a handful of simultaneous requests can multiply this
-  // by dozens of lambda instances and exhaust a small RDS instance's
-  // max_connections. idleTimeout releases unused connections quickly instead of
+  // Kept small in production: on serverless (Vercel), every concurrent
+  // invocation/cold start opens its own pool, so a handful of simultaneous
+  // requests can multiply this by dozens of lambda instances and exhaust a
+  // small RDS instance's max_connections. Local dev is a single long-lived
+  // process (one pool, not multiplied across lambdas), so a limit this tight
+  // caused real pool-exhaustion failures during ordinary use — a single page
+  // load here easily fires 5-7 parallel GETs, and with several browser tabs
+  // open against the same dev server a limit of 2 could starve a POST for a
+  // connection entirely (a distinct failure mode from Prisma's own
+  // interactive-transaction timeout — this happens before the transaction
+  // even starts). idleTimeout releases unused connections quickly instead of
   // holding them open across invocations.
-  connectionLimit: 2,
+  connectionLimit: process.env.NODE_ENV === "production" ? 2 : 10,
   idleTimeout: 15,
   allowPublicKeyRetrieval: true,
 });

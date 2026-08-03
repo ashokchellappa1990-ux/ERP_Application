@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SectionCard } from "@/components/ui/SectionCard";
+import { AppLoader } from "@/components/ui/AppLoader";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { BankPicker, emptyBank, type BankValue } from "@/components/finance/BankPicker";
@@ -63,10 +64,15 @@ type PostStage = "draft" | "dispatched" | "dc" | "invoiced";
 export function DirectLoadDispatchForm() {
   const router = useRouter();
   const toast = useToast();
+  const searchParams = useSearchParams();
+  const prefillGateEntryId = searchParams.get("gateEntryId");
   const [submitting, setSubmitting] = useState(false);
+  // Blocks the form until the Vehicle Gate Entry prefill (transport/driver
+  // info + item lines + per-line rate/tax lookups) has fully finished, so the
+  // user never sees a half-populated screen when arriving via "Start Loading".
+  const [prefillLoading, setPrefillLoading] = useState(!!prefillGateEntryId);
 
   const [dispatchDate, setDispatchDate] = useState(new Date().toISOString().slice(0, 10));
-  const [warehouse, setWarehouse] = useState("");
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerName, setCustomerName] = useState("");
   const [customerQuery, setCustomerQuery] = useState("");
@@ -146,9 +152,10 @@ export function DirectLoadDispatchForm() {
   }, []);
 
   // ---- Prefill from a Vehicle Gate Entry passed in via ?gateEntryId= (e.g. the
-  // "Start Loading" action on the Vehicle Gate Entry list jumps here directly). ----
-  const searchParams = useSearchParams();
-  const prefillGateEntryId = searchParams.get("gateEntryId");
+  // "Start Loading" action on the Vehicle Gate Entry list jumps here directly).
+  // Also prefills Items from whatever was captured on the gate entry itself
+  // (product + qty), looking each one up for its current rate/tax so the
+  // taxable/tax/net-amount calculations are already correct on arrival. ----
   useEffect(() => {
     if (!prefillGateEntryId) return;
     (async () => {
@@ -164,7 +171,25 @@ export function DirectLoadDispatchForm() {
           transportCompanyId: d.transportCompanyId, transportCompanyName: d.transportCompanyName ?? null,
           vehicleType: d.vehicleTypeEntry ?? d.vehicleType, dispatchType: d.dispatchType, referenceNo: d.referenceNo, status: d.status,
         });
+
+        const gateItems: { productId: number; productName: string; sku: string | null; uom: string | null; qty: number }[] = d.items ?? [];
+        if (gateItems.length) {
+          const prefilled = await Promise.all(gateItems.map(async (it, i): Promise<Line> => {
+            let hit: ProductHit | undefined;
+            try {
+              const pj = await fetch(`/api/pos/products?q=${encodeURIComponent(it.sku || it.productName)}`, { cache: "no-store" }).then((r) => r.json());
+              hit = pj.ok ? (pj.products as ProductHit[]).find((p) => p.id === it.productId) ?? pj.products?.[0] : undefined;
+            } catch { /* best effort per line — falls back to qty-only, rate/tax left blank */ }
+            return {
+              ...blankLine(i), productId: it.productId, productName: it.productName, sku: it.sku || hit?.sku || "", uom: it.uom || hit?.uom || "",
+              qty: String(it.qty), rate: hit?.price != null ? String(hit.price) : "", taxPct: hit?.gst != null ? String(hit.gst) : "",
+              batchTracked: !!(hit?.batchTracked || hit?.invBatch || hit?.invMfg || hit?.invExpiry),
+            };
+          }));
+          setLines(prefilled);
+        }
       } catch { /* best effort */ }
+      finally { setPrefillLoading(false); }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefillGateEntryId]);
@@ -294,7 +319,7 @@ export function DirectLoadDispatchForm() {
       customerId: customerId || null,
       customerName: customerName.trim() || null,
       deliveryAddress: deliveryAddress.trim() || null,
-      warehouse: warehouse.trim() || null,
+      warehouse: null,
       vehicleGateEntryId: vehicleGateEntryId || null,
       transportCompanyId: transportCompanyId || null,
       vehicleId: vehicleId || null,
@@ -415,10 +440,15 @@ export function DirectLoadDispatchForm() {
         <Link href="/warehouse/transfer/load-dispatch/new"><Button variant="outline" size="md"><ArrowLeft className="h-4 w-4" /> Back</Button></Link>
       </div>
 
+      {prefillLoading ? (
+        <div className="rounded-2xl border border-border bg-card py-16 shadow-sm">
+          <AppLoader label="Loading vehicle gate entry details…" />
+        </div>
+      ) : (
+      <>
       <SectionCard icon={Users} title="Customer &amp; Delivery" allowOverflow>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Fld label="Dispatch Date"><input type="date" value={dispatchDate} onChange={(e) => setDispatchDate(e.target.value)} className={inp} /></Fld>
-          <Fld label="Warehouse"><input value={warehouse} onChange={(e) => setWarehouse(e.target.value)} className={inp} /></Fld>
           <div className="relative">
             <label className="mb-1 block text-2xs font-semibold text-muted">Customer</label>
             <input value={customerQuery} onChange={(e) => onCustomerQuery(e.target.value)} placeholder="Search customer master…" className={inp} />
@@ -669,6 +699,8 @@ export function DirectLoadDispatchForm() {
       <div className="flex items-center justify-end gap-2">
         <Button size="lg" onClick={save} disabled={submitting}>{submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Create Dispatch</Button>
       </div>
+      </>
+      )}
 
       {/* Post-submit: complete + generate Delivery Challan / post the Sales Invoice, or continue later */}
       {createdId != null && (

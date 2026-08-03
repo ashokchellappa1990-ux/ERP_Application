@@ -10,6 +10,7 @@ import { AppLoader } from "@/components/ui/AppLoader";
 import { useToast } from "@/components/ui/Toast";
 import { SettingsScopeBanner } from "@/components/scope/SettingsScopeBanner";
 import { DEFAULT_DISPATCH_CONFIG, type TransportConfigData } from "@/lib/settings/transportConfigDefaults";
+import { GATE_ENTRY_DISPATCH_TYPES } from "@/lib/contracts/transport";
 import { cn } from "@/lib/cn";
 
 interface FlagDef { id: string; label: string; desc?: string }
@@ -72,6 +73,12 @@ const POSTING_METHOD_OPTS = [
   { value: "Manual", label: "Manual" },
 ];
 
+const REFERENCE_TYPE_OPTS = [
+  { value: "", label: "— No preload —" },
+  { value: "Sales Order", label: "Sales Order" },
+  { value: "Direct Customer Dispatch", label: "Direct Customer Dispatch" },
+];
+
 const TRANSPORT_COST_METHOD_OPTS = [
   { value: "Fixed", label: "Fixed" },
   { value: "Per KM", label: "Per KM" },
@@ -129,6 +136,30 @@ export function DispatchSettings() {
 
       <Section icon={Settings} title="General">
         <Flags items={GENERAL} flag={flag} setFlag={setFlag} />
+      </Section>
+
+      <Section icon={Truck} title="Vehicle Gate Entry Defaults">
+        <p className="mb-3 text-2xs text-muted">Preloads Dispatch Type / Reference Type on the Vehicle Gate Entry add screen so most users never have to pick them. Leave blank for no preload. Locking shows the preloaded value but disables changing it.</p>
+        <Grid>
+          <div>
+            <Select label="Default Dispatch Type" options={[{ value: "", label: "— No preload —" }, ...GATE_ENTRY_DISPATCH_TYPES.map((t) => ({ value: t.value, label: t.label }))]} value={field("defaultDispatchType")} onChange={(e) => setField("defaultDispatchType", e.target.value)} />
+            <label className="mt-2 flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2.5">
+              <span className="text-sm font-medium text-foreground">Lock (not user-changeable)</span>
+              <Switch checked={flag("lockDefaultDispatchType")} onChange={(v) => setFlag("lockDefaultDispatchType", v)} aria-label="Lock default dispatch type" />
+            </label>
+          </div>
+          <div>
+            <Select label="Default Reference Type" options={REFERENCE_TYPE_OPTS} value={field("defaultReferenceType")} onChange={(e) => setField("defaultReferenceType", e.target.value)} />
+            <label className="mt-2 flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2.5">
+              <span className="text-sm font-medium text-foreground">Lock (not user-changeable)</span>
+              <Switch checked={flag("lockDefaultReferenceType")} onChange={(v) => setFlag("lockDefaultReferenceType", v)} aria-label="Lock default reference type" />
+            </label>
+          </div>
+        </Grid>
+        <Grid>
+          <Input label="Gate Entry No Prefix" value={field("gateEntryPrefix")} onChange={(e) => setField("gateEntryPrefix", e.target.value)} placeholder="GATE" />
+        </Grid>
+        <p className="text-2xs text-muted">Auto-generated as {`{prefix}-00001`}, {`{prefix}-00002`}, … whenever Gate Entry No is left as the suggested value.</p>
       </Section>
 
       <Section icon={FileText} title="Delivery Challan">
