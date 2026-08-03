@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { Switch } from "@/components/ui/Switch";
 import { useToast } from "@/components/ui/Toast";
 import { DEFAULT_RECEIPT, PAPER_SIZES, type ReceiptTemplate } from "@/lib/settings/receiptTemplate";
+import { buildTaxInvoiceHtml, TAX_INVOICE_SAMPLE } from "@/lib/print/taxInvoiceHtml";
+import { buildWeightSlipHtml, WEIGHT_SLIP_SAMPLE } from "@/lib/print/weightSlipHtml";
 import { cn } from "@/lib/cn";
 
 const FLAGS: { k: keyof ReceiptTemplate; label: string; desc: string }[] = [
@@ -21,9 +23,15 @@ const FLAGS: { k: keyof ReceiptTemplate; label: string; desc: string }[] = [
 const TABS = [
   { id: "B2C", label: "Sales Invoice B2C", desc: "Printed POS bill / thermal receipt." },
   { id: "B2B", label: "Sales Invoice B2B", desc: "Tax invoice for business customers." },
+  { id: "B2B_T2", label: "Sales Invoice B2B (Template 2)", desc: "Alternate A4 tax invoice design — Bill To/Vehicle/Driver/weight detail, printed from Load & Dispatch." },
+  { id: "WEIGHT_SLIP", label: "Weight Slip", desc: "Weighbridge slip printed alongside the Template 2 invoice from Load & Dispatch." },
   { id: "COLLECTION", label: "Customer Collection", desc: "Receipt given on collecting payment." },
 ] as const;
 type TplType = (typeof TABS)[number]["id"];
+// These two documents are dynamic, generated-HTML designs (src/lib/print/*Html.ts)
+// rather than the toggle-driven receipt this page otherwise edits — only the
+// text fields below apply; "What to Print" toggles don't.
+const CUSTOM_DESIGN_TYPES: TplType[] = ["B2B_T2", "WEIGHT_SLIP"];
 
 export default function InvoiceTemplatePage() {
   const toast = useToast();
@@ -53,6 +61,17 @@ export default function InvoiceTemplatePage() {
   }
 
   const activeTab = TABS.find((t) => t.id === type)!;
+  const isCustomDesign = CUSTOM_DESIGN_TYPES.includes(type);
+  const stripAutoPrint = (html: string) => html.replace(/<script>window\.onload[\s\S]*?<\/script>/, "");
+  const buildPreviewHtml = () => (type === "WEIGHT_SLIP"
+    ? buildWeightSlipHtml(WEIGHT_SLIP_SAMPLE, { title: tpl.title, footerNote: tpl.footerNote })
+    : buildTaxInvoiceHtml(TAX_INVOICE_SAMPLE, { title: tpl.title, footerNote: tpl.footerNote }));
+  const previewHtmlNoAutoPrint = isCustomDesign ? stripAutoPrint(buildPreviewHtml()) : "";
+  function openFullPreview() {
+    const w = window.open("", "_blank", "width=900,height=800");
+    if (!w) return;
+    w.document.write(buildPreviewHtml()); w.document.close();
+  }
 
   return (
     <div className="space-y-5">
@@ -81,37 +100,70 @@ export default function InvoiceTemplatePage() {
                 <div className="flex flex-wrap gap-1.5">{PAPER_SIZES.map((p) => <button key={p.value} onClick={() => set("paperSize", p.value)} className={cn("rounded-md border px-2.5 py-2 text-2xs font-semibold transition", tpl.paperSize === p.value ? "border-primary bg-primary-subtle text-primary" : "border-border bg-surface text-muted hover:border-primary/40")}>{p.label}</button>)}</div>
               </Field>
               <div className="sm:col-span-2"><Field label="Header Note (under store name)"><input value={tpl.headerNote} onChange={(e) => set("headerNote", e.target.value)} placeholder="e.g. Branch / address line" className={inp} /></Field></div>
-              <Field label="Thank-You Message"><input value={tpl.thankYouMessage} onChange={(e) => set("thankYouMessage", e.target.value)} className={inp} /></Field>
-              <Field label="Footer Note / Terms"><input value={tpl.footerNote} onChange={(e) => set("footerNote", e.target.value)} placeholder="e.g. Goods once sold…" className={inp} /></Field>
+              {!isCustomDesign && <Field label="Thank-You Message"><input value={tpl.thankYouMessage} onChange={(e) => set("thankYouMessage", e.target.value)} className={inp} /></Field>}
+              <Field label={isCustomDesign ? "Footer Note" : "Footer Note / Terms"}><input value={tpl.footerNote} onChange={(e) => set("footerNote", e.target.value)} placeholder={type === "WEIGHT_SLIP" ? "e.g. Thank you for your business." : "e.g. Goods once sold…"} className={inp} /></Field>
             </div>
           </Section>
-          <Section title="Header Details">
-            <p className="mb-3 text-2xs text-muted">Configure the company identity printed at the top of the bill.</p>
-            <div className="grid gap-2.5 sm:grid-cols-2">
-              <HeaderToggle label="Use Branch Name &amp; GSTIN" desc="Show the branch's name & GSTIN instead of the business's common details." checked={tpl.useBranchDetails} onChange={() => set("useBranchDetails", !tpl.useBranchDetails)} />
-              <HeaderToggle label="Show Branch Name" desc="Print the branch name line in the header." checked={tpl.showBranchName} onChange={() => set("showBranchName", !tpl.showBranchName)} />
-              <HeaderToggle label="Show Contact / Toll-Free No." desc="Print a contact or toll-free number." checked={tpl.showContact} onChange={() => set("showContact", !tpl.showContact)} />
-            </div>
-            {tpl.showContact && (
-              <div className="mt-3 max-w-xs">
-                <Field label="Contact / Toll-Free Number"><input value={tpl.contactNumber} onChange={(e) => set("contactNumber", e.target.value)} placeholder="1800-123-4567" className={inp} /></Field>
-              </div>
-            )}
-          </Section>
-          <Section title="What to Print">
-            <div className="grid gap-2.5 sm:grid-cols-2">
-              {FLAGS.map((f) => (
-                <label key={f.k} className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2.5">
-                  <span><span className="block text-sm font-medium text-foreground">{f.label}</span><span className="block text-2xs text-subtle">{f.desc}</span></span>
-                  <Switch checked={!!tpl[f.k]} onChange={() => set(f.k, !tpl[f.k] as never)} aria-label={f.label} />
-                </label>
-              ))}
-            </div>
-          </Section>
+          {!isCustomDesign && (
+            <>
+              <Section title="Header Details">
+                <p className="mb-3 text-2xs text-muted">Configure the company identity printed at the top of the bill.</p>
+                <div className="grid gap-2.5 sm:grid-cols-2">
+                  <HeaderToggle label="Use Branch Name &amp; GSTIN" desc="Show the branch's name & GSTIN instead of the business's common details." checked={tpl.useBranchDetails} onChange={() => set("useBranchDetails", !tpl.useBranchDetails)} />
+                  <HeaderToggle label="Show Branch Name" desc="Print the branch name line in the header." checked={tpl.showBranchName} onChange={() => set("showBranchName", !tpl.showBranchName)} />
+                  <HeaderToggle label="Show Contact / Toll-Free No." desc="Print a contact or toll-free number." checked={tpl.showContact} onChange={() => set("showContact", !tpl.showContact)} />
+                </div>
+                {tpl.showContact && (
+                  <div className="mt-3 max-w-xs">
+                    <Field label="Contact / Toll-Free Number"><input value={tpl.contactNumber} onChange={(e) => set("contactNumber", e.target.value)} placeholder="1800-123-4567" className={inp} /></Field>
+                  </div>
+                )}
+              </Section>
+              <Section title="What to Print">
+                <div className="grid gap-2.5 sm:grid-cols-2">
+                  {FLAGS.map((f) => (
+                    <label key={f.k} className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2.5">
+                      <span><span className="block text-sm font-medium text-foreground">{f.label}</span><span className="block text-2xs text-subtle">{f.desc}</span></span>
+                      <Switch checked={!!tpl[f.k]} onChange={() => set(f.k, !tpl[f.k] as never)} aria-label={f.label} />
+                    </label>
+                  ))}
+                </div>
+              </Section>
+            </>
+          )}
+          {isCustomDesign && (
+            <Section title="About this design">
+              <p className="text-2xs text-muted">
+                {type === "B2B_T2"
+                  ? "This is a purpose-built A4 Tax Invoice layout (Bill To / Bill No / Vehicle Number / Delivery To / Driver, a weighbridge-style item line with Empty/Load/Net weight, GST breakup, Royalty Pass and Round Off) printed from a Load & Dispatch record's \"Print Sales Invoice\" button — separate from the standard Sales Invoice (B2B) receipt above. Only Title and Footer Note are configurable here; every other field (customer, amounts, vehicle, weights) is filled in per-invoice automatically."
+                  : "This is the weighbridge slip (Token No, Ref No, In/Out time, vehicle, Empty/Load/Net weight, payment, delivery) printed from a Load & Dispatch record's \"Print Weight Slip\" button. Only Title and Footer Note are configurable here — the rest is filled in per-dispatch automatically."}
+              </p>
+            </Section>
+          )}
         </div>
 
         {/* Live preview */}
         <div className="lg:sticky lg:top-4">
+          {isCustomDesign ? (
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground"><Printer className="h-4 w-4 text-primary" /> Design Preview</div>
+                <Button variant="outline" size="sm" onClick={openFullPreview}><Printer className="h-3.5 w-3.5" /> Open Full Preview</Button>
+              </div>
+              <div className="overflow-hidden rounded-lg border border-dashed border-border-strong bg-white" style={{ height: type === "WEIGHT_SLIP" ? 420 : 520 }}>
+                <iframe
+                  key={type} title="Template preview" srcDoc={previewHtmlNoAutoPrint}
+                  style={{
+                    width: type === "WEIGHT_SLIP" ? 360 : 800,
+                    height: type === "WEIGHT_SLIP" ? 525 : 1444,
+                    transform: `scale(${type === "WEIGHT_SLIP" ? 288 / 360 : 288 / 800})`,
+                    transformOrigin: "top left", border: 0,
+                  }}
+                />
+              </div>
+              <p className="mt-2 text-center text-2xs text-subtle">Sample data shown — real invoices/dispatches fill every field in automatically.</p>
+            </div>
+          ) : (
           <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
             <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-foreground"><Printer className="h-4 w-4 text-primary" /> Receipt Preview</div>
             <div className="mx-auto max-w-[240px] rounded-lg border border-dashed border-border-strong bg-white p-3 font-mono text-[10px] leading-relaxed text-slate-900">
@@ -136,6 +188,7 @@ export default function InvoiceTemplatePage() {
             </div>
             <p className="mt-2 text-center text-2xs text-subtle">{PAPER_SIZES.find((p) => p.value === tpl.paperSize)?.label}</p>
           </div>
+          )}
         </div>
       </div>
     </div>

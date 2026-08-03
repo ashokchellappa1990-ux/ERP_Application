@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Truck, FileText, Boxes, ScanLine, CheckCircle2, XCircle, PlayCircle,
-  MessageSquare, PackageCheck, Wallet, Save, ClipboardList, Layers, Receipt,
+  MessageSquare, PackageCheck, Wallet, Save, ClipboardList, Layers, Receipt, Printer, Scale,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -16,6 +16,9 @@ import { cn } from "@/lib/cn";
 import { LOAD_DISPATCH_DOC_TYPES } from "@/lib/contracts/loadDispatch";
 import type { LoadDispatchDetail, LoadDispatchItemDto } from "@/lib/contracts/loadDispatch";
 import type { TransportConfigData } from "@/lib/settings/transportConfigDefaults";
+import { buildTaxInvoiceHtml, type TaxInvoiceData } from "@/lib/print/taxInvoiceHtml";
+import { buildWeightSlipHtml, type WeightSlipData } from "@/lib/print/weightSlipHtml";
+import { DEFAULT_RECEIPT } from "@/lib/settings/receiptTemplate";
 
 type Tone = "neutral" | "primary" | "success" | "warning" | "danger" | "info";
 const STATUS_TONE: Record<string, Tone> = {
@@ -89,6 +92,7 @@ export function LoadDispatchEditor({ id }: { id: number }) {
 
   const [savingDraft, setSavingDraft] = useState(false);
   const [actionBusy, setActionBusy] = useState<string | null>(null);
+  const [printBusy, setPrintBusy] = useState<"invoice" | "weight-slip" | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
 
@@ -244,6 +248,30 @@ export function LoadDispatchEditor({ id }: { id: number }) {
     else toast.error(j?.message || "Could not post the Sales Invoice.");
   }
 
+  // Template 2 Tax Invoice + Weight Slip — printed straight from this view,
+  // reading the same data (Sale + Vehicle Gate Entry + weighments + transport
+  // cost) assembled server-side by the print-data route. Both templates' saved
+  // title/footerNote (Settings → Invoice Template) are fetched alongside.
+  async function printDocument(kind: "invoice" | "weight-slip") {
+    setPrintBusy(kind);
+    try {
+      const [dataRes, tplRes] = await Promise.all([
+        fetch(`/api/warehouse/load-dispatch/${id}/print-data`, { cache: "no-store" }).then((r) => r.json()),
+        fetch(`/api/settings/invoice-template?type=${kind === "invoice" ? "B2B_T2" : "WEIGHT_SLIP"}`, { cache: "no-store" }).then((r) => r.json()),
+      ]);
+      if (!dataRes?.ok) { toast.error(dataRes?.message || "Could not load print data."); return; }
+      const tpl = tplRes?.ok ? { title: tplRes.template.title, footerNote: tplRes.template.footerNote } : DEFAULT_RECEIPT;
+      const html = kind === "invoice"
+        ? (dataRes.taxInvoice ? buildTaxInvoiceHtml(dataRes.taxInvoice as TaxInvoiceData, tpl) : null)
+        : (dataRes.weightSlip ? buildWeightSlipHtml(dataRes.weightSlip as WeightSlipData, tpl) : null);
+      if (!html) { toast.error(kind === "invoice" ? "No Sales Invoice has been posted for this dispatch yet." : "No Vehicle Gate Entry / weighment is linked to this dispatch."); return; }
+      const w = window.open("", "_blank", "width=900,height=800");
+      if (!w) return;
+      w.document.write(html); w.document.close();
+    } catch { toast.error("Could not prepare the document — please try again."); }
+    finally { setPrintBusy(null); }
+  }
+
   const itemTotals = useMemo(() => {
     let taxable = 0, tax = 0;
     for (const it of items) { taxable += it.taxableValue || 0; tax += it.taxAmount || 0; }
@@ -293,7 +321,19 @@ export function LoadDispatchEditor({ id }: { id: number }) {
           </div>
           <p className="mt-1 text-xs text-subtle">{x.partyName || x.sourceRefNo || "—"}{x.warehouse ? ` · ${x.warehouse}` : ""} — {x.items.length} item(s), {fmt.qty(x.totalQty)} qty.</p>
         </div>
-        <Link href="/warehouse/transfer/load-dispatch"><Button variant="outline" size="md"><ArrowLeft className="h-4 w-4" /> Back</Button></Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {x.docType === "Customer" && (
+            <>
+              <Button variant="outline" size="md" onClick={() => printDocument("invoice")} disabled={printBusy != null} title={x.saleId ? "Print the Tax Invoice (Template 2)" : "Available once a Sales Invoice has been posted"}>
+                <Printer className="h-4 w-4" /> {printBusy === "invoice" ? "Preparing…" : "Print Invoice"}
+              </Button>
+              <Button variant="outline" size="md" onClick={() => printDocument("weight-slip")} disabled={printBusy != null} title={x.vehicleGateEntryId ? "Print the Weight Slip" : "Available once a Vehicle Gate Entry is linked"}>
+                <Scale className="h-4 w-4" /> {printBusy === "weight-slip" ? "Preparing…" : "Print Weight Slip"}
+              </Button>
+            </>
+          )}
+          <Link href="/warehouse/transfer/load-dispatch"><Button variant="outline" size="md"><ArrowLeft className="h-4 w-4" /> Back</Button></Link>
+        </div>
       </div>
 
       <StatusTimeline status={x.status} />
