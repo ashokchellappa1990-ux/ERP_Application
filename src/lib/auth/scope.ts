@@ -34,6 +34,7 @@ export interface ScopeFilter {
 }
 
 export interface ScopeUser {
+  id?: number;
   tenantId: number;
   role?: string | null;
   roleId?: number | null;
@@ -51,8 +52,31 @@ export interface AllowedScope {
 
 const PRIVILEGED = ["owner", "admin", "super-admin", "business-owner", "administrator"];
 
+// getAllowedScope runs on essentially every API request (it's what
+// getActiveScope calls first) and was costing 2-3 sequential DB round trips
+// (role check + business list + branch list) before the request's actual
+// work even started — a fixed "tax" on every list load / search keystroke.
+// The org hierarchy this resolves (businesses/branches/role privilege) changes
+// rarely — an operator restructuring branches, not a per-second event — so a
+// short TTL cache eliminates the redundant queries for the overwhelmingly
+// common case (many requests per user within a few seconds) while still
+// picking up real changes within half a minute. Module-level, so it persists
+// across warm invocations in the same process/serverless container; a cold
+// start just starts with an empty cache, no correctness impact either way.
+const SCOPE_CACHE_TTL_MS = 30_000;
+const scopeCache = new Map<string, { data: AllowedScope; expiresAt: number }>();
+
 /** The businesses + branches a user is permitted to see/select (hierarchy rule). */
 export async function getAllowedScope(user: ScopeUser): Promise<AllowedScope> {
+  const cacheKey = user.id != null ? `${user.tenantId}:${user.id}` : null;
+  if (cacheKey) {
+    const cached = scopeCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.data;
+    // Opportunistic cleanup so a long-lived process doesn't accumulate stale
+    // entries forever — cheap relative to the queries this cache saves.
+    if (scopeCache.size > 500) scopeCache.clear();
+  }
+
   let privileged = PRIVILEGED.includes((user.role ?? "").toLowerCase());
   if (!privileged && user.roleId) {
     const r = await prisma.role.findUnique({ where: { id: user.roleId }, select: { isAllAccess: true } });
@@ -70,7 +94,9 @@ export async function getAllowedScope(user: ScopeUser): Promise<AllowedScope> {
 
   if (privileged) {
     const branches = await prisma.branch.findMany({ where: { tenantId: user.tenantId }, select: branchSelect, orderBy: branchOrder });
-    return { businesses: allBiz, branches, lockBusiness: false, lockBranch: false, privileged: true };
+    const result: AllowedScope = { businesses: allBiz, branches, lockBusiness: false, lockBranch: false, privileged: true };
+    if (cacheKey) scopeCache.set(cacheKey, { data: result, expiresAt: Date.now() + SCOPE_CACHE_TTL_MS });
+    return result;
   }
 
   // Non-privileged: restricted to the assigned business (and branch subtree, if branch-level).
@@ -96,7 +122,9 @@ export async function getAllowedScope(user: ScopeUser): Promise<AllowedScope> {
     // sub-branch/store separately — still confined to their subtree.
     lockBranch = branches.length <= 1;
   }
-  return { businesses, branches, lockBusiness: businesses.length <= 1, lockBranch, privileged: false };
+  const result: AllowedScope = { businesses, branches, lockBusiness: businesses.length <= 1, lockBranch, privileged: false };
+  if (cacheKey) scopeCache.set(cacheKey, { data: result, expiresAt: Date.now() + SCOPE_CACHE_TTL_MS });
+  return result;
 }
 
 /** Resolve the active {businessId, branchId, branchIds} from cookies, validated

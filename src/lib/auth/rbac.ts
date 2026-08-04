@@ -46,14 +46,35 @@ export async function ensureRolesForTenant(tenantId: number): Promise<number | n
   return ownerRoleId;
 }
 
+// getUserPermissions backs requirePermission(), which runs on essentially
+// every API request (often more than once per page load) — the role+grants
+// join it does was completely uncached, adding a fixed query to every single
+// request regardless of what that request actually does. Role grants change
+// rarely (an admin editing the permission matrix, not a per-second event), so
+// a short TTL cache — same pattern as getAllowedScope in scope.ts — removes
+// that fixed cost for the overwhelmingly common case of many requests per
+// user within a few seconds, at the price of up to 30s staleness after a
+// grant change (acceptable: RBAC guard checks still run, they just read a
+// slightly-stale permission list for that window).
+const PERMISSIONS_CACHE_TTL_MS = 30_000;
+const permissionsCache = new Map<number, { data: string[]; expiresAt: number }>();
+
 /** Resolve the effective permission keys for a user. */
 export async function getUserPermissions(user: { role?: string | null; roleId?: number | null }): Promise<string[]> {
   if (user.roleId) {
+    const cached = permissionsCache.get(user.roleId);
+    if (cached && cached.expiresAt > Date.now()) return cached.data;
+
     const role = await prisma.role.findUnique({
       where: { id: user.roleId },
       include: { permissions: { include: { permission: { select: { key: true } } } } },
     });
-    if (role) return role.isAllAccess ? [...ALL_PERMISSION_KEYS] : role.permissions.map((rp) => rp.permission.key);
+    if (role) {
+      const keys = role.isAllAccess ? [...ALL_PERMISSION_KEYS] : role.permissions.map((rp) => rp.permission.key);
+      if (permissionsCache.size > 500) permissionsCache.clear();
+      permissionsCache.set(user.roleId, { data: keys, expiresAt: Date.now() + PERMISSIONS_CACHE_TTL_MS });
+      return keys;
+    }
   }
   // Legacy fallback when no roleId is set (e.g. pre-RBAC users).
   const r = (user.role ?? "").toLowerCase();
@@ -61,6 +82,13 @@ export async function getUserPermissions(user: { role?: string | null; roleId?: 
   const pre = PREDEFINED_ROLES.find((p) => p.slug === slugifyRole(user.role ?? ""));
   if (pre) return expandGrants(pre.grants);
   return ["dashboard"];
+}
+
+/** Called after editing a role's grants so callers see the change immediately
+ *  instead of waiting out the cache TTL. */
+export function invalidateUserPermissionsCache(roleId?: number) {
+  if (roleId != null) permissionsCache.delete(roleId);
+  else permissionsCache.clear();
 }
 
 /** Replace a role's grants with the given permission keys (matrix save). */
@@ -73,6 +101,7 @@ export async function setRolePermissions(roleId: number, keys: string[]): Promis
     prisma.rolePermission.deleteMany({ where: { roleId } }),
     prisma.rolePermission.createMany({ data: perms.map((p) => ({ roleId, permissionId: p.id })), skipDuplicates: true }),
   ]);
+  invalidateUserPermissionsCache(roleId);
 }
 
 export type { Prisma };

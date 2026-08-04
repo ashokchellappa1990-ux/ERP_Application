@@ -17,6 +17,13 @@ export async function GET(req: Request) {
   const denied = await requirePermission(user, PERM);
   if (denied) return denied;
 
+  // The list assembles data from ~10 sequential/parallel queries (gate entries,
+  // linked dispatches, vehicles/drivers/companies, weighments, sales) — any one
+  // of them hitting a transient DB hiccup used to crash the whole request with
+  // no JSON body at all (the page would just silently fail to load). Wrapping
+  // it means a transient failure now surfaces as a clear, retryable error
+  // instead of an unhandled crash.
+  try {
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") ?? "").trim();
   const status = url.searchParams.get("status") ?? "All";
@@ -78,34 +85,39 @@ export async function GET(req: Request) {
   // Stats cards read scope-wide (ignoring the list's own search/status/date
   // filters) — Load & Dispatch Completed / DC Generated / Invoice Posted are
   // derived from each gate entry's most-recent linked Load & Dispatch status,
-  // same rule as the per-row Dispatch/DC/Invoice Status columns below. This
-  // scope-wide lookup is computed BEFORE the main `rows` query so a DC/Invoice
-  // Status filter (below) can also restrict `where.id` before that query runs.
-  const allEntries = await prisma.vehicleGateEntry.findMany({ where: { ...sw, deletedAt: null }, select: { id: true } });
-  const total = allEntries.length;
-  const allIds = allEntries.map((e) => e.id);
-  const allDispatchesForStats = allIds.length
-    ? await prisma.loadDispatch.findMany({ where: { vehicleGateEntryId: { in: allIds }, deletedAt: null }, orderBy: { id: "desc" }, select: { vehicleGateEntryId: true, status: true } })
-    : [];
-  const latestStatusByGate = new Map<number, string>();
-  for (const d of allDispatchesForStats) if (d.vehicleGateEntryId != null && !latestStatusByGate.has(d.vehicleGateEntryId)) latestStatusByGate.set(d.vehicleGateEntryId, d.status);
+  // same rule as the per-row Dispatch/DC/Invoice Status columns below.
   const DISPATCHED_OR_LATER = ["Dispatched", "Delivery Challan Generated", "Sales Invoice Posted"];
   const DC_OR_LATER = ["Delivery Challan Generated", "Sales Invoice Posted"];
-  let completed = 0, dcGenerated = 0, invoicePosted = 0;
-  for (const st of latestStatusByGate.values()) {
-    if (DISPATCHED_OR_LATER.includes(st)) completed++;
-    if (DC_OR_LATER.includes(st)) dcGenerated++;
-    if (st === "Sales Invoice Posted") invoicePosted++;
+  async function computeStats() {
+    const allEntries = await prisma.vehicleGateEntry.findMany({ where: { ...sw, deletedAt: null }, select: { id: true } });
+    const allIds = allEntries.map((e) => e.id);
+    const allDispatchesForStats = allIds.length
+      ? await prisma.loadDispatch.findMany({ where: { vehicleGateEntryId: { in: allIds }, deletedAt: null }, orderBy: { id: "desc" }, select: { vehicleGateEntryId: true, status: true } })
+      : [];
+    const latestStatusByGate = new Map<number, string>();
+    for (const d of allDispatchesForStats) if (d.vehicleGateEntryId != null && !latestStatusByGate.has(d.vehicleGateEntryId)) latestStatusByGate.set(d.vehicleGateEntryId, d.status);
+    let completed = 0, dcGenerated = 0, invoicePosted = 0;
+    for (const st of latestStatusByGate.values()) {
+      if (DISPATCHED_OR_LATER.includes(st)) completed++;
+      if (DC_OR_LATER.includes(st)) dcGenerated++;
+      if (st === "Sales Invoice Posted") invoicePosted++;
+    }
+    return { total: allIds.length, allIds, latestStatusByGate, completed, dcGenerated, invoicePosted };
   }
 
   // DC Status / Invoice Status filters — combinable (both ANDed), so picking
   // "Generated" + "NotPosted" together finds exactly "DC generated but
-  // invoice not yet posted". Only gate entries that are at least Dispatched
-  // have a meaningful DC/Invoice status at all, so anything earlier is excluded
-  // the moment either filter is active.
-  if (dcStatusFilter !== "All" || invoiceStatusFilter !== "All") {
-    const matchIds = allIds.filter((gid) => {
-      const st = latestStatusByGate.get(gid);
+  // invoice not yet posted". Only when one of these is active do we need the
+  // stats scan to finish BEFORE the main `rows` query (to restrict `where.id`
+  // first) — otherwise (the common case, no filter) it runs concurrently with
+  // the rows/vehicles/etc. pipeline below instead of blocking it.
+  const needsStatsBeforeRows = dcStatusFilter !== "All" || invoiceStatusFilter !== "All";
+  let statsPromise: ReturnType<typeof computeStats> | null = null;
+  if (needsStatsBeforeRows) {
+    const stats = await computeStats();
+    statsPromise = Promise.resolve(stats);
+    const matchIds = stats.allIds.filter((gid) => {
+      const st = stats.latestStatusByGate.get(gid);
       if (!st || !DISPATCHED_OR_LATER.includes(st)) return false;
       const dcGeneratedNow = DC_OR_LATER.includes(st);
       const invoicePostedNow = st === "Sales Invoice Posted";
@@ -116,6 +128,8 @@ export async function GET(req: Request) {
       return true;
     });
     idRestrictions.push(matchIds);
+  } else {
+    statsPromise = computeStats(); // kicked off, not awaited — runs alongside the rows pipeline
   }
   if (idRestrictions.length) {
     let ids = idRestrictions[0];
@@ -203,7 +217,12 @@ export async function GET(req: Request) {
     };
   });
 
-  return NextResponse.json({ ok: true, rows: shaped, stats: { total, waiting, inside, completed, dcGenerated, invoicePosted } });
+  const stats = await statsPromise!;
+  return NextResponse.json({ ok: true, rows: shaped, stats: { total: stats.total, waiting, inside, completed: stats.completed, dcGenerated: stats.dcGenerated, invoicePosted: stats.invoicePosted } });
+  } catch (err) {
+    console.error("[transport/gate-entry] list error", err);
+    return NextResponse.json({ ok: false, message: "Could not load gate entries — please try again." }, { status: 500 });
+  }
 }
 
 // POST /api/transport/gate-entry — create a gate entry (status starts "Waiting").
