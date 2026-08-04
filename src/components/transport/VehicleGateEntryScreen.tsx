@@ -30,6 +30,7 @@ interface Row {
   preLoadWeight: number | null; postLoadWeight: number | null; netWeight: number | null;
   saleType: string | null; saleOutstanding: number | null;
 }
+interface HoverDetail { productName: string | null; preLoadWeight: number | null; postLoadWeight: number | null; netWeight: number | null }
 interface Stats { total: number; waiting: number; inside: number; completed: number; dcGenerated: number; invoicePosted: number }
 const EMPTY: Stats = { total: 0, waiting: 0, inside: 0, completed: 0, dcGenerated: 0, invoicePosted: 0 };
 const PAYMENT_STATUS_TONE: Record<string, "success" | "warning" | "danger"> = { Paid: "success", Partial: "warning", Credit: "danger" };
@@ -95,6 +96,20 @@ export function VehicleGateEntryScreen() {
   const [busy, setBusy] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [hover, setHover] = useState<{ row: Row; x: number; y: number } | null>(null);
+  // Product name + pre/post-loading weighment are only shown in the
+  // hover popover / expand accordion — fetched lazily per row (once, cached
+  // client-side) instead of eagerly joined for every row on every list load.
+  const [detailCache, setDetailCache] = useState<Record<number, HoverDetail | null>>({});
+  const ensureDetail = useCallback((id: number) => {
+    setDetailCache((cur) => {
+      if (id in cur) return cur;
+      fetch(`/api/transport/gate-entry/${id}/hover-detail`, { cache: "no-store" })
+        .then((res) => res.json())
+        .then((j) => { if (j.ok) setDetailCache((c) => ({ ...c, [id]: j.data })); })
+        .catch(() => {});
+      return { ...cur, [id]: null };
+    });
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -220,8 +235,8 @@ export function VehicleGateEntryScreen() {
                 <Fragment key={r.id}>
                 <tr
                   className="cursor-pointer border-b border-border last:border-0 transition hover:bg-primary-subtle/30"
-                  onClick={() => setExpandedId((cur) => (cur === r.id ? null : r.id))}
-                  onMouseEnter={(e) => setHover({ row: r, x: e.clientX, y: e.clientY })}
+                  onClick={() => { setExpandedId((cur) => (cur === r.id ? null : r.id)); ensureDetail(r.id); }}
+                  onMouseEnter={(e) => { setHover({ row: r, x: e.clientX, y: e.clientY }); ensureDetail(r.id); }}
                   onMouseMove={(e) => setHover({ row: r, x: e.clientX, y: e.clientY })}
                   onMouseLeave={() => setHover(null)}
                 >
@@ -267,7 +282,7 @@ export function VehicleGateEntryScreen() {
                 {expandedId === r.id && (
                   <tr className="border-b border-border bg-surface-2/60 last:border-0">
                     <td colSpan={12} className="px-4 py-3">
-                      <RowDetailGrid row={r} fmt={fmt} />
+                      <RowDetailGrid row={r} fmt={fmt} detail={detailCache[r.id]} />
                     </td>
                   </tr>
                 )}
@@ -280,7 +295,7 @@ export function VehicleGateEntryScreen() {
         </div>
       </div>
 
-      {hover && <RowHoverPopover row={hover.row} x={hover.x} y={hover.y} fmt={fmt} />}
+      {hover && <RowHoverPopover row={hover.row} x={hover.x} y={hover.y} fmt={fmt} detail={detailCache[hover.row.id]} />}
 
       {exitRow && <GateExitModal row={exitRow} onClose={() => setExitRow(null)} onSaved={(warning) => { setExitRow(null); load(); if (warning) toast.warning(warning); else toast.success("Vehicle exited."); }} />}
 
@@ -348,16 +363,21 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: "pri
 
 // Shared field list for both the hover popover and the click-to-expand
 // accordion row — everything not already visible as its own table column.
-function detailFields(row: Row, fmt: ReturnType<typeof useFmt>): { label: string; value: string; highlight?: boolean }[] {
+// `detail` is undefined while it hasn't been requested yet, null while the
+// lazy fetch is in flight, and the resolved object once loaded — see
+// ensureDetail()/detailCache in VehicleGateEntryScreen.
+function detailFields(row: Row, fmt: ReturnType<typeof useFmt>, detail: HoverDetail | null | undefined): { label: string; value: string; highlight?: boolean }[] {
+  const loading = detail === null;
+  const weight = (v: number | null | undefined) => (loading ? "…" : v != null ? `${v} kg` : "—");
   return [
     { label: "Driver", value: row.driverName ?? "—" },
     { label: "Transport Company", value: row.transportCompanyName ?? "—" },
     { label: "Dispatch Type", value: row.dispatchType ?? "—" },
     { label: "Reference No", value: row.referenceNo ?? "—" },
-    { label: "Product", value: row.productName ?? "—", highlight: true },
-    { label: "Empty Weight", value: row.preLoadWeight != null ? `${row.preLoadWeight} kg` : "—" },
-    { label: "Post Load Weight", value: row.postLoadWeight != null ? `${row.postLoadWeight} kg` : "—" },
-    { label: "Net Weight", value: row.netWeight != null ? `${row.netWeight} kg` : "—" },
+    { label: "Product", value: loading ? "…" : detail?.productName ?? "—", highlight: true },
+    { label: "Empty Weight", value: weight(detail?.preLoadWeight) },
+    { label: "Post Load Weight", value: weight(detail?.postLoadWeight) },
+    { label: "Net Weight", value: weight(detail?.netWeight) },
     { label: "Sale Type", value: row.saleType ?? "—" },
     { label: "Invoice No", value: row.invoiceNo ?? "—" },
     { label: "Outstanding Balance", value: row.saleOutstanding != null ? fmt.money(row.saleOutstanding) : "—" },
@@ -365,10 +385,10 @@ function detailFields(row: Row, fmt: ReturnType<typeof useFmt>): { label: string
   ];
 }
 
-function RowDetailGrid({ row, fmt }: { row: Row; fmt: ReturnType<typeof useFmt> }) {
+function RowDetailGrid({ row, fmt, detail }: { row: Row; fmt: ReturnType<typeof useFmt>; detail: HoverDetail | null | undefined }) {
   return (
     <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3 lg:grid-cols-4">
-      {detailFields(row, fmt).map((f) => (
+      {detailFields(row, fmt, detail).map((f) => (
         <div key={f.label}>
           <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">{f.label}</p>
           <p className={cn("text-xs font-medium", f.highlight ? "font-bold text-primary" : "text-foreground")}>{f.value}</p>
@@ -380,7 +400,7 @@ function RowDetailGrid({ row, fmt }: { row: Row; fmt: ReturnType<typeof useFmt> 
 
 // Rich hover card following the cursor — flips to stay inside the viewport
 // (left instead of right, above instead of below) near the window edges.
-function RowHoverPopover({ row, x, y, fmt }: { row: Row; x: number; y: number; fmt: ReturnType<typeof useFmt> }) {
+function RowHoverPopover({ row, x, y, fmt, detail }: { row: Row; x: number; y: number; fmt: ReturnType<typeof useFmt>; detail: HoverDetail | null | undefined }) {
   const width = 320, estHeight = 340, margin = 16;
   const flipLeft = typeof window !== "undefined" && x + width + margin > window.innerWidth;
   const flipUp = typeof window !== "undefined" && y + estHeight + margin > window.innerHeight;
@@ -395,7 +415,7 @@ function RowHoverPopover({ row, x, y, fmt }: { row: Row; x: number; y: number; f
         <span className="font-mono">{row.gateEntryNo}</span><span>{row.vehicleNo}</span>
       </p>
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-        {detailFields(row, fmt).map((f) => (
+        {detailFields(row, fmt, detail).map((f) => (
           <div key={f.label}>
             <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">{f.label}</p>
             <p className={cn("truncate text-xs font-medium", f.highlight ? "font-bold text-primary" : "text-foreground")}>{f.value}</p>

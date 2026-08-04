@@ -167,28 +167,18 @@ export async function GET(req: Request) {
 
   const dispatchIds = dispatches.map((d) => d.id);
   const saleIds = Array.from(new Set(dispatches.map((d) => d.saleId).filter((v): v is number => !!v)));
-  const [itemAgg, sales, dispatchItemNames, gateItemNames, preWs, postWs] = await Promise.all([
+  const [itemAgg, sales] = await Promise.all([
     dispatchIds.length ? prisma.loadDispatchItem.groupBy({ by: ["loadDispatchId"], where: { loadDispatchId: { in: dispatchIds }, deletedAt: null }, _sum: { taxableValue: true, taxAmount: true } }) : Promise.resolve([]),
     saleIds.length ? prisma.sale.findMany({ where: { id: { in: saleIds } }, select: { id: true, invoiceNo: true, paymentStatus: true, paymentMode: true, total: true, amountPaid: true } }) : Promise.resolve([]),
-    // Product names shown on the row's hover/expand detail panel — from the
-    // linked dispatch's own items once one exists, else from what was
-    // captured directly on the gate entry (Item Details, optional at gate time).
-    dispatchIds.length ? prisma.loadDispatchItem.findMany({ where: { loadDispatchId: { in: dispatchIds }, deletedAt: null }, select: { loadDispatchId: true, productName: true } }) : Promise.resolve([]),
-    gateEntryIds.length ? prisma.vehicleGateEntryItem.findMany({ where: { gateEntryId: { in: gateEntryIds } }, select: { gateEntryId: true, productName: true } }) : Promise.resolve([]),
-    // Pre/Post-Loading Weighment — shown on the hover/expand detail panel only
-    // (removed as its own columns per an earlier decluttering request).
-    gateEntryIds.length ? prisma.preLoadingWeighment.findMany({ where: { gateEntryId: { in: gateEntryIds } }, orderBy: { id: "desc" }, select: { gateEntryId: true, tareWeight: true } }) : Promise.resolve([]),
-    gateEntryIds.length ? prisma.postLoadingWeighment.findMany({ where: { gateEntryId: { in: gateEntryIds } }, select: { gateEntryId: true, grossWeight: true, netWeight: true } }) : Promise.resolve([]),
   ]);
   const totalValueByDispatch = new Map(itemAgg.map((a) => [a.loadDispatchId, Number(a._sum.taxableValue ?? 0) + Number(a._sum.taxAmount ?? 0)]));
   const saleMap = new Map(sales.map((s) => [s.id, s]));
-  const dispatchNamesMap = new Map<number, string[]>();
-  for (const it of dispatchItemNames) { const arr = dispatchNamesMap.get(it.loadDispatchId) ?? []; arr.push(it.productName); dispatchNamesMap.set(it.loadDispatchId, arr); }
-  const gateNamesMap = new Map<number, string[]>();
-  for (const it of gateItemNames) { const arr = gateNamesMap.get(it.gateEntryId) ?? []; arr.push(it.productName); gateNamesMap.set(it.gateEntryId, arr); }
-  const preMap = new Map<number, number>();
-  for (const w of preWs) if (!preMap.has(w.gateEntryId)) preMap.set(w.gateEntryId, Number(w.tareWeight));
-  const postMap = new Map(postWs.map((w) => [w.gateEntryId, { gross: Number(w.grossWeight), net: Number(w.netWeight) }]));
+  // Product names + Pre/Post-Loading Weighment are shown on the row's
+  // hover/expand detail panel only — they used to be joined eagerly here for
+  // every row on every list load; now fetched lazily per-row on demand via
+  // GET /api/transport/gate-entry/[id]/hover-detail, so the list itself does
+  // 4 fewer queries per load (2 fewer round trips, since they ran in the same
+  // Promise.all batch as itemAgg/sales above).
 
   const shaped = rows.map((r) => {
     const dispatch = dispatchMap.get(r.id);
@@ -210,8 +200,9 @@ export async function GET(req: Request) {
       totalQty: dispatch ? Number(dispatch.totalQty) : null,
       totalValue: dispatch ? (totalValueByDispatch.get(dispatch.id) ?? 0) : null,
       invoiceNo: sale?.invoiceNo ?? null, paymentStatus: sale?.paymentStatus ?? null,
-      productName: (dispatch ? dispatchNamesMap.get(dispatch.id) : gateNamesMap.get(r.id))?.join(", ") || null,
-      preLoadWeight: preMap.get(r.id) ?? null, postLoadWeight: postMap.get(r.id)?.gross ?? null, netWeight: postMap.get(r.id)?.net ?? null,
+      // Lazily fetched on hover/expand — see /[id]/hover-detail — not eager-loaded here anymore.
+      productName: null as string | null,
+      preLoadWeight: null as number | null, postLoadWeight: null as number | null, netWeight: null as number | null,
       saleType: sale?.paymentMode ?? null, saleOutstanding: sale ? Number(sale.total) - Number(sale.amountPaid) : null,
       createdAt: r.createdAt.toISOString(),
     };

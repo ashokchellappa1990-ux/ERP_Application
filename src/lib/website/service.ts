@@ -15,10 +15,18 @@ function parse(json: string | null | undefined): Partial<WebsiteConfig> | null {
   try { return JSON.parse(json) as Partial<WebsiteConfig>; } catch { return null; }
 }
 
-/** Published config the public site renders (falls back to defaults). */
+/** Published config the public site renders (falls back to defaults). Never
+ *  throws — the public marketing site (root layout + page, no error boundary
+ *  of their own) must still render on a transient DB hiccup instead of
+ *  crashing the whole route with an opaque "Server Components render" error. */
 export async function getPublishedConfig(): Promise<WebsiteConfig> {
-  const r = await prisma.websiteSetting.findFirst();
-  return mergeConfig(parse(r?.publishedJson));
+  try {
+    const r = await prisma.websiteSetting.findFirst();
+    return mergeConfig(parse(r?.publishedJson));
+  } catch (err) {
+    console.error("[website] getPublishedConfig failed, using defaults", err);
+    return mergeConfig(null);
+  }
 }
 
 /** Draft config for the CMS editor (falls back to published, then defaults). */
