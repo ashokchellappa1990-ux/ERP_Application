@@ -5,6 +5,19 @@ import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 // also drives MySQL. Next.js loads .env automatically, so these vars are
 // available server-side. allowPublicKeyRetrieval lets the mariadb driver complete
 // MySQL 8's caching_sha2_password handshake over a local (non-TLS) connection.
+// One-time diagnostic (no secrets — presence/host only) to confirm the
+// deployment platform is actually exposing these console-configured env vars
+// to the SSR runtime. Safe to remove once a deploy target's env wiring is confirmed.
+console.error(
+  "[prisma:init] DB_SERVER=%s DB_PORT=%s DB_NAME=%s DB_USER_set=%s DB_PASSWORD_set=%s NODE_ENV=%s",
+  process.env.DB_SERVER ?? "(unset)",
+  process.env.DB_PORT ?? "(unset)",
+  process.env.DB_NAME ?? "(unset)",
+  process.env.DB_USER ? "yes" : "no",
+  process.env.DB_PASSWORD ? "yes" : "no",
+  process.env.NODE_ENV,
+);
+
 const adapter = new PrismaMariaDb({
   host: process.env.DB_SERVER ?? "localhost",
   port: Number(process.env.DB_PORT ?? 3306),
