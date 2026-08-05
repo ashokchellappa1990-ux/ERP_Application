@@ -16,6 +16,7 @@ import { BankPicker, emptyBank, type BankValue } from "@/components/finance/Bank
 import { fieldOn, fieldMust } from "@/lib/settings/docFieldsConfig";
 import { buildTaxInvoiceHtml, type TaxInvoiceData } from "@/lib/print/taxInvoiceHtml";
 import { DEFAULT_RECEIPT } from "@/lib/settings/receiptTemplate";
+import { roundTonQty } from "@/lib/settings/transportConfigDefaults";
 
 const SCREEN = "load_dispatch";
 const req = (key: string) => (fieldMust(SCREEN, key) ? " *" : "");
@@ -63,7 +64,7 @@ function calcLine(l: Line) {
   return { gross, discAmount, taxable, taxAmount, net };
 }
 
-type PayCat = "full" | "partial" | "credit";
+type PayCat = "full" | "partial" | "credit" | "split";
 type PostStage = "draft" | "dispatched" | "dc" | "invoiced";
 
 export function DirectLoadDispatchForm() {
@@ -163,15 +164,32 @@ export function DirectLoadDispatchForm() {
   const [tollCharge, setTollCharge] = useState("");
   const [driverAllowance, setDriverAllowance] = useState("");
   const [helperAllowance, setHelperAllowance] = useState("");
-  const [driverBatta, setDriverBatta] = useState("");
+  // Vehicle Rent is shared with the Payment Details section below (single
+  // source — it's recovered from the customer as part of the invoice total,
+  // not just an internal cost line). Driver Batta and Transit Pass used to be
+  // free-text here too; they're now always auto-calculated (see
+  // driverBattaAmount/transitPassAmount below) per Dispatch Configuration's
+  // rates, so there's no separate manual input for them anymore.
   const [vehicleRent, setVehicleRent] = useState("");
-  const [transitPass, setTransitPass] = useState("");
   const [otherCharges, setOtherCharges] = useState("");
   const [tcDiscount, setTcDiscount] = useState("");
   const [tcGst, setTcGst] = useState("");
+
+  // ---- Payment Details config (Dispatch Configuration > Transport Cost) ----
+  const [driverBattaPerTon, setDriverBattaPerTon] = useState(10);
+  const [driverBattaRounding, setDriverBattaRounding] = useState("floor");
+  const [transitPassPerTon, setTransitPassPerTon] = useState(140);
+  const [transitPassQtyMode, setTransitPassQtyMode] = useState<"Manual" | "AutoNetWeight">("Manual");
+  const [transitPassQtyManual, setTransitPassQtyManual] = useState("");
+  // Adjustment: Driver Batta is netted out of what's collected from the
+  // customer (driver keeps it directly). Payment: the full invoice amount is
+  // collected and the business pays the driver separately — captured below.
+  const [driverBattaMode, setDriverBattaMode] = useState<"adjustment" | "payment">("adjustment");
+  const [battaPaymentMode, setBattaPaymentMode] = useState("Cash");
+
   const totalTransportCost = r2(
     n(freightCharge) + n(loadingCharge) + n(unloadingCharge) + n(fuelCharge) + n(tollCharge) +
-    n(driverAllowance) + n(helperAllowance) + n(driverBatta) + n(vehicleRent) + n(transitPass) + n(otherCharges) - n(tcDiscount) + n(tcGst)
+    n(driverAllowance) + n(helperAllowance) + n(otherCharges) - n(tcDiscount) + n(tcGst)
   );
 
   // ---- Payment Collection (mirrors B2bInvoiceForm) ----
@@ -179,6 +197,7 @@ export function DirectLoadDispatchForm() {
   const [amtPaid, setAmtPaid] = useState("");
   const [payMode, setPayMode] = useState("Bank Transfer");
   const [bank, setBank] = useState<BankValue>(emptyBank);
+  const [splitLines, setSplitLines] = useState<{ mode: string; amount: string }[]>([{ mode: "Cash", amount: "" }]);
 
   // ---- Post-submit actions: Post Loading Weighment / Delivery Challan / Sales Invoice ----
   const [createdId, setCreatedId] = useState<number | null>(null);
@@ -212,6 +231,11 @@ export function DirectLoadDispatchForm() {
       const m = j.config?.fields?.postLoadWeightCaptureMode;
       if (m === "Both" || m === "CaptureLater" || m === "CaptureNow") setPostWeightCaptureMode(m);
       setRequireWeighment(!!j.config?.flags?.requireWeighment);
+      if (j.config?.fields?.driverBattaPerTon != null) setDriverBattaPerTon(Number(j.config.fields.driverBattaPerTon) || 0);
+      if (j.config?.fields?.driverBattaRounding) setDriverBattaRounding(j.config.fields.driverBattaRounding);
+      if (j.config?.fields?.transitPassPerTon != null) setTransitPassPerTon(Number(j.config.fields.transitPassPerTon) || 0);
+      const tpm = j.config?.fields?.transitPassQtyMode;
+      if (tpm === "Manual" || tpm === "AutoNetWeight") setTransitPassQtyMode(tpm);
     }).catch(() => {});
   }, []);
 
@@ -375,13 +399,27 @@ export function DirectLoadDispatchForm() {
     return { subtotal: r2(subtotal), discTotal: r2(discTotal), taxable: r2(taxable), tax: r2(tax), grandTotal };
   }, [lines]);
 
-  const paidNow = payCat === "full" ? totals.grandTotal : payCat === "partial" ? n(amtPaid) : 0;
-  const payStatus = paidNow <= 0 ? "Credit" : paidNow >= totals.grandTotal ? "Paid" : "Partial";
+  // ---- Payment Details — Driver Batta / Transit Pass, both Ton-qty based ----
+  // "Ton" matched case-insensitively against each line's uom, same convention
+  // used for the Kg-to-Ton net-weight conversion above.
+  const tonQty = useMemo(() => lines.reduce((s, l) => s + ((l.uom || "").toLowerCase() === "ton" ? n(l.qty) : 0), 0), [lines]);
+  const roundedTonQty = roundTonQty(tonQty, driverBattaRounding);
+  const driverBattaAmount = r2(roundedTonQty * driverBattaPerTon);
+  const transitPassQty = transitPassQtyMode === "AutoNetWeight" ? tonQty : n(transitPassQtyManual);
+  const transitPassAmount = r2(transitPassQty * transitPassPerTon);
+  const totalInvoiceAmount = r2(totals.taxable + totals.tax + n(vehicleRent) + transitPassAmount);
+  const totalAmountToCollect = r2(driverBattaMode === "adjustment" ? totalInvoiceAmount - driverBattaAmount : totalInvoiceAmount);
+
+  const splitTotal = r2(splitLines.reduce((s, l) => s + n(l.amount), 0));
+  const paidNow = payCat === "full" ? totalAmountToCollect : payCat === "partial" ? n(amtPaid) : payCat === "split" ? splitTotal : 0;
+  const payStatus = paidNow <= 0 ? "Credit" : paidNow >= totalAmountToCollect ? "Paid" : "Partial";
 
   async function save() {
     const valid = lines.filter((l) => l.productId && n(l.qty) > 0);
     if (!valid.length) { toast.error("Add at least one item with a valid quantity."); return; }
-    if (payCat === "partial" && (paidNow <= 0 || paidNow >= totals.grandTotal)) { toast.error("Enter a partial amount greater than 0 and less than the grand total."); return; }
+    if (payCat === "partial" && (paidNow <= 0 || paidNow >= totalAmountToCollect)) { toast.error("Enter a partial amount greater than 0 and less than the total amount to be collected."); return; }
+    if (payCat === "split" && (splitTotal <= 0 || splitTotal > totalAmountToCollect)) { toast.error("Split payment lines must add up to more than 0 and no more than the total amount to be collected."); return; }
+    if (transitPassQtyMode === "Manual" && n(transitPassQtyManual) < 0) { toast.error("Enter a valid Transit Pass quantity."); return; }
     if (postWeightTiming === "now" && vehicleGateEntryId && n(postGrossWeight) <= 0) { toast.error("Enter a valid post-loading gross weight, or switch Weighment Management to “Later”."); return; }
     if (requireWeighment && vehicleGateEntryId && tareWeight == null) { toast.error("Pre-Loading Weighment must be completed for the linked Vehicle Gate Entry before this dispatch can be created (per Dispatch Configuration)."); return; }
     setSubmitting(true);
@@ -402,13 +440,17 @@ export function DirectLoadDispatchForm() {
       helperName: helperName.trim() || null,
       helperMobile: helperMobile.trim() || null,
       sealNumber: sealNumber.trim() || null,
+      vehicleRent: n(vehicleRent),
+      transitPassQty: transitPassQty,
+      driverBattaMode: (driverBattaMode === "adjustment" ? "Adjustment" : "Payment") as "Adjustment" | "Payment",
       payment: {
-        paymentMode: (payCat === "full" ? "Full" : payCat === "partial" ? "Partial" : "Credit") as "Full" | "Partial" | "Credit",
+        paymentMode: (payCat === "full" ? "Full" : payCat === "partial" ? "Partial" : payCat === "split" ? "Split" : "Credit") as "Full" | "Partial" | "Credit" | "Split",
         paymentAmount: paidNow,
-        paymentMethod: paidNow > 0 ? payMode : null,
-        bankId: paidNow > 0 ? bank.bankId : null,
-        bankName: paidNow > 0 ? bank.bankName : null,
-        bankAccount: paidNow > 0 ? bank.bankAccount : null,
+        paymentMethod: payCat === "split" ? null : paidNow > 0 ? payMode : null,
+        bankId: payCat === "split" ? null : paidNow > 0 ? bank.bankId : null,
+        bankName: payCat === "split" ? null : paidNow > 0 ? bank.bankName : null,
+        bankAccount: payCat === "split" ? null : paidNow > 0 ? bank.bankAccount : null,
+        paymentSplits: payCat === "split" ? splitLines.filter((l) => n(l.amount) > 0).map((l) => ({ mode: l.mode, amount: n(l.amount), reference: null })) : null,
       },
       remarks: remarks.trim() || null,
       items: valid.map((l) => ({
@@ -424,8 +466,11 @@ export function DirectLoadDispatchForm() {
       if (!res.ok || !j.ok) { toast.error(j.message || "Could not create the dispatch."); setSubmitting(false); return; }
       const id = j.id as number;
 
-      // Transport Cost — only fire a second request if at least one charge was entered.
-      const tcHasValue = [freightCharge, loadingCharge, unloadingCharge, fuelCharge, tollCharge, driverAllowance, helperAllowance, driverBatta, vehicleRent, transitPass, otherCharges, tcDiscount, tcGst].some((v) => n(v) > 0);
+      // Transport Cost — only fire a second request if at least one charge was
+      // entered. Driver Batta / Vehicle Rent / Transit Pass are already stored
+      // authoritatively on the dispatch itself (see payload above) — sent here
+      // too so the Transport Cost report/screen shows the same figures.
+      const tcHasValue = [freightCharge, loadingCharge, unloadingCharge, fuelCharge, tollCharge, driverAllowance, helperAllowance, vehicleRent, otherCharges, tcDiscount, tcGst].some((v) => n(v) > 0) || driverBattaAmount > 0 || transitPassAmount > 0;
       if (tcHasValue) {
         try {
           await fetch(`/api/warehouse/load-dispatch/${id}/transport-cost`, {
@@ -434,7 +479,7 @@ export function DirectLoadDispatchForm() {
               transportCompanyId: transportCompanyId || null, vehicleId: vehicleId || null,
               freightCharge: n(freightCharge), loadingCharge: n(loadingCharge), unloadingCharge: n(unloadingCharge),
               fuelCharge: n(fuelCharge), tollCharge: n(tollCharge), driverAllowance: n(driverAllowance),
-              helperAllowance: n(helperAllowance), driverBatta: n(driverBatta), vehicleRent: n(vehicleRent), transitPass: n(transitPass),
+              helperAllowance: n(helperAllowance), driverBatta: driverBattaAmount, vehicleRent: n(vehicleRent), transitPass: transitPassAmount, transitPassQty,
               otherCharges: n(otherCharges), discount: n(tcDiscount), gstAmount: n(tcGst),
               remarks: null,
             }),
@@ -761,39 +806,98 @@ export function DirectLoadDispatchForm() {
             {fieldOn(SCREEN, "tollCharge") && <Fld label="Toll Charge"><input type="number" value={tollCharge} onChange={(e) => setTollCharge(e.target.value)} className={inp} /></Fld>}
             {fieldOn(SCREEN, "driverAllowance") && <Fld label="Driver Allowance (Bata)"><input type="number" value={driverAllowance} onChange={(e) => setDriverAllowance(e.target.value)} className={inp} /></Fld>}
             {fieldOn(SCREEN, "helperAllowance") && <Fld label="Helper Allowance"><input type="number" value={helperAllowance} onChange={(e) => setHelperAllowance(e.target.value)} className={inp} /></Fld>}
-            {fieldOn(SCREEN, "driverBatta") && <Fld label="Driver Batta"><input type="number" value={driverBatta} onChange={(e) => setDriverBatta(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "driverBatta") && <Fld label="Driver Batta (auto)"><input readOnly value={driverBattaAmount.toFixed(2)} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>}
             {fieldOn(SCREEN, "vehicleRent") && <Fld label="Vehicle Rent"><input type="number" value={vehicleRent} onChange={(e) => setVehicleRent(e.target.value)} className={inp} /></Fld>}
-            {fieldOn(SCREEN, "transitPass") && <Fld label="Transit Pass"><input type="number" value={transitPass} onChange={(e) => setTransitPass(e.target.value)} className={inp} /></Fld>}
+            {fieldOn(SCREEN, "transitPass") && <Fld label="Transit Pass (auto)"><input readOnly value={transitPassAmount.toFixed(2)} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>}
             {fieldOn(SCREEN, "otherTransportCharges") && <Fld label="Other Charges"><input type="number" value={otherCharges} onChange={(e) => setOtherCharges(e.target.value)} className={inp} /></Fld>}
             {fieldOn(SCREEN, "transportDiscount") && <Fld label="Discount"><input type="number" value={tcDiscount} onChange={(e) => setTcDiscount(e.target.value)} className={inp} /></Fld>}
             {fieldOn(SCREEN, "transportGst") && <Fld label="GST Amount"><input type="number" value={tcGst} onChange={(e) => setTcGst(e.target.value)} className={inp} /></Fld>}
-            <Fld label="Total Transport Cost"><input readOnly value={totalTransportCost.toFixed(2)} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>
+            <Fld label="Total Transport Cost"><input readOnly value={r2(totalTransportCost + driverBattaAmount + transitPassAmount).toFixed(2)} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>
           </div>
-          <p className="mt-2 text-2xs text-subtle">Saved separately after the dispatch is created — left blank/zero, it won&apos;t be saved at all.</p>
+          <p className="mt-2 text-2xs text-subtle">Driver Batta &amp; Transit Pass are auto-calculated in Payment Details below (Dispatch Configuration rates) — not editable here. The rest is saved separately after the dispatch is created; left blank/zero, it won&apos;t be saved at all.</p>
         </SectionCard>
         )}
 
+        <SectionCard icon={IndianRupee} title="Payment Details" allowOverflow>
+          <div className="space-y-1.5 text-sm">
+            <Row k="Total Material Value" v={totals.taxable.toFixed(2)} />
+            <Row k="Total Tax Value" v={totals.tax.toFixed(2)} />
+            <Row k="Rent (Amount to be Recovered)" v={n(vehicleRent).toFixed(2)} />
+            <Row k="Transit Pass Amount" v={transitPassAmount.toFixed(2)} />
+            <div className="my-1 h-px bg-border" />
+            <div className="flex items-center justify-between font-bold text-foreground"><span>Total Invoice Amount</span><span>{totalInvoiceAmount.toFixed(2)}</span></div>
+          </div>
+
+          {transitPassQtyMode === "Manual" ? (
+            <div className="mt-3"><Fld label={`Transit Pass Qty (Ton) — ₹${transitPassPerTon}/Ton`}><input type="number" min={0} step="0.001" value={transitPassQtyManual} onChange={(e) => setTransitPassQtyManual(e.target.value)} className={inp} /></Fld></div>
+          ) : (
+            <p className="mt-3 text-2xs text-subtle">Transit Pass Qty auto-fills from Net Weight: {tonQty.toFixed(3)} Ton × ₹{transitPassPerTon}/Ton.</p>
+          )}
+
+          <div className="mt-3 border-t border-border pt-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Driver Batta Amount</p>
+                <p className="text-2xs text-subtle">{roundedTonQty} Ton (rounded) × ₹{driverBattaPerTon}/Ton</p>
+              </div>
+              <span className="text-lg font-bold tabular-nums text-foreground">{driverBattaAmount.toFixed(2)}</span>
+            </div>
+            <div className="mt-2 inline-flex w-full overflow-hidden rounded-md border border-border text-2xs">
+              {([["adjustment", "Adjustment"], ["payment", "Payment"]] as const).map(([m, lbl]) => (
+                <button key={m} type="button" onClick={() => setDriverBattaMode(m)} className={cn("flex-1 px-2 py-1.5 font-semibold transition", driverBattaMode === m ? "bg-primary text-white" : "bg-surface text-muted hover:text-foreground")}>{lbl}</button>
+              ))}
+            </div>
+            <p className="mt-1 text-2xs text-subtle">
+              {driverBattaMode === "adjustment"
+                ? "Netted out of what's collected from the customer — the driver keeps this directly."
+                : "Full invoice amount is collected from the customer; the business pays the driver separately below."}
+            </p>
+            {driverBattaMode === "payment" && (
+              <div className="mt-2 max-w-xs"><Fld label="Batta Payment Mode"><select value={battaPaymentMode} onChange={(e) => setBattaPaymentMode(e.target.value)} className={inp}>{["Cash", "Bank Transfer", "UPI", "Cheque", "Card"].map((m) => <option key={m}>{m}</option>)}</select></Fld></div>
+            )}
+          </div>
+
+          <div className="mt-3 rounded-lg bg-primary-subtle/40 px-3 py-2.5">
+            <div className="flex items-center justify-between font-bold text-primary"><span>Total Amount to be Collected</span><span className="text-lg tabular-nums">{totalAmountToCollect.toFixed(2)}</span></div>
+          </div>
+        </SectionCard>
+      </div>
+
+      <div className="grid gap-4">
         <SectionCard icon={IndianRupee} title="Payment Collection" allowOverflow>
           <div className="grid gap-3">
             <div>
               <label className="mb-1 block text-2xs font-semibold text-muted">Payment</label>
               <div className="inline-flex w-full overflow-hidden rounded-md border border-border text-2xs">
-                {([["full", "Full Collection"], ["partial", "Partial Collection"], ["credit", "Credit Due"]] as const).map(([m, lbl]) => (
+                {([["full", "Full Collection"], ["partial", "Partial Collection"], ["split", "Split Payment"], ["credit", "Credit Due"]] as const).map(([m, lbl]) => (
                   <button key={m} type="button" onClick={() => setPayCat(m)} className={cn("flex-1 px-2 py-1.5 font-semibold transition", payCat === m ? "bg-primary text-white" : "bg-surface text-muted hover:text-foreground")}>{lbl}</button>
                 ))}
               </div>
             </div>
-            {payCat !== "credit" && (
+            {payCat !== "credit" && payCat !== "split" && (
               <div className="grid gap-3 sm:grid-cols-2">
-                <Fld label="Amount Received"><input type="number" value={payCat === "full" ? String(totals.grandTotal) : amtPaid} readOnly={payCat === "full"} onChange={(e) => setAmtPaid(e.target.value)} placeholder="0.00" className={cn(inp, payCat === "full" && "bg-surface-2")} /></Fld>
+                <Fld label="Amount Received"><input type="number" value={payCat === "full" ? String(totalAmountToCollect) : amtPaid} readOnly={payCat === "full"} onChange={(e) => setAmtPaid(e.target.value)} placeholder="0.00" className={cn(inp, payCat === "full" && "bg-surface-2")} /></Fld>
                 <Fld label="Payment Mode"><select value={payMode} onChange={(e) => setPayMode(e.target.value)} className={inp}>{["Bank Transfer", "Cash", "UPI", "Cheque", "Card"].map((m) => <option key={m}>{m}</option>)}</select></Fld>
                 <div className="sm:col-span-2"><BankPicker mode={paidNow > 0 ? payMode : undefined} value={bank} onChange={setBank} required /></div>
               </div>
             )}
+            {payCat === "split" && (
+              <div className="space-y-2">
+                {splitLines.map((l, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <select value={l.mode} onChange={(e) => setSplitLines((p) => p.map((x, xi) => xi === i ? { ...x, mode: e.target.value } : x))} className={cn(inp, "flex-1")}>{["Cash", "Bank Transfer", "UPI", "Cheque", "Card"].map((m) => <option key={m}>{m}</option>)}</select>
+                    <input type="number" value={l.amount} onChange={(e) => setSplitLines((p) => p.map((x, xi) => xi === i ? { ...x, amount: e.target.value } : x))} placeholder="0.00" className={cn(inp, "flex-1")} />
+                    <button type="button" onClick={() => setSplitLines((p) => (p.length > 1 ? p.filter((_, xi) => xi !== i) : p))} className="shrink-0 text-subtle hover:text-danger"><X className="h-4 w-4" /></button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => setSplitLines((p) => [...p, { mode: "Cash", amount: "" }])} className="text-2xs font-semibold text-primary hover:underline">+ Add payment line</button>
+                <div className="flex items-center justify-between rounded-md bg-surface-2 px-3 py-1.5 text-xs"><span className="text-muted">Split Total</span><span className="font-semibold tabular-nums text-foreground">{splitTotal.toFixed(2)}</span></div>
+              </div>
+            )}
           </div>
           <div className="mt-2 space-y-1.5 rounded-lg bg-surface-2 px-3 py-2 text-xs">
-            <div className="flex items-center justify-between"><span className="text-muted">Total Amount to be Collected</span><span className="font-semibold tabular-nums text-foreground">{totals.grandTotal.toFixed(2)}</span></div>
-            <div className="flex items-center justify-between"><span className="text-muted">Balance Amount to be Collected</span><span className="font-semibold tabular-nums text-foreground">{Math.max(0, totals.grandTotal - paidNow).toFixed(2)}</span></div>
+            <div className="flex items-center justify-between"><span className="text-muted">Total Amount to be Collected</span><span className="font-semibold tabular-nums text-foreground">{totalAmountToCollect.toFixed(2)}</span></div>
+            <div className="flex items-center justify-between"><span className="text-muted">Balance Amount to be Collected</span><span className="font-semibold tabular-nums text-foreground">{Math.max(0, totalAmountToCollect - paidNow).toFixed(2)}</span></div>
             <div className="flex items-center justify-between"><span className="text-muted">Status</span><span className={cn("font-bold", payStatus === "Paid" ? "text-success" : payStatus === "Partial" ? "text-warning" : "text-danger")}>{payStatus}</span></div>
           </div>
         </SectionCard>

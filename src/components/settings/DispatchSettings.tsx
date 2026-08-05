@@ -91,6 +91,15 @@ const POST_LOAD_WEIGHT_OPTS = [
   { value: "CaptureNow", label: "By Default Capture Now" },
 ];
 
+const DRIVER_BATTA_ROUNDING_OPTS = [
+  { value: "floor", label: "Round Down (14.01-14.99 -> 14)" },
+  { value: "nearest", label: "Nearest Whole Ton" },
+  { value: "ceil", label: "Round Up" },
+];
+const TRANSIT_PASS_QTY_MODE_OPTS = [
+  { value: "Manual", label: "Manual — user enters the Ton qty" },
+  { value: "AutoNetWeight", label: "Auto — same Ton qty as Net Weight" },
+];
 const TRANSPORT_COST_METHOD_OPTS = [
   { value: "Fixed", label: "Fixed" },
   { value: "Per KM", label: "Per KM" },
@@ -224,6 +233,16 @@ export function DispatchSettings() {
           </div>
         </Grid>
         <Flags items={TRANSPORT_FLAGS} flag={flag} setFlag={setFlag} />
+        <div className="border-t border-border pt-4">
+          <p className="mb-3 text-xs font-semibold text-foreground">Payment Details — Driver Batta &amp; Transit Pass</p>
+          <Grid>
+            <Input type="number" min={0} label="Driver Batta Rate (₹ / Ton)" value={field("driverBattaPerTon")} onChange={(e) => setField("driverBattaPerTon", e.target.value)} />
+            <Select label="Driver Batta Rounding" options={DRIVER_BATTA_ROUNDING_OPTS} value={field("driverBattaRounding")} onChange={(e) => setField("driverBattaRounding", e.target.value)} />
+            <Input type="number" min={0} label="Transit Pass Rate (₹ / Ton)" value={field("transitPassPerTon")} onChange={(e) => setField("transitPassPerTon", e.target.value)} />
+            <Select label="Transit Pass Qty Source" options={TRANSIT_PASS_QTY_MODE_OPTS} value={field("transitPassQtyMode")} onChange={(e) => setField("transitPassQtyMode", e.target.value)} />
+          </Grid>
+          <p className="mt-2 text-2xs text-muted">Driver Batta is always auto-calculated (rounded Ton qty × rate) on the Direct Customer Dispatch screen's Payment Details section. Transit Pass qty is either typed in directly or defaulted from the dispatch's Net Weight, per the source above.</p>
+        </div>
       </Section>
     </div>
   );

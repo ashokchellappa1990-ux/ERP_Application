@@ -12,7 +12,7 @@ const num = (v: unknown) => (v == null ? 0 : Number(v));
 export interface TransportCostDto {
   transportCompanyId: number | null; vehicleId: number | null; distance: number;
   freightCharge: number; loadingCharge: number; unloadingCharge: number; fuelCharge: number; tollCharge: number;
-  driverAllowance: number; helperAllowance: number; driverBatta: number; vehicleRent: number; transitPass: number;
+  driverAllowance: number; helperAllowance: number; driverBatta: number; vehicleRent: number; transitPass: number; transitPassQty: number | null;
   otherCharges: number; discount: number; gstAmount: number;
   totalCost: number; remarks: string | null;
 }
@@ -20,7 +20,7 @@ export interface TransportCostDto {
 function toDto(r: {
   transportCompanyId: number | null; vehicleId: number | null; distance: unknown;
   freightCharge: unknown; loadingCharge: unknown; unloadingCharge: unknown; fuelCharge: unknown; tollCharge: unknown;
-  driverAllowance: unknown; helperAllowance: unknown; driverBatta: unknown; vehicleRent: unknown; transitPass: unknown;
+  driverAllowance: unknown; helperAllowance: unknown; driverBatta: unknown; vehicleRent: unknown; transitPass: unknown; transitPassQty: unknown;
   otherCharges: unknown; discount: unknown; gstAmount: unknown;
   totalCost: unknown; remarks: string | null;
 }): TransportCostDto {
@@ -29,6 +29,7 @@ function toDto(r: {
     freightCharge: num(r.freightCharge), loadingCharge: num(r.loadingCharge), unloadingCharge: num(r.unloadingCharge),
     fuelCharge: num(r.fuelCharge), tollCharge: num(r.tollCharge), driverAllowance: num(r.driverAllowance),
     helperAllowance: num(r.helperAllowance), driverBatta: num(r.driverBatta), vehicleRent: num(r.vehicleRent), transitPass: num(r.transitPass),
+    transitPassQty: r.transitPassQty != null ? num(r.transitPassQty) : null,
     otherCharges: num(r.otherCharges), discount: num(r.discount),
     gstAmount: num(r.gstAmount), totalCost: num(r.totalCost), remarks: r.remarks,
   };
@@ -79,7 +80,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     transportCompanyId: b.transportCompanyId ?? null, vehicleId: b.vehicleId ?? null, distance: b.distance,
     freightCharge: b.freightCharge, loadingCharge: b.loadingCharge, unloadingCharge: b.unloadingCharge,
     fuelCharge: b.fuelCharge, tollCharge: b.tollCharge, driverAllowance: b.driverAllowance, helperAllowance: b.helperAllowance,
-    driverBatta: b.driverBatta, vehicleRent: b.vehicleRent, transitPass: b.transitPass,
+    driverBatta: b.driverBatta, vehicleRent: b.vehicleRent, transitPass: b.transitPass, transitPassQty: b.transitPassQty ?? null,
     otherCharges: b.otherCharges, discount: b.discount, gstAmount: b.gstAmount, totalCost, remarks: b.remarks ?? null,
     updatedBy: user.id,
   };

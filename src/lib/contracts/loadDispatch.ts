@@ -64,17 +64,27 @@ export const loadDispatchItemInput = z.object({
   remarks: z.string().trim().max(300).optional().nullable(),
 });
 
-/** Full/Partial/Credit — same terminology as the existing B2B Sales Invoice
- * screen (src/components/sales/B2bInvoiceForm.tsx). Captured at Load & Dispatch
- * creation/edit time; applied when the invoice actually posts (see
- * buildPreparedSale in src/lib/transport/loadDispatch.ts). */
+/** One leg of a split-tender collection — same [{ mode, amount, reference }]
+ * shape as CustomerCollection.payments elsewhere in this app. */
+export const paymentSplitLineInput = z.object({
+  mode: z.string().trim().min(1).max(40),
+  amount: z.coerce.number().min(0),
+  reference: z.string().trim().max(80).optional().nullable(),
+});
+
+/** Full/Partial/Credit/Split — same terminology as the existing B2B Sales
+ * Invoice screen (src/components/sales/B2bInvoiceForm.tsx), plus Split for
+ * multi-mode tender. Captured at Load & Dispatch creation/edit time; applied
+ * when the invoice actually posts (see buildPreparedSale in
+ * src/lib/transport/loadDispatch.ts). */
 export const paymentCollectionInput = z.object({
-  paymentMode: z.enum(["Full", "Partial", "Credit"]).default("Credit"),
+  paymentMode: z.enum(["Full", "Partial", "Credit", "Split"]).default("Credit"),
   paymentAmount: z.coerce.number().min(0).optional().nullable(),
   paymentMethod: z.string().trim().max(30).optional().nullable(),
   bankId: z.coerce.number().int().positive().optional().nullable(),
   bankName: z.string().trim().max(150).optional().nullable(),
   bankAccount: z.string().trim().max(60).optional().nullable(),
+  paymentSplits: z.array(paymentSplitLineInput).optional().nullable(),
 });
 
 /* --------------------------------------------------------- create inputs */
@@ -106,6 +116,15 @@ export const directCustomerDispatchInput = z.object({
   helperMobile: z.string().trim().max(20).optional().nullable(),
   sealNumber: z.string().trim().max(60).optional().nullable(),
   payment: paymentCollectionInput.optional(),
+  // Payment Details section — Rent (Amount to be Recovered) folds straight
+  // into the invoice total; Transit Pass qty is either what the user typed
+  // (Manual mode) or ignored server-side in favor of the Net-Weight-derived
+  // Ton qty (AutoNetWeight mode, per Dispatch Configuration); Driver Batta
+  // is NEVER accepted from the client — the server always (re)computes it
+  // from the dispatched Ton qty + configured rate/rounding.
+  vehicleRent: z.coerce.number().min(0).default(0),
+  transitPassQty: z.coerce.number().min(0).default(0),
+  driverBattaMode: z.enum(["Adjustment", "Payment"]).default("Adjustment"),
   remarks: z.string().trim().max(2000).optional().nullable(),
   items: z.array(loadDispatchItemInput).min(1, "Add at least one item"),
 });
@@ -171,6 +190,7 @@ export const loadDispatchTransportCostInput = z.object({
   driverBatta: z.coerce.number().min(0).default(0),
   vehicleRent: z.coerce.number().min(0).default(0),
   transitPass: z.coerce.number().min(0).default(0),
+  transitPassQty: z.coerce.number().min(0).optional().nullable(),
   otherCharges: z.coerce.number().min(0).default(0),
   discount: z.coerce.number().min(0).default(0),
   gstAmount: z.coerce.number().min(0).default(0),
@@ -207,8 +227,11 @@ export interface LoadDispatchDetail {
   totalProducts: number; totalQty: number; totalWeight: number | null; totalPackages: number;
   remarks: string | null; cancelReason: string | null;
   deliveryChallanId: number | null; saleId: number | null;
-  paymentMode: "Full" | "Partial" | "Credit" | null; paymentAmount: number | null; paymentMethod: string | null;
+  paymentMode: "Full" | "Partial" | "Credit" | "Split" | null; paymentAmount: number | null; paymentMethod: string | null;
   bankId: number | null; bankName: string | null; bankAccount: string | null;
+  paymentSplits: { mode: string; amount: number; reference?: string | null }[] | null;
+  vehicleRent: number; transitPassQty: number | null; transitPassAmount: number;
+  driverBattaAmount: number; driverBattaMode: "Adjustment" | "Payment" | null;
   // Once the Sales Invoice has posted — the invoice's own Cash/Card/UPI/Split/Credit
   // sale type, and its outstanding balance (total − amountPaid), read straight
   // off the Sale row rather than guessed from LoadDispatch's own payment intent.

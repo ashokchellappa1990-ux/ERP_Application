@@ -26,6 +26,17 @@ export const DEFAULT_DISPATCH_CONFIG: TransportConfigData = {
     // Load & Dispatch No auto-numbering prefix — e.g. "LD" -> LD-00001
     // (docType-specific suffixes like -ST/-PR/-SR still append after this).
     dispatchNoPrefix: "LD",
+    // Payment Details section (Direct Customer Dispatch) — Driver Batta is
+    // always auto-calculated as (rounded Ton qty) x this rate; rounding always
+    // floors partial tons down to the whole number (14.01-14.99 -> 14), the
+    // only method currently implemented.
+    driverBattaPerTon: "10",
+    driverBattaRounding: "floor", // floor | nearest | ceil
+    // Transit Pass amount = qty (Ton) x this rate. transitPassQtyMode decides
+    // where that qty comes from: Manual (user types it) or AutoNetWeight
+    // (defaults to the same Net-Weight-derived Ton figure Driver Batta uses).
+    transitPassPerTon: "140",
+    transitPassQtyMode: "Manual", // Manual | AutoNetWeight
     // Vehicle Gate Entry's own Item Details section — None hides it entirely,
     // Single limits it to exactly one product (picking a new one replaces the
     // old), Multiple keeps the existing repeatable-row behavior.
@@ -104,6 +115,33 @@ export const DEFAULT_DISPATCH_CONFIG: TransportConfigData = {
 /** Deep clone so editable copies never mutate the shared default. */
 export function cloneTransportConfig(): TransportConfigData {
   return JSON.parse(JSON.stringify(DEFAULT_DISPATCH_CONFIG));
+}
+
+/** Rounds a Ton quantity per the configured method — "floor" treats any
+ * fractional part as belonging to the whole number below it (14.01-14.99 ->
+ * 14), matching how Driver Batta is meant to charge only for whole tons
+ * carried. */
+export function roundTonQty(qty: number, method: string): number {
+  if (method === "ceil") return Math.ceil(qty);
+  if (method === "nearest") return Math.round(qty);
+  return Math.floor(qty);
+}
+
+/** Driver Batta = (rounded Ton qty) x the configured per-Ton rate. Shared by
+ * the client (live display) and the server (authoritative recompute at
+ * save time — never trust the client's own arithmetic for money). */
+export function computeDriverBatta(cfg: Pick<TransportConfigData, "fields" | "flags">, tonQty: number): number {
+  const rate = Number(cfg.fields.driverBattaPerTon) || 0;
+  const rounded = roundTonQty(tonQty, cfg.fields.driverBattaRounding || "floor");
+  return Math.max(0, rounded) * rate;
+}
+
+/** Transit Pass = qty (Ton, manual or auto from Net Weight per
+ * transitPassQtyMode) x the configured per-Ton rate. No rounding — unlike
+ * Driver Batta, this isn't specified to floor to whole tons. */
+export function computeTransitPass(cfg: Pick<TransportConfigData, "fields" | "flags">, tonQty: number): number {
+  const rate = Number(cfg.fields.transitPassPerTon) || 0;
+  return Math.max(0, tonQty) * rate;
 }
 
 /** Builds a Gate Entry No from the configured prefix (+ month/year, if

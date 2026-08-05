@@ -9071,6 +9071,11 @@ model TransportCost {
   driverBatta     Decimal @default(0) @db.Decimal(18, 2)
   vehicleRent     Decimal @default(0) @db.Decimal(18, 2)
   transitPass     Decimal @default(0) @db.Decimal(18, 2)
+  // Ton qty the Transit Pass amount above was computed from — user-entered
+  // (Manual mode) or auto-filled from Net Weight (AutoNetWeight mode), per
+  // Dispatch Configuration's transitPassQtyMode. Kept for reporting even
+  // though the amount alone would suffice for the invoice math.
+  transitPassQty  Decimal? @db.Decimal(18, 3)
   otherCharges    Decimal @default(0) @db.Decimal(18, 2)
   discount        Decimal @default(0) @db.Decimal(18, 2)
   gstAmount       Decimal @default(0) @db.Decimal(18, 2)
@@ -9171,6 +9176,26 @@ model LoadDispatch {
   bankId        Int?
   bankName      String?  @db.VarChar(150)
   bankAccount   String?  @db.VarChar(60)
+  // Driver Batta recovery choice — Adjustment nets the auto-calculated Batta
+  // out of what's collected from the customer (driver keeps it directly from
+  // the customer); Payment collects the full invoice amount and the Batta is
+  // paid to the driver separately by the business. See DirectLoadDispatchForm.tsx.
+  driverBattaMode String? @db.VarChar(16) // Adjustment | Payment
+  // Split-tender breakdown when Payment Collection's "Split Payment" mode is
+  // used — same [{ mode, amount, reference }] shape as CustomerCollection.payments.
+  paymentSplits   Json?
+
+  // Payment Details section (Direct Customer Dispatch) — Rent + Transit Pass
+  // fold into the posted Sale's total (see buildPreparedSale in
+  // src/lib/transport/loadDispatch.ts); Driver Batta never does — it only
+  // affects how much cash is actually collected (driverBattaMode above),
+  // never the invoice amount itself. All server-computed/validated, never
+  // trusted verbatim from the client for the amounts (transitPassQty is the
+  // one exception — user-entered in Manual mode).
+  vehicleRent       Decimal  @default(0) @db.Decimal(18, 2)
+  transitPassQty    Decimal? @db.Decimal(18, 3)
+  transitPassAmount Decimal  @default(0) @db.Decimal(18, 2)
+  driverBattaAmount Decimal  @default(0) @db.Decimal(18, 2)
 
   createdBy     Int?
   createdByName String? @db.VarChar(160)

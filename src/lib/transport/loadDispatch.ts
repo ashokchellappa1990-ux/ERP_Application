@@ -6,6 +6,7 @@ import { createDispatch, postDispatch, loadRequestForDispatch } from "@/lib/ware
 import { postMovement, consumeLots } from "@/lib/inventory/ledger";
 import { createSaleTx, type PreparedSale } from "@/lib/sales/createSale";
 import { getDispatchConfig } from "@/lib/settings/dispatchConfig";
+import { computeDriverBatta, computeTransitPass } from "@/lib/settings/transportConfigDefaults";
 import type { TerminalStamp } from "@/lib/pos/terminalContext";
 import type { LoadDispatchItemDto } from "@/lib/contracts/loadDispatch";
 
@@ -123,9 +124,11 @@ export interface DirectDispatchItemInput {
   dispatchedQty: number; rate?: number | null; discPct?: number | null; discAmount?: number; taxPct?: number | null;
   remarks?: string | null;
 }
+export interface PaymentSplitLine { mode: string; amount: number; reference?: string | null }
 export interface PaymentCollectionInput {
-  paymentMode: "Full" | "Partial" | "Credit"; paymentAmount?: number | null; paymentMethod?: string | null;
+  paymentMode: "Full" | "Partial" | "Credit" | "Split"; paymentAmount?: number | null; paymentMethod?: string | null;
   bankId?: number | null; bankName?: string | null; bankAccount?: string | null;
+  paymentSplits?: PaymentSplitLine[] | null;
 }
 export interface DirectCustomerDispatchInput {
   dispatchDate: string; customerId?: number | null; customerName?: string | null; deliveryAddress?: string | null;
@@ -134,6 +137,9 @@ export interface DirectCustomerDispatchInput {
   driverName?: string | null; driverMobile?: string | null; driverLicenseNo?: string | null;
   helperName?: string | null; helperMobile?: string | null; sealNumber?: string | null;
   payment?: PaymentCollectionInput;
+  // Payment Details section — see the field comments on directCustomerDispatchInput
+  // in src/lib/contracts/loadDispatch.ts for exactly what each one means.
+  vehicleRent?: number; transitPassQty?: number; driverBattaMode?: "Adjustment" | "Payment";
   remarks?: string | null; items: DirectDispatchItemInput[];
 }
 
@@ -178,6 +184,17 @@ export async function createDirectCustomerDispatch(scope: ActiveScope, user: Act
     };
   });
 
+  // Driver Batta and (in AutoNetWeight mode) Transit Pass qty are always
+  // derived from the dispatched Ton quantity server-side — never trusted
+  // verbatim from the client, since these feed the actual invoice/collection
+  // amounts. "Ton" is matched case-insensitively against each line's own uom,
+  // same convention as the Kg-to-Ton net-weight conversion elsewhere.
+  const tonQty = items.reduce((s, it) => s + ((it.uom || "").toLowerCase() === "ton" ? num(it.dispatchedQty) : 0), 0);
+  const driverBattaAmount = r2(computeDriverBatta(cfg, tonQty));
+  const transitPassQty = cfg.fields.transitPassQtyMode === "AutoNetWeight" ? tonQty : Math.max(0, Number(input.transitPassQty) || 0);
+  const transitPassAmount = r2(computeTransitPass(cfg, transitPassQty));
+  const vehicleRent = Math.max(0, Number(input.vehicleRent) || 0);
+
   const payment = input.payment;
   const id = await prisma.$transaction(async (tx) => {
     const doc = await tx.loadDispatch.create({
@@ -199,6 +216,9 @@ export async function createDirectCustomerDispatch(scope: ActiveScope, user: Act
         paymentMode: payment?.paymentMode ?? undefined, paymentAmount: payment?.paymentAmount ?? undefined,
         paymentMethod: payment?.paymentMethod ?? undefined, bankId: payment?.bankId ?? undefined,
         bankName: payment?.bankName ?? undefined, bankAccount: payment?.bankAccount ?? undefined,
+        paymentSplits: (payment?.paymentSplits as Prisma.InputJsonValue | undefined) ?? undefined,
+        vehicleRent, transitPassQty, transitPassAmount, driverBattaAmount,
+        driverBattaMode: input.driverBattaMode ?? "Adjustment",
         remarks: input.remarks ?? undefined,
         status: "Draft", totalProducts: items.length, totalQty: r3(totalQty), totalPackages: 0,
         createdBy: user.id, createdByName: user.fullName ?? undefined,
@@ -491,6 +511,14 @@ interface PreparedSaleSourceDoc {
   sourceRefType: string | null; sourceRefNo: string | null;
   paymentMode: string | null; paymentAmount: Prisma.Decimal | null; paymentMethod: string | null;
   bankId: number | null; bankName: string | null; bankAccount: string | null;
+  paymentSplits: Prisma.JsonValue | null;
+  // Rent + Transit Pass recovery — added straight into the invoice total (not
+  // GST-taxable, so taxableValue/taxTotal stay purely item-based); Driver
+  // Batta deliberately does NOT appear here — it only ever affects how much
+  // cash gets collected (via paymentAmount, already net of it when
+  // driverBattaMode was "Adjustment" — see DirectLoadDispatchForm.tsx), never
+  // the invoice amount itself.
+  vehicleRent: Prisma.Decimal; transitPassAmount: Prisma.Decimal;
 }
 async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc): Promise<PreparedSale> {
   const items = doc.items;
@@ -522,19 +550,33 @@ async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc): 
       cost: num(it.cost),
     };
   });
-  const total = r2(taxableValue + taxTotal);
+  // Rent + Transit Pass fold straight into the total — see the interface
+  // comment above for why Driver Batta never does.
+  const recoveries = r2(num(doc.vehicleRent) + num(doc.transitPassAmount));
+  const total = r2(taxableValue + taxTotal + recoveries);
 
-  // Payment collection — Full/Partial/Credit, same terminology as the
+  // Payment collection — Full/Partial/Credit/Split, same terminology as the
   // existing B2B Sales Invoice screen (src/components/sales/B2bInvoiceForm.tsx).
+  // "Full" still honors an explicit client-sent paymentAmount when present —
+  // Direct Customer Dispatch always sends one (already net of Driver Batta
+  // when driverBattaMode is "Adjustment"); falls back to the full total for
+  // older call sites that never sent an amount for "Full" collection.
   const mode = doc.paymentMode ?? "Credit";
-  const amountPaid = mode === "Full" ? total : mode === "Partial" ? r2(Math.min(num(doc.paymentAmount), total)) : 0;
+  const splits = Array.isArray(doc.paymentSplits) ? (doc.paymentSplits as unknown as { mode: string; amount: number; reference?: string | null }[]) : [];
+  const splitTotal = r2(splits.reduce((s, p) => s + (Number(p.amount) || 0), 0));
+  const amountPaid = mode === "Credit" ? 0
+    : mode === "Split" ? r2(Math.min(splitTotal, total))
+    : doc.paymentAmount != null ? r2(Math.min(num(doc.paymentAmount), total))
+    : total;
   // "Credit" (not "Unpaid") for the zero-paid case — matches the vocabulary
   // Sale.paymentStatus actually uses everywhere else (Paid | Partial | Credit,
   // see prepareSale in src/lib/sales/createSale.ts) and what the Accounts
   // Receivable screen's API filters on (paymentStatus in [Credit, Partial]).
   const paymentStatus = amountPaid <= 0 ? "Credit" : amountPaid >= total ? "Paid" : "Partial";
   const method = doc.paymentMethod || "Cash";
-  const payments = amountPaid > 0 ? [{ mode: method, amount: amountPaid, reference: null }] : [];
+  const payments = mode === "Split" && splits.length
+    ? splits.map((p) => ({ mode: p.mode, amount: Number(p.amount) || 0, reference: p.reference ?? null }))
+    : amountPaid > 0 ? [{ mode: method, amount: amountPaid, reference: null }] : [];
 
   return {
     saleDate: doc.dispatchDate, warehouse: doc.warehouse || "Main Store",
