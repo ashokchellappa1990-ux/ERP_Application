@@ -5,19 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Printer, Scale } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { AppLoader } from "@/components/ui/AppLoader";
-import { useToast } from "@/components/ui/Toast";
-import { buildTokenSlipHtml, type TokenSlipData } from "@/lib/print/tokenSlipHtml";
+import { buildTokenSlipParts, type TokenSlipData } from "@/lib/print/tokenSlipHtml";
 import { DEFAULT_RECEIPT } from "@/lib/settings/receiptTemplate";
-
-const stripAutoPrint = (html: string) => html.replace(/<script>window\.onload[\s\S]*?<\/script>/, "");
-// buildTokenSlipHtml returns a standalone <!doctype html> document (style in
-// <head>, markup in <body>) meant for a popup window — pull both pieces back
-// out so they can be dropped straight into this page instead.
-function extractDocParts(html: string): { style: string; body: string } {
-  const style = html.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? "";
-  const body = html.match(/<body>([\s\S]*)<\/body>/)?.[1] ?? html;
-  return { style, body };
-}
 
 /** In-app preview of the Pre Load Weight Slip (Token) — reached either right
  * after submitting a Pre-Loading Weighment ("Preview & Print"), from the
@@ -29,14 +18,13 @@ function extractDocParts(html: string): { style: string; body: string } {
  * actually look at it first. */
 export function TokenSlipPreview() {
   const router = useRouter();
-  const toast = useToast();
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
   const gateEntryId = searchParams.get("gateEntryId");
   const next = searchParams.get("next") || "/transport/pre-weighment";
 
   const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [data, setData] = useState<TokenSlipData | null>(null);
   const [tpl, setTpl] = useState({ title: DEFAULT_RECEIPT.title, footerNote: DEFAULT_RECEIPT.footerNote });
 
@@ -44,6 +32,7 @@ export function TokenSlipPreview() {
     let active = true;
     (async () => {
       setLoading(true);
+      if (!id && !gateEntryId) { setErrorMsg("No weighment or gate entry was specified."); setLoading(false); return; }
       try {
         const q = id ? `id=${id}` : `gateEntryId=${gateEntryId}`;
         const [dataRes, tplRes] = await Promise.all([
@@ -51,10 +40,13 @@ export function TokenSlipPreview() {
           fetch("/api/settings/invoice-template?type=TOKEN", { cache: "no-store" }).then((r) => r.json()),
         ]);
         if (!active) return;
-        if (!dataRes?.ok) { setNotFound(true); return; }
+        if (!dataRes?.ok) { setErrorMsg(dataRes?.message || "Could not load this token."); return; }
         setData(dataRes.tokenSlip);
         if (tplRes?.ok) setTpl({ title: tplRes.template.title, footerNote: tplRes.template.footerNote });
-      } catch { if (active) setNotFound(true); } finally { if (active) setLoading(false); }
+      } catch (err) {
+        console.error("[TokenSlipPreview] load error", err);
+        if (active) setErrorMsg("Network error — could not load this token.");
+      } finally { if (active) setLoading(false); }
     })();
     return () => { active = false; };
   }, [id, gateEntryId]);
@@ -74,12 +66,7 @@ export function TokenSlipPreview() {
     window.print();
   }
 
-  const { style: slipStyle, body: slipBody } = data
-    ? extractDocParts(stripAutoPrint(buildTokenSlipHtml(data, tpl)))
-    : { style: "", body: "" };
-  // The generated document's CSS targets `body{…}` (it's meant to BE the whole
-  // popup document) — retarget that to the wrapper div this page actually uses.
-  const scopedSlipStyle = slipStyle.replace("body{", ".token-slip-root{");
+  const { style: slipStyle, bodyHtml: slipBody } = data ? buildTokenSlipParts(data, tpl) : { style: "", bodyHtml: "" };
 
   return (
     <div className="space-y-4">
@@ -105,18 +92,18 @@ export function TokenSlipPreview() {
 
       {loading && <AppLoader label="Loading token details…" />}
 
-      {!loading && notFound && (
+      {!loading && errorMsg && (
         <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm print:hidden">
           <Scale className="mx-auto h-8 w-8 text-subtle" />
-          <p className="mt-3 text-sm font-semibold text-foreground">Could not load this token.</p>
+          <p className="mt-3 text-sm font-semibold text-foreground">{errorMsg}</p>
           <p className="mt-1 text-sm text-muted">The Pre-Loading Weighment may not exist, or you don&apos;t have access to it.</p>
         </div>
       )}
 
       {!loading && data && (
         <div id="token-print-area" className="flex justify-center rounded-2xl border border-border bg-card p-8 shadow-sm print:border-0 print:p-0 print:shadow-none">
-          <style>{scopedSlipStyle}</style>
-          <div className="token-slip-root w-full max-w-[360px]" dangerouslySetInnerHTML={{ __html: slipBody }} />
+          <style>{slipStyle}</style>
+          <div className="w-full max-w-[360px]" dangerouslySetInnerHTML={{ __html: slipBody }} />
         </div>
       )}
     </div>

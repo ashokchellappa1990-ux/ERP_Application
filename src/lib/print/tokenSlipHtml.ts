@@ -35,27 +35,29 @@ function pseudoBarcode(code: string): string {
   return `<div style="height:36px;display:flex;align-items:stretch;justify-content:center;margin:6px 0">${bars}</div>`;
 }
 
-/** Gate Token / pre-loading slip — Token No, product, Ref No, date/in-time,
- * customer, vehicle, Empty (tare) weight, payment, delivery, with Load & Net
- * Weight left blank (filled in later on the Weight Slip once the vehicle is
- * loaded and weighed out). Printed right after a Pre-Loading Weighment is
- * recorded, and re-printable from the weighment list / Load & Dispatch view. */
-export function buildTokenSlipHtml(data: TokenSlipData, tpl: Pick<ReceiptTemplate, "title" | "footerNote">): string {
+const TOKEN_SLIP_STYLE = `
+    .token-slip-wrap{font-family:ui-monospace,Consolas,monospace;color:#0f172a;font-size:12px}
+    .token-slip{max-width:320px;margin:0 auto;border:1px dashed #94a3b8;padding:10px 14px}
+    .token-slip .co{text-align:center;font-weight:800;font-size:14px}
+    .token-slip .title{text-align:center;font-size:11px;letter-spacing:.08em;border-top:1px solid #0f172a;border-bottom:1px solid #0f172a;padding:3px 0;margin:6px 0;font-weight:700}
+    .token-slip .tok{text-align:center;font-weight:700;margin-top:4px}
+    .token-slip .prod{text-align:center;font-weight:700;font-style:italic;letter-spacing:.06em;margin:4px 0}
+    .token-slip .row{display:flex;justify-content:space-between;gap:8px;padding:1.5px 0}
+    .token-slip .lbl{color:#334155}
+    .token-slip .rule{border-top:1px dashed #94a3b8;margin:6px 0}
+    .token-slip .notice{text-align:center;font-size:10px;color:#334155;margin-top:8px;line-height:1.5}
+    .token-slip .notice b{font-weight:700}
+    .token-slip .tokfoot{text-align:center;font-weight:700;margin-top:6px}
+`;
+
+/** Just the slip's own CSS + inner markup (no <!doctype>/<html>/<body> wrapper,
+ * no auto-print script) — for embedding directly on an in-app page, avoiding
+ * the fragility of parsing them back out of buildTokenSlipHtml's full
+ * document string. buildTokenSlipHtml (below) is a thin wrapper around this
+ * for the rare case a standalone popup document is still wanted. */
+export function buildTokenSlipParts(data: TokenSlipData, tpl: Pick<ReceiptTemplate, "title" | "footerNote">): { style: string; bodyHtml: string } {
   const row = (label: string, value: string) => `<div class="row"><span class="lbl">${esc(label)}</span><span>: ${esc(value)}</span></div>`;
-  return `<!doctype html><html><head><meta charset="utf-8"><title>Token ${esc(data.tokenNo)}</title><style>
-    @page{margin:8mm}*{box-sizing:border-box}body{font-family:ui-monospace,Consolas,monospace;margin:0;color:#0f172a;font-size:12px}
-    .slip{max-width:320px;margin:0 auto;border:1px dashed #94a3b8;padding:10px 14px}
-    .co{text-align:center;font-weight:800;font-size:14px}
-    .title{text-align:center;font-size:11px;letter-spacing:.08em;border-top:1px solid #0f172a;border-bottom:1px solid #0f172a;padding:3px 0;margin:6px 0;font-weight:700}
-    .tok{text-align:center;font-weight:700;margin-top:4px}
-    .prod{text-align:center;font-weight:700;font-style:italic;letter-spacing:.06em;margin:4px 0}
-    .row{display:flex;justify-content:space-between;gap:8px;padding:1.5px 0}
-    .lbl{color:#334155}
-    .rule{border-top:1px dashed #94a3b8;margin:6px 0}
-    .notice{text-align:center;font-size:10px;color:#334155;margin-top:8px;line-height:1.5}
-    .notice b{font-weight:700}
-    .tokfoot{text-align:center;font-weight:700;margin-top:6px}
-    </style></head><body><div class="slip">
+  const bodyHtml = `<div class="token-slip-wrap"><div class="token-slip">
     <div class="co">${esc(data.business.name)}</div>
     <div class="title">${esc(tpl.title || "TOKEN")}</div>
     ${pseudoBarcode(data.tokenNo)}
@@ -80,7 +82,22 @@ export function buildTokenSlipHtml(data: TokenSlipData, tpl: Pick<ReceiptTemplat
     </div>
     ${tpl.footerNote ? `<div class="notice">${esc(tpl.footerNote)}</div>` : ""}
     <div class="tokfoot">${esc(data.tokenNo)}</div>
-    </div>
+    </div></div>`;
+  return { style: TOKEN_SLIP_STYLE, bodyHtml };
+}
+
+/** Gate Token / pre-loading slip — Token No, product, Ref No, date/in-time,
+ * customer, vehicle, Empty (tare) weight, payment, delivery, with Load & Net
+ * Weight left blank (filled in later on the Weight Slip once the vehicle is
+ * loaded and weighed out). Standalone popup-window document — the in-app
+ * preview page uses buildTokenSlipParts() directly instead. */
+export function buildTokenSlipHtml(data: TokenSlipData, tpl: Pick<ReceiptTemplate, "title" | "footerNote">): string {
+  const { style, bodyHtml } = buildTokenSlipParts(data, tpl);
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Token ${esc(data.tokenNo)}</title><style>
+    @page{margin:8mm}*{box-sizing:border-box}
+    ${style}
+    </style></head><body>
+    ${bodyHtml}
     <script>window.onload=function(){setTimeout(function(){window.print()},200)}</script>
     </body></html>`;
 }

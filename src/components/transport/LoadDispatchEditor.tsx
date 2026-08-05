@@ -373,19 +373,19 @@ export function LoadDispatchEditor({ id }: { id: number }) {
           <p className="mt-1 text-xs text-subtle">{x.partyName || x.sourceRefNo || "—"}{x.warehouse ? ` · ${x.warehouse}` : ""} — {x.items.length} item(s), {fmt.qty(x.totalQty)} qty.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="secondary" size="md"
+            onClick={() => router.push(`/transport/pre-weighment/token?gateEntryId=${x.vehicleGateEntryId}&next=${encodeURIComponent(`/warehouse/transfer/load-dispatch/${id}`)}`)}
+            disabled={printBusy != null || !x.vehicleGateEntryId}
+            title={x.vehicleGateEntryId ? "Preview & print the Pre Load Weight Slip" : "Available once a Vehicle Gate Entry is linked"}
+          >
+            <Ticket className="h-4 w-4" /> Print Pre Load
+          </Button>
           <Button variant="secondary" size="md" onClick={() => printDocument("dc")} disabled={printBusy != null || !x.deliveryChallanId} title={x.deliveryChallanId ? "Print the Delivery Challan" : "Available once a Delivery Challan has been generated"}>
             <FileText className="h-4 w-4" /> {printBusy === "dc" ? "Preparing…" : "Print DC"}
           </Button>
           <Button variant="accent" size="md" onClick={() => printDocument("weight-slip")} disabled={printBusy != null || !x.vehicleGateEntryId} title={x.vehicleGateEntryId ? "Print the Weight Slip" : "Available once a Vehicle Gate Entry is linked"}>
             <Scale className="h-4 w-4" /> {printBusy === "weight-slip" ? "Preparing…" : "Print Weight Slip"}
-          </Button>
-          <Button
-            variant="secondary" size="md"
-            onClick={() => router.push(`/transport/pre-weighment/token?gateEntryId=${x.vehicleGateEntryId}&next=${encodeURIComponent(`/warehouse/transfer/load-dispatch/${id}`)}`)}
-            disabled={printBusy != null || !x.vehicleGateEntryId}
-            title={x.vehicleGateEntryId ? "Preview & print the Pre Load Weight Slip (Token)" : "Available once a Vehicle Gate Entry is linked"}
-          >
-            <Ticket className="h-4 w-4" /> Print Token
           </Button>
           <Button variant="primary" size="md" onClick={() => printDocument("invoice")} disabled={printBusy != null || !x.saleId} title={x.saleId ? "Print the Tax Invoice" : "Available once a Sales Invoice has been posted"}>
             <Printer className="h-4 w-4" /> {printBusy === "invoice" ? "Preparing…" : "Print Invoice"}
