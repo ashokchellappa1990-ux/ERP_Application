@@ -641,6 +641,7 @@ model Customer {
 
   @@index([tenantId])
   @@index([tenantId, phone])
+  @@index([tenantId, name])
   businessId Int?
   branchId   Int?
 
@@ -8869,6 +8870,13 @@ model VehicleGateEntry {
   @@unique([tenantId, gateEntryNo])
   @@index([tenantId, status])
   @@index([dispatchExecutionId])
+  // Vehicle Weighment Management's fallback lookup filters by vehicleId alone
+  // (when a vehicle is picked manually instead of via customer/reference).
+  @@index([tenantId, vehicleId])
+  // The list's default (unfiltered) view sorts by createdAt desc — without
+  // this, that sort falls back to an in-memory filesort past the tenantId
+  // scope once the table grows past a small row count.
+  @@index([tenantId, createdAt])
   @@map("vehicle_gate_entry")
 }
 
@@ -9166,6 +9174,11 @@ model LoadDispatch {
   @@unique([tenantId, dispatchNo])
   @@index([tenantId, docType, status])
   @@index([sourceRefType, sourceRefId])
+  // The most heavily-hit lookup on this table: every Vehicle Gate Entry list
+  // load, its hover-detail fetch, and the gate-entry detail route all resolve
+  // "the Load & Dispatch linked to this gate entry" via vehicleGateEntryId —
+  // previously unindexed, forcing a full table scan on every one of those.
+  @@index([vehicleGateEntryId])
   @@map("load_dispatch")
 }
 

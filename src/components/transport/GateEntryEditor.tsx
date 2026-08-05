@@ -68,6 +68,7 @@ export function GateEntryEditor() {
   const [customerName, setCustomerName] = useState("");
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerHits, setCustomerHits] = useState<CustomerHit[] | null>(null);
+  const [searchingCustomer, setSearchingCustomer] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryAddressLocked, setDeliveryAddressLocked] = useState(false);
   const [trQuery, setTrQuery] = useState("");
@@ -111,6 +112,7 @@ export function GateEntryEditor() {
   const [items, setItems] = useState<ItemLine[]>([]);
   const [pq, setPq] = useState("");
   const [productHits, setProductHits] = useState<ProductHit[] | null>(null);
+  const [searchingProduct, setSearchingProduct] = useState(false);
 
   const loadMasters = () => {
     return Promise.all([
@@ -174,11 +176,22 @@ export function GateEntryEditor() {
 
   const custTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchCustomers = async (q: string) => {
-    if (!q.trim()) { setCustomerHits(null); return; }
-    const j = await fetch(`/api/masters/customers?q=${encodeURIComponent(q.trim())}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
-    if (j.ok) setCustomerHits((j.customers ?? []).slice(0, 20));
+    if (!q.trim()) { setCustomerHits(null); setSearchingCustomer(false); return; }
+    try {
+      const j = await fetch(`/api/masters/customers?q=${encodeURIComponent(q.trim())}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+      if (j.ok) setCustomerHits((j.customers ?? []).slice(0, 20));
+    } finally { setSearchingCustomer(false); }
   };
-  const onCustomerQuery = (v: string) => { setCustomerQuery(v); if (custTimer.current) clearTimeout(custTimer.current); custTimer.current = setTimeout(() => searchCustomers(v), 250); };
+  // The spinner starts the moment typing pauses (not just once the debounce
+  // fires the actual request) so the user immediately sees "your input was
+  // registered" rather than a dead field for the full 250ms debounce window.
+  const onCustomerQuery = (v: string) => {
+    setCustomerQuery(v);
+    if (custTimer.current) clearTimeout(custTimer.current);
+    if (!v.trim()) { setCustomerHits(null); setSearchingCustomer(false); return; }
+    setSearchingCustomer(true);
+    custTimer.current = setTimeout(() => searchCustomers(v), 250);
+  };
   const pickCustomer = (hit: CustomerHit) => {
     setCustomerId(hit.id); setCustomerName(hit.name); setCustomerQuery(hit.name); setCustomerHits(null);
     setDeliveryAddress(hit.address ?? ""); setDeliveryAddressLocked(false);
@@ -197,8 +210,20 @@ export function GateEntryEditor() {
   };
 
   const prodTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const searchProducts = async (q: string) => { if (!q.trim()) { setProductHits(null); return; } try { const j = await fetch(`/api/pos/products?q=${encodeURIComponent(q.trim())}`, { cache: "no-store" }).then((r) => r.json()); if (j.ok) setProductHits(j.products ?? []); } catch { setProductHits(null); } };
-  const onPq = (v: string) => { setPq(v); if (prodTimer.current) clearTimeout(prodTimer.current); if (!v.trim()) { setProductHits(null); return; } prodTimer.current = setTimeout(() => searchProducts(v), 250); };
+  const searchProducts = async (q: string) => {
+    if (!q.trim()) { setProductHits(null); setSearchingProduct(false); return; }
+    try {
+      const j = await fetch(`/api/pos/products?q=${encodeURIComponent(q.trim())}`, { cache: "no-store" }).then((r) => r.json());
+      if (j.ok) setProductHits(j.products ?? []);
+    } catch { setProductHits(null); } finally { setSearchingProduct(false); }
+  };
+  const onPq = (v: string) => {
+    setPq(v);
+    if (prodTimer.current) clearTimeout(prodTimer.current);
+    if (!v.trim()) { setProductHits(null); setSearchingProduct(false); return; }
+    setSearchingProduct(true);
+    prodTimer.current = setTimeout(() => searchProducts(v), 250);
+  };
   const addItem = (p: ProductHit) => {
     const line: ItemLine = { id: `${p.id}-${Math.random().toString(36).slice(2, 7)}`, productId: p.id, productName: p.name, sku: p.sku ?? "", uom: p.uom ?? "", qty: "1" };
     // Single mode: picking a product replaces whatever was there — the
@@ -305,7 +330,10 @@ export function GateEntryEditor() {
           {dispatchType === "Customer" && referenceType === "Direct Customer Dispatch" && (
             <div className="relative">
               <label className="mb-1 block text-2xs font-semibold text-muted">Customer</label>
-              <input value={customerQuery} onChange={(e) => onCustomerQuery(e.target.value)} placeholder="Search customer master…" className={inp} />
+              <div className="relative">
+                <input value={customerQuery} onChange={(e) => onCustomerQuery(e.target.value)} placeholder="Search customer master…" className={cn(inp, searchingCustomer && "pr-9")} />
+                {searchingCustomer && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary" />}
+              </div>
               {customerHits !== null && (
                 <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border bg-card shadow-lg">
                   {customerHits.length ? customerHits.map((h) => (
@@ -410,7 +438,8 @@ export function GateEntryEditor() {
         </p>
         {(itemCaptureMode !== "Single" || items.length === 0) && (
         <div className="relative mb-3 max-w-md">
-          <input value={pq} onChange={(e) => onPq(e.target.value)} placeholder="Search product to add…" className={inp} />
+          <input value={pq} onChange={(e) => onPq(e.target.value)} placeholder="Search product to add…" className={cn(inp, searchingProduct && "pr-9")} />
+          {searchingProduct && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary" />}
           {productHits !== null && (productHits.length ? (
             <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border bg-card shadow-lg">
               {productHits.map((p) => (

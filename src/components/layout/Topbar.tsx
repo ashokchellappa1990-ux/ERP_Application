@@ -1,11 +1,13 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Bell, Search, Menu, LogOut, GitBranch } from "lucide-react";
 import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
 import { useScope } from "@/components/scope/ScopeProvider";
 import { useSession } from "@/components/auth/SessionProvider";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { AppLoader } from "@/components/ui/AppLoader";
 import {
   getCompanyProfile,
   subscribeCompanyProfile,
@@ -26,6 +28,14 @@ export interface TopbarProps {
 
 export function Topbar({ onMenu }: TopbarProps) {
   const { user, signOut } = useSession();
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function confirmLogout() {
+    setLoggingOut(true);
+    setConfirmingLogout(false);
+    await signOut();
+  }
   // Live company branding from Business Setup (re-renders on save).
   const company = useSyncExternalStore(
     subscribeCompanyProfile,
@@ -124,7 +134,7 @@ export function Topbar({ onMenu }: TopbarProps) {
           </span>
           <button
             type="button"
-            onClick={signOut}
+            onClick={() => setConfirmingLogout(true)}
             title="Sign out"
             className={cn(
               "touch-target ml-1 grid place-items-center rounded-md text-muted",
@@ -136,6 +146,18 @@ export function Topbar({ onMenu }: TopbarProps) {
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmingLogout}
+        icon={LogOut}
+        tone="danger"
+        title="Sign out?"
+        message="You'll need to sign in again to continue working."
+        confirmLabel="Sign Out"
+        onConfirm={confirmLogout}
+        onCancel={() => setConfirmingLogout(false)}
+      />
+      {loggingOut && <AppLoader fullScreen label="Signing out" />}
     </header>
   );
 }
