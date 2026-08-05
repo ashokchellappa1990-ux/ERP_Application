@@ -795,7 +795,7 @@ export function DirectLoadDispatchForm() {
       </SectionCard>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-3">
         {fieldOn(SCREEN, "transportCost") && (
         <SectionCard icon={Truck} title="Transport Cost" allowOverflow>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -824,15 +824,17 @@ export function DirectLoadDispatchForm() {
             <Row k="Total Tax Value" v={totals.tax.toFixed(2)} />
             <Row k="Rent (Amount to be Recovered)" v={n(vehicleRent).toFixed(2)} />
             <Row k="Transit Pass Amount" v={transitPassAmount.toFixed(2)} />
+            {transitPassQtyMode === "Manual" ? (
+              <div className="flex items-center justify-between gap-3">
+                <span className="shrink-0 text-2xs text-subtle">Transit Pass Qty (Ton) — ₹{transitPassPerTon}/Ton</span>
+                <input type="number" min={0} step="0.001" value={transitPassQtyManual} onChange={(e) => setTransitPassQtyManual(e.target.value)} className={cn(inp, "h-8 w-28 text-right")} />
+              </div>
+            ) : (
+              <p className="text-2xs text-subtle">Transit Pass Qty auto-fills from Net Weight: {tonQty.toFixed(3)} Ton × ₹{transitPassPerTon}/Ton.</p>
+            )}
             <div className="my-1 h-px bg-border" />
             <div className="flex items-center justify-between font-bold text-foreground"><span>Total Invoice Amount</span><span>{totalInvoiceAmount.toFixed(2)}</span></div>
           </div>
-
-          {transitPassQtyMode === "Manual" ? (
-            <div className="mt-3"><Fld label={`Transit Pass Qty (Ton) — ₹${transitPassPerTon}/Ton`}><input type="number" min={0} step="0.001" value={transitPassQtyManual} onChange={(e) => setTransitPassQtyManual(e.target.value)} className={inp} /></Fld></div>
-          ) : (
-            <p className="mt-3 text-2xs text-subtle">Transit Pass Qty auto-fills from Net Weight: {tonQty.toFixed(3)} Ton × ₹{transitPassPerTon}/Ton.</p>
-          )}
 
           <div className="mt-3 border-t border-border pt-3">
             <div className="flex items-center justify-between">
@@ -861,9 +863,7 @@ export function DirectLoadDispatchForm() {
             <div className="flex items-center justify-between font-bold text-primary"><span>Total Amount to be Collected</span><span className="text-lg tabular-nums">{totalAmountToCollect.toFixed(2)}</span></div>
           </div>
         </SectionCard>
-      </div>
 
-      <div className="grid gap-4">
         <SectionCard icon={IndianRupee} title="Payment Collection" allowOverflow>
           <div className="grid gap-3">
             <div>
