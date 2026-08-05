@@ -32,6 +32,10 @@ export function GateEntryEditor() {
   const toast = useToast();
   const [saving, setSaving] = useState(false);
   const [savedId, setSavedId] = useState<number | null>(null);
+  // Shown the instant "Continue to Weighment Now" is clicked, through the
+  // client-side route change — otherwise there's a blank beat where nothing
+  // on screen indicates the click registered.
+  const [navigating, setNavigating] = useState(false);
   // Blocks the whole form until every initial fetch (masters, next gate entry
   // number, Dispatch Configuration preload, scope/location) has resolved —
   // avoids the page rendering with fields still saying "Loading…" one by one.
@@ -529,12 +533,15 @@ export function GateEntryEditor() {
               <p className="text-sm text-muted">Would you like to continue with the Pre Loading Weighment now, or do it later?</p>
             </div>
             <div className="flex flex-col gap-2 border-t border-border bg-surface-2 px-5 py-4">
-              <Button size="md" onClick={() => router.push(`/transport/pre-weighment/new?gateEntryId=${savedId}`)}><Scale className="h-4 w-4" /> Continue to Weighment Now</Button>
-              <Button variant="outline" size="md" onClick={() => router.push("/transport/gate-entry")}>Do It Later</Button>
+              <Button size="md" disabled={navigating} onClick={() => { setNavigating(true); router.push(`/transport/pre-weighment/new?gateEntryId=${savedId}`); }}>
+                {navigating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Scale className="h-4 w-4" />} Continue to Weighment Now
+              </Button>
+              <Button variant="outline" size="md" disabled={navigating} onClick={() => router.push("/transport/gate-entry")}>Do It Later</Button>
             </div>
           </div>
         </div>
       )}
+      {navigating && <AppLoader fullScreen label="Opening Pre Loading Weighment" />}
     </div>
   );
 }

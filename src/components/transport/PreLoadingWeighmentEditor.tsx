@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Scale, ArrowLeft, Truck, Users, Save, Loader2, RadioTower, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SectionCard } from "@/components/ui/SectionCard";
+import { AppLoader } from "@/components/ui/AppLoader";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 
@@ -23,6 +24,12 @@ export function PreLoadingWeighmentEditor() {
   const toast = useToast();
   const searchParams = useSearchParams();
   const preselectId = searchParams.get("gateEntryId");
+  // Reached from the Vehicle Gate Entry list/editor's "Continue to Weighment
+  // Now" hand-off (?gateEntryId=) vs. navigated here directly — only in the
+  // former case should Back / after-save return to the gate entry list
+  // instead of this screen's own list.
+  const fromGateEntry = !!preselectId;
+  const backHref = fromGateEntry ? "/transport/gate-entry" : "/transport/pre-weighment";
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -126,7 +133,7 @@ export function PreLoadingWeighmentEditor() {
         }),
       });
       const j = await res.json().catch(() => ({}));
-      if (res.ok && j.ok) { toast.success(j.message || "Pre-loading weighment recorded."); router.push("/transport/pre-weighment"); }
+      if (res.ok && j.ok) { toast.success(j.message || "Pre-loading weighment recorded."); router.push(backHref); }
       else { toast.error(j.message || "Could not save the weighment."); setSaving(false); }
     } catch { toast.error("Network error — could not save."); setSaving(false); }
   }
@@ -135,12 +142,14 @@ export function PreLoadingWeighmentEditor() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="mb-1 flex items-center gap-2 text-xs text-muted"><Link href="/transport/pre-weighment" className="hover:text-foreground">Pre Loading Weighment</Link><span className="text-subtle">/</span><span className="font-medium text-foreground">New</span></div>
+          <div className="mb-1 flex items-center gap-2 text-xs text-muted"><Link href={backHref} className="hover:text-foreground">{fromGateEntry ? "Vehicle Gate Entry" : "Pre Loading Weighment"}</Link><span className="text-subtle">/</span><span className="font-medium text-foreground">New</span></div>
           <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Scale className="h-5 w-5 text-primary" /> New Pre Loading Weighment</h1>
           <p className="mt-0.5 text-sm text-muted">Records the empty (tare) weight of a vehicle before loading begins.</p>
         </div>
-        <Link href="/transport/pre-weighment"><Button variant="outline" size="md"><ArrowLeft className="h-4 w-4" /> Back</Button></Link>
+        <Link href={backHref}><Button variant="outline" size="md"><ArrowLeft className="h-4 w-4" /> Back</Button></Link>
       </div>
+
+      {loading && <AppLoader label="Loading vehicle & weighment details…" />}
 
       {!loading && eligible.length === 0 && (
         <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
@@ -151,13 +160,13 @@ export function PreLoadingWeighmentEditor() {
         </div>
       )}
 
-      {(loading || eligible.length > 0) && (
+      {!loading && eligible.length > 0 && (
         <>
           <SectionCard icon={Truck} title="Vehicle &amp; Gate Entry" allowOverflow>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <Fld label="Vehicle Number *">
-                <select value={gateEntryId} onChange={(e) => onSelectVehicle(e.target.value ? Number(e.target.value) : "")} className={inp} disabled={loading}>
-                  <option value="">{loading ? "Loading…" : "Select vehicle…"}</option>
+                <select value={gateEntryId} onChange={(e) => onSelectVehicle(e.target.value ? Number(e.target.value) : "")} className={inp}>
+                  <option value="">Select vehicle…</option>
                   {eligible.map((g) => <option key={g.id} value={g.id}>{g.vehicleNo} — {g.gateEntryNo} ({g.status})</option>)}
                 </select>
               </Fld>

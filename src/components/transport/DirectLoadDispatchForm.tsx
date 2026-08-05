@@ -71,6 +71,10 @@ export function DirectLoadDispatchForm() {
   const toast = useToast();
   const searchParams = useSearchParams();
   const prefillGateEntryId = searchParams.get("gateEntryId");
+  // Reached from the Vehicle Gate Entry list's "Dispatch" action (?gateEntryId=)
+  // vs. picked from the New Load & Dispatch source list directly — only the
+  // former should send Back to the gate entry list instead of the source picker.
+  const backHref = prefillGateEntryId ? "/transport/gate-entry" : "/warehouse/transfer/load-dispatch/new";
   const [submitting, setSubmitting] = useState(false);
   // Blocks the form until the Vehicle Gate Entry prefill (transport/driver
   // info + item lines + per-line rate/tax lookups) has fully finished, so the
@@ -513,7 +517,7 @@ export function DirectLoadDispatchForm() {
           <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Truck className="h-5 w-5 text-primary" /> Direct Customer Dispatch</h1>
           <p className="mt-0.5 text-sm text-muted">Manual dispatch to a customer without a Sales Order.</p>
         </div>
-        <Link href="/warehouse/transfer/load-dispatch/new"><Button variant="outline" size="md"><ArrowLeft className="h-4 w-4" /> Back</Button></Link>
+        <Link href={backHref}><Button variant="outline" size="md"><ArrowLeft className="h-4 w-4" /> Back</Button></Link>
       </div>
 
       {prefillLoading ? (
