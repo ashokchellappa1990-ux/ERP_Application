@@ -9,14 +9,16 @@ const STR = ["title", "paperSize", "headerNote", "thankYouMessage", "footerNote"
 const FLAGS = ["showGstin", "showCustomer", "showHsn", "showMrp", "showSavings", "showTaxBreakup", "showItemTax", "useBranchDetails", "showBranchName", "showContact"] as const;
 // B2B_T2 — the alternate "Tax Invoice" design (Bill To/Vehicle/Driver/weight
 // line/Royalty Pass) used from Load & Dispatch; WEIGHT_SLIP — the weighbridge
-// slip printed alongside it. Both reuse the same InvoiceTemplate row shape
-// (just title/headerNote/footerNote/paperSize are meaningful for them — the
-// FLAGS toggles are B2C/B2B-receipt-specific and unused by these two).
-const TYPES = ["B2C", "B2B", "B2B_T2", "WEIGHT_SLIP", "COLLECTION"] as const;
+// slip printed alongside it; TOKEN — the gate token printed right after a
+// Pre-Loading Weighment (same slip shape, but Load/Net Weight aren't known
+// yet). All three reuse the same InvoiceTemplate row shape (just
+// title/headerNote/footerNote/paperSize are meaningful for them — the FLAGS
+// toggles are B2C/B2B-receipt-specific and unused by these).
+const TYPES = ["B2C", "B2B", "B2B_T2", "WEIGHT_SLIP", "TOKEN", "COLLECTION"] as const;
 type TplType = (typeof TYPES)[number];
 
 // Sensible per-type default title so a freshly-seeded template reads correctly.
-const DEFAULT_TITLE: Record<TplType, string> = { B2C: "Tax Invoice", B2B: "Tax Invoice", B2B_T2: "Tax Invoice", WEIGHT_SLIP: "WEIGHMENT SLIP", COLLECTION: "Collection Receipt" };
+const DEFAULT_TITLE: Record<TplType, string> = { B2C: "Tax Invoice", B2B: "Tax Invoice", B2B_T2: "Tax Invoice", WEIGHT_SLIP: "WEIGHMENT SLIP", TOKEN: "TOKEN", COLLECTION: "Collection Receipt" };
 
 function resolveType(v: unknown): TplType {
   const t = String(v ?? "B2C").toUpperCase();

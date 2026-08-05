@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/Toast";
 import { DEFAULT_RECEIPT, PAPER_SIZES, type ReceiptTemplate } from "@/lib/settings/receiptTemplate";
 import { buildTaxInvoiceHtml, TAX_INVOICE_SAMPLE } from "@/lib/print/taxInvoiceHtml";
 import { buildWeightSlipHtml, WEIGHT_SLIP_SAMPLE } from "@/lib/print/weightSlipHtml";
+import { buildTokenSlipHtml, TOKEN_SLIP_SAMPLE } from "@/lib/print/tokenSlipHtml";
 import { cn } from "@/lib/cn";
 
 const FLAGS: { k: keyof ReceiptTemplate; label: string; desc: string }[] = [
@@ -25,13 +26,14 @@ const TABS = [
   { id: "B2B", label: "Sales Invoice B2B", desc: "Tax invoice for business customers." },
   { id: "B2B_T2", label: "Sales Invoice B2B (Template 2)", desc: "Alternate A4 tax invoice design — Bill To/Vehicle/Driver/weight detail, printed from Load & Dispatch." },
   { id: "WEIGHT_SLIP", label: "Weight Slip", desc: "Weighbridge slip printed alongside the Template 2 invoice from Load & Dispatch." },
+  { id: "TOKEN", label: "Pre Load Weight Slip (Token)", desc: "Gate token printed right after a Pre-Loading Weighment — Empty weight only, Load/Net Weight blank until loading is done." },
   { id: "COLLECTION", label: "Customer Collection", desc: "Receipt given on collecting payment." },
 ] as const;
 type TplType = (typeof TABS)[number]["id"];
-// These two documents are dynamic, generated-HTML designs (src/lib/print/*Html.ts)
+// These documents are dynamic, generated-HTML designs (src/lib/print/*Html.ts)
 // rather than the toggle-driven receipt this page otherwise edits — only the
 // text fields below apply; "What to Print" toggles don't.
-const CUSTOM_DESIGN_TYPES: TplType[] = ["B2B_T2", "WEIGHT_SLIP"];
+const CUSTOM_DESIGN_TYPES: TplType[] = ["B2B_T2", "WEIGHT_SLIP", "TOKEN"];
 
 export default function InvoiceTemplatePage() {
   const toast = useToast();
@@ -65,7 +67,10 @@ export default function InvoiceTemplatePage() {
   const stripAutoPrint = (html: string) => html.replace(/<script>window\.onload[\s\S]*?<\/script>/, "");
   const buildPreviewHtml = () => (type === "WEIGHT_SLIP"
     ? buildWeightSlipHtml(WEIGHT_SLIP_SAMPLE, { title: tpl.title, footerNote: tpl.footerNote })
+    : type === "TOKEN"
+    ? buildTokenSlipHtml(TOKEN_SLIP_SAMPLE, { title: tpl.title, footerNote: tpl.footerNote })
     : buildTaxInvoiceHtml(TAX_INVOICE_SAMPLE, { title: tpl.title, footerNote: tpl.footerNote }));
+  const isSlip = type === "WEIGHT_SLIP" || type === "TOKEN";
   const previewHtmlNoAutoPrint = isCustomDesign ? stripAutoPrint(buildPreviewHtml()) : "";
   function openFullPreview() {
     const w = window.open("", "_blank", "width=900,height=800");
@@ -101,7 +106,7 @@ export default function InvoiceTemplatePage() {
               </Field>
               <div className="sm:col-span-2"><Field label="Header Note (under store name)"><input value={tpl.headerNote} onChange={(e) => set("headerNote", e.target.value)} placeholder="e.g. Branch / address line" className={inp} /></Field></div>
               {!isCustomDesign && <Field label="Thank-You Message"><input value={tpl.thankYouMessage} onChange={(e) => set("thankYouMessage", e.target.value)} className={inp} /></Field>}
-              <Field label={isCustomDesign ? "Footer Note" : "Footer Note / Terms"}><input value={tpl.footerNote} onChange={(e) => set("footerNote", e.target.value)} placeholder={type === "WEIGHT_SLIP" ? "e.g. Thank you for your business." : "e.g. Goods once sold…"} className={inp} /></Field>
+              <Field label={isCustomDesign ? "Footer Note" : "Footer Note / Terms"}><input value={tpl.footerNote} onChange={(e) => set("footerNote", e.target.value)} placeholder={isSlip ? "e.g. Thank you for your business." : "e.g. Goods once sold…"} className={inp} /></Field>
             </div>
           </Section>
           {!isCustomDesign && (
@@ -136,6 +141,8 @@ export default function InvoiceTemplatePage() {
               <p className="text-2xs text-muted">
                 {type === "B2B_T2"
                   ? "This is a purpose-built A4 Tax Invoice layout (Bill To / Bill No / Vehicle Number / Delivery To / Driver, a weighbridge-style item line with Empty/Load/Net weight, GST breakup, Royalty Pass and Round Off) printed from a Load & Dispatch record's \"Print Sales Invoice\" button — separate from the standard Sales Invoice (B2B) receipt above. Only Title and Footer Note are configurable here; every other field (customer, amounts, vehicle, weights) is filled in per-invoice automatically."
+                  : type === "TOKEN"
+                  ? "This is the gate token printed right after a Pre-Loading Weighment is recorded (Token No, product, Ref No, date/in-time, customer, vehicle, Empty weight, payment, delivery) — Load & Net Weight always print blank since they aren't known until the vehicle is loaded and weighed out. Only Title and Footer Note are configurable here; a fixed safety notice always prints below the fields."
                   : "This is the weighbridge slip (Token No, Ref No, In/Out time, vehicle, Empty/Load/Net weight, payment, delivery) printed from a Load & Dispatch record's \"Print Weight Slip\" button. Only Title and Footer Note are configurable here — the rest is filled in per-dispatch automatically."}
               </p>
             </Section>
@@ -150,13 +157,13 @@ export default function InvoiceTemplatePage() {
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground"><Printer className="h-4 w-4 text-primary" /> Design Preview</div>
                 <Button variant="outline" size="sm" onClick={openFullPreview}><Printer className="h-3.5 w-3.5" /> Open Full Preview</Button>
               </div>
-              <div className="overflow-hidden rounded-lg border border-dashed border-border-strong bg-white" style={{ height: type === "WEIGHT_SLIP" ? 420 : 520 }}>
+              <div className="overflow-hidden rounded-lg border border-dashed border-border-strong bg-white" style={{ height: isSlip ? 420 : 520 }}>
                 <iframe
                   key={type} title="Template preview" srcDoc={previewHtmlNoAutoPrint}
                   style={{
-                    width: type === "WEIGHT_SLIP" ? 360 : 800,
-                    height: type === "WEIGHT_SLIP" ? 525 : 1444,
-                    transform: `scale(${type === "WEIGHT_SLIP" ? 288 / 360 : 288 / 800})`,
+                    width: isSlip ? 360 : 800,
+                    height: isSlip ? 525 : 1444,
+                    transform: `scale(${isSlip ? 288 / 360 : 288 / 800})`,
                     transformOrigin: "top left", border: 0,
                   }}
                 />

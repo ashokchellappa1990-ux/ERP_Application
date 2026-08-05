@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Truck, FileText, Boxes, ScanLine, CheckCircle2, XCircle, PlayCircle,
-  MessageSquare, PackageCheck, Wallet, Save, ClipboardList, Layers, Receipt, Printer, Scale,
+  MessageSquare, PackageCheck, Wallet, Save, ClipboardList, Layers, Receipt, Printer, Scale, Ticket,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -52,6 +53,7 @@ const EMPTY_TC: TransportCostState = {
 
 export function LoadDispatchEditor({ id }: { id: number }) {
   const fmt = useFmt();
+  const router = useRouter();
   const toast = useToast();
   const [data, setData] = useState<LoadDispatchDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -375,6 +377,14 @@ export function LoadDispatchEditor({ id }: { id: number }) {
           </Button>
           <Button variant="accent" size="md" onClick={() => printDocument("weight-slip")} disabled={printBusy != null || !x.vehicleGateEntryId} title={x.vehicleGateEntryId ? "Print the Weight Slip" : "Available once a Vehicle Gate Entry is linked"}>
             <Scale className="h-4 w-4" /> {printBusy === "weight-slip" ? "Preparing…" : "Print Weight Slip"}
+          </Button>
+          <Button
+            variant="secondary" size="md"
+            onClick={() => router.push(`/transport/pre-weighment/token?gateEntryId=${x.vehicleGateEntryId}&next=${encodeURIComponent(`/warehouse/transfer/load-dispatch/${id}`)}`)}
+            disabled={printBusy != null || !x.vehicleGateEntryId}
+            title={x.vehicleGateEntryId ? "Preview & print the Pre Load Weight Slip (Token)" : "Available once a Vehicle Gate Entry is linked"}
+          >
+            <Ticket className="h-4 w-4" /> Print Token
           </Button>
           <Button variant="primary" size="md" onClick={() => printDocument("invoice")} disabled={printBusy != null || !x.saleId} title={x.saleId ? "Print the Tax Invoice (Template 2)" : "Available once a Sales Invoice has been posted"}>
             <Printer className="h-4 w-4" /> {printBusy === "invoice" ? "Preparing…" : "Print Invoice"}

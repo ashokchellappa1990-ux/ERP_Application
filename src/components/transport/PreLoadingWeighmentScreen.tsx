@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Scale, Plus } from "lucide-react";
+import { Scale, Plus, Printer } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { AppLoader } from "@/components/ui/AppLoader";
@@ -62,6 +62,7 @@ export function PreLoadingWeighmentScreen() {
                 <th className="px-4 py-3">Operator</th>
                 <th className="px-4 py-3">Weighed On</th>
                 <th className="px-4 py-3 text-center">Gate Status</th>
+                <th className="px-4 py-3 text-right">Token</th>
               </tr>
             </thead>
             <tbody>
@@ -75,11 +76,16 @@ export function PreLoadingWeighmentScreen() {
                     <td className="px-4 py-3 text-2xs text-muted">{r.operator ?? "—"}</td>
                     <td className="px-4 py-3 text-2xs text-muted">{r.weighDate ?? "—"} {r.weighTime ?? ""}</td>
                     <td className="px-4 py-3 text-center">{g && <Badge tone="neutral">{g.status}</Badge>}</td>
+                    <td className="px-4 py-3 text-right">
+                      <Button size="sm" variant="secondary" className="whitespace-nowrap" onClick={() => router.push(`/transport/pre-weighment/token?id=${r.id}&next=${encodeURIComponent("/transport/pre-weighment")}`)}>
+                        <Printer className="h-3.5 w-3.5" /> Preview &amp; Print
+                      </Button>
+                    </td>
                   </tr>
                 );
               })}
-              {loading && rows.length === 0 && <tr><td colSpan={6} className="px-4 py-8"><AppLoader label="Loading weighments…" size="sm" /></td></tr>}
-              {!loading && rows.length === 0 && <tr><td colSpan={6} className="px-4 py-10 text-center text-sm text-muted">{notAuthed ? <>Please <Link href="/login" className="font-semibold text-primary hover:underline">sign in</Link>.</> : "No pre-loading weighments yet."}</td></tr>}
+              {loading && rows.length === 0 && <tr><td colSpan={7} className="px-4 py-8"><AppLoader label="Loading weighments…" size="sm" /></td></tr>}
+              {!loading && rows.length === 0 && <tr><td colSpan={7} className="px-4 py-10 text-center text-sm text-muted">{notAuthed ? <>Please <Link href="/login" className="font-semibold text-primary hover:underline">sign in</Link>.</> : "No pre-loading weighments yet."}</td></tr>}
             </tbody>
           </table>
         </div>

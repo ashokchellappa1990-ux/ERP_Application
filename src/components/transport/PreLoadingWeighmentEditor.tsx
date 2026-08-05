@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Scale, ArrowLeft, Truck, Users, Save, Loader2, RadioTower, Plus, X } from "lucide-react";
+import { Scale, ArrowLeft, Truck, Users, Save, Loader2, RadioTower, Plus, X, CheckCircle2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { AppLoader } from "@/components/ui/AppLoader";
@@ -33,6 +33,7 @@ export function PreLoadingWeighmentEditor() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savedId, setSavedId] = useState<number | null>(null);
   const [eligible, setEligible] = useState<GateRow[]>([]);
   const [companies, setCompanies] = useState<Opt[]>([]);
   const [weighbridges, setWeighbridges] = useState<Opt[]>([]);
@@ -133,7 +134,7 @@ export function PreLoadingWeighmentEditor() {
         }),
       });
       const j = await res.json().catch(() => ({}));
-      if (res.ok && j.ok) { toast.success(j.message || "Pre-loading weighment recorded."); router.push(backHref); }
+      if (res.ok && j.ok) { toast.success(j.message || "Pre-loading weighment recorded."); setSavedId(j.id); }
       else { toast.error(j.message || "Could not save the weighment."); setSaving(false); }
     } catch { toast.error("Network error — could not save."); setSaving(false); }
   }
@@ -243,6 +244,22 @@ export function PreLoadingWeighmentEditor() {
       )}
 
       {addCompanyOpen && <AddTransportCompanyModal onClose={() => setAddCompanyOpen(false)} onAdded={(row) => { setCompanies((p) => [{ id: row.id, label: row.name }, ...p]); setTransportCompanyId(row.id); setAddCompanyOpen(false); }} />}
+
+      {savedId != null && (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
+            <div className="flex flex-col items-center gap-2 px-6 py-6 text-center">
+              <span className="grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success"><CheckCircle2 className="h-6 w-6" /></span>
+              <h2 className="text-sm font-bold text-foreground">Weight Submitted Successfully</h2>
+              <p className="text-sm text-muted">Do you want to print the Pre Load Weight Slip?</p>
+            </div>
+            <div className="flex flex-col gap-2 border-t border-border bg-surface-2 px-5 py-4">
+              <Button size="md" onClick={() => router.push(`/transport/pre-weighment/token?id=${savedId}&next=${encodeURIComponent(backHref)}`)}><Printer className="h-4 w-4" /> Preview &amp; Print</Button>
+              <Button variant="outline" size="md" onClick={() => router.push(backHref)}>Do It Later</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
