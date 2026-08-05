@@ -169,6 +169,12 @@ export const loadDispatchUpdateInput = z.object({
   remarks: z.string().trim().max(2000).optional().nullable(),
   items: z.array(loadDispatchItemInput).optional(),
   payment: paymentCollectionInput.optional(),
+  // Payment Details corrections (Rent / Transit Pass Qty / Driver Batta mode)
+  // — Driver Batta amount itself is still always server-recomputed, never
+  // accepted from the client (see createDirectCustomerDispatch's comment).
+  vehicleRent: z.coerce.number().min(0).optional(),
+  transitPassQty: z.coerce.number().min(0).optional(),
+  driverBattaMode: z.enum(["Adjustment", "Payment"]).optional(),
 });
 
 export const loadDispatchActionInput = z.object({

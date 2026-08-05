@@ -6,6 +6,8 @@ import { requirePermission } from "@/lib/auth/guard";
 import { writeAudit } from "@/lib/audit/log";
 import { loadDispatchUpdateInput } from "@/lib/contracts/loadDispatch";
 import type { LoadDispatchDetail } from "@/lib/contracts/loadDispatch";
+import { getDispatchConfig } from "@/lib/settings/dispatchConfig";
+import { computeDriverBatta, computeTransitPass } from "@/lib/settings/transportConfigDefaults";
 
 const PERM = "warehouse.transfer";
 const num = (v: unknown) => (v == null ? 0 : Number(v));
@@ -85,6 +87,19 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   if (!doc) return NextResponse.json({ ok: false, message: "Load & Dispatch not found." }, { status: 404 });
   if (!["Draft", "Ready", "Loading"].includes(doc.status)) return NextResponse.json({ ok: false, message: `A ${doc.status} dispatch can no longer be edited.` }, { status: 422 });
 
+  // Driver Batta / Transit Pass — same "never trust the client for money"
+  // recompute this dispatch was created with (see createDirectCustomerDispatch),
+  // now also applied here so a Payment Details correction after creation
+  // (e.g. a mistyped Transit Pass Qty) is recalculated the same way.
+  const cfg = await getDispatchConfig(user);
+  const itemsForTon = input.items
+    ? input.items.map((it) => ({ uom: it.uom ?? null, dispatchedQty: it.dispatchedQty }))
+    : await prisma.loadDispatchItem.findMany({ where: { loadDispatchId: id }, select: { uom: true, dispatchedQty: true } });
+  const tonQty = itemsForTon.reduce((s, it) => s + ((it.uom || "").toLowerCase() === "ton" ? Number(it.dispatchedQty) : 0), 0);
+  const driverBattaAmount = Math.round(computeDriverBatta(cfg, tonQty) * 100) / 100;
+  const transitPassQty = cfg.fields.transitPassQtyMode === "AutoNetWeight" ? tonQty : (input.transitPassQty != null ? Math.max(0, input.transitPassQty) : undefined);
+  const transitPassAmount = transitPassQty != null ? Math.round(computeTransitPass(cfg, transitPassQty) * 100) / 100 : undefined;
+
   await prisma.$transaction(async (tx) => {
     await tx.loadDispatch.update({
       where: { id },
@@ -100,6 +115,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         paymentMode: input.payment?.paymentMode, paymentAmount: input.payment?.paymentAmount,
         paymentMethod: input.payment?.paymentMethod, bankId: input.payment?.bankId,
         bankName: input.payment?.bankName, bankAccount: input.payment?.bankAccount,
+        vehicleRent: input.vehicleRent, transitPassQty, transitPassAmount, driverBattaAmount,
+        driverBattaMode: input.driverBattaMode,
         updatedBy: user.id,
       },
     });

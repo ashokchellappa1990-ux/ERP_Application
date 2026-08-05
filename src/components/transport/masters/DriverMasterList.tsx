@@ -95,6 +95,8 @@ function DriverModal({ mode, id, companies, onClose, onSaved }: { mode: "add" | 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(!!id);
   const [busy, setBusy] = useState(false);
+  const [companyList, setCompanyList] = useState<CompanyOption[]>(companies);
+  const [addCompanyOpen, setAddCompanyOpen] = useState(false);
   const set = <K extends keyof DriverInput>(k: K, v: DriverInput[K]) => setF((s) => ({ ...s, [k]: v }));
 
   useEffect(() => {
@@ -129,13 +131,64 @@ function DriverModal({ mode, id, companies, onClose, onSaved }: { mode: "add" | 
               <div><label className={lbl}>License No</label><input value={f.licenseNo ?? ""} onChange={(e) => set("licenseNo", e.target.value)} className={inp} /></div>
               <div><label className={lbl}>License Expiry</label><input type="date" value={f.licenseExpiry ?? ""} onChange={(e) => set("licenseExpiry", e.target.value)} className={inp} /></div>
               <div><label className={lbl}>Phone</label><input value={f.phone ?? ""} onChange={(e) => set("phone", e.target.value)} className={inp} /></div>
-              <div><label className={lbl}>Transport Company</label><select value={f.transportCompanyId ?? ""} onChange={(e) => set("transportCompanyId", Number(e.target.value) || null)} className={inp}><option value="">— None —</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+              <div>
+                <label className={lbl}>Transport Company</label>
+                <div className="flex gap-1.5">
+                  <select value={f.transportCompanyId ?? ""} onChange={(e) => set("transportCompanyId", Number(e.target.value) || null)} className={inp}><option value="">— None —</option>{companyList.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+                  <button type="button" title="Add new transport company" onClick={() => setAddCompanyOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border-strong bg-surface text-muted hover:border-primary hover:text-primary"><Plus className="h-4 w-4" /></button>
+                </div>
+              </div>
               <div><label className={lbl}>Status</label><select value={f.status} onChange={(e) => set("status", e.target.value as DriverInput["status"])} className={inp}><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div>
               <div className="sm:col-span-2"><label className={lbl}>Remarks</label><input value={f.remarks ?? ""} onChange={(e) => set("remarks", e.target.value)} className={inp} /></div>
             </div>
           )}
         </div>
         <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3"><Button size="sm" variant="ghost" onClick={onClose}>Close</Button><Button size="sm" onClick={save} disabled={busy || loading}>{busy ? "Saving…" : "Save"}</Button></div>
+      </div>
+      {addCompanyOpen && (
+        <AddTransportCompanyModal
+          onClose={() => setAddCompanyOpen(false)}
+          onAdded={(row) => { setCompanyList((p) => [{ id: row.id, name: row.name }, ...p]); set("transportCompanyId", row.id); setAddCompanyOpen(false); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function AddTransportCompanyModal({ onClose, onAdded }: { onClose: () => void; onAdded: (row: { id: number; name: string }) => void }) {
+  const toast = useToast();
+  const [code, setCode] = useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    if (!code.trim() || !name.trim()) { toast.error("Code and name are required."); return; }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/transport/masters/transport-company", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, name, phone: phone || null, status: "Active" }) });
+      const j = await res.json().catch(() => ({}));
+      if (res.ok && j.ok) { toast.success("Transport company added."); onAdded(j.row); }
+      else { toast.error(j.message || "Could not add the transport company."); setSaving(false); }
+    } catch { toast.error("Network error."); setSaving(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-border bg-surface-2 px-5 py-3.5">
+          <h2 className="text-sm font-bold text-foreground">Add Transport Company</h2>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-surface hover:text-foreground"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="space-y-3 p-5">
+          <div><label className={lbl}>Code *</label><input value={code} onChange={(e) => setCode(e.target.value)} className={inp} /></div>
+          <div><label className={lbl}>Name *</label><input value={name} onChange={(e) => setName(e.target.value)} className={inp} /></div>
+          <div><label className={lbl}>Phone</label><input value={phone} onChange={(e) => setPhone(e.target.value)} className={inp} /></div>
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t border-border bg-surface-2 px-5 py-3">
+          <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+          <Button size="sm" onClick={save} disabled={saving}>{saving ? "Saving…" : "Add"}</Button>
+        </div>
       </div>
     </div>
   );

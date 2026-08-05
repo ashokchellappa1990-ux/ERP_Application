@@ -13,7 +13,7 @@ import { cn } from "@/lib/cn";
 interface GateRow {
   id: number; gateEntryNo: string; vehicleId: number; vehicleNo: string; status: string;
   driverName: string | null; driverMobile: string | null; driverLicenseNo: string | null;
-  transportCompanyId: number | null; transportCompanyName: string | null;
+  transportCompanyId: number | null; transportCompanyName: string | null; vehicleType: string | null;
   customerName: string | null; dispatchType: string | null; referenceNo: string | null;
 }
 interface Opt { id: number; label: string }
@@ -42,6 +42,7 @@ export function PreLoadingWeighmentEditor() {
   const [gateEntryId, setGateEntryId] = useState<number | "">("");
   const [editingDetails, setEditingDetails] = useState(false);
   const [transportCompanyId, setTransportCompanyId] = useState<number | "">("");
+  const [vehicleType, setVehicleType] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerHits, setCustomerHits] = useState<CustomerHit[] | null>(null);
@@ -78,6 +79,7 @@ export function PreLoadingWeighmentEditor() {
   function applyGateEntry(g: GateRow) {
     setGateEntryId(g.id);
     setTransportCompanyId(g.transportCompanyId ?? "");
+    setVehicleType(g.vehicleType ?? "");
     setCustomerName(g.customerName ?? "");
     setCustomerQuery(g.customerName ?? "");
     setDriverName(g.driverName ?? "");
@@ -89,7 +91,7 @@ export function PreLoadingWeighmentEditor() {
   function onSelectVehicle(id: number | "") {
     const g = eligible.find((x) => x.id === id);
     if (g) applyGateEntry(g);
-    else { setGateEntryId(""); setTransportCompanyId(""); setCustomerName(""); setCustomerQuery(""); setDriverName(""); setDriverMobile(""); setDriverLicenseNo(""); }
+    else { setGateEntryId(""); setTransportCompanyId(""); setVehicleType(""); setCustomerName(""); setCustomerQuery(""); setDriverName(""); setDriverMobile(""); setDriverLicenseNo(""); }
   }
 
   const custTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -216,6 +218,7 @@ export function PreLoadingWeighmentEditor() {
                   {editingDetails && <button type="button" title="Add new transport company" onClick={() => setAddCompanyOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border-strong bg-surface text-muted hover:border-primary hover:text-primary"><Plus className="h-4 w-4" /></button>}
                 </div>
               </div>
+              <Fld label="Vehicle Type"><input value={vehicleType || "—"} disabled className={cn(inp, "cursor-not-allowed bg-surface-2 text-subtle")} /></Fld>
               <Fld label="Driver Name"><input value={driverName} disabled={!editingDetails} onChange={(e) => setDriverName(e.target.value)} placeholder="—" className={cn(inp, !editingDetails && "text-subtle")} /></Fld>
               <Fld label="Driver Mobile"><input value={driverMobile} disabled={!editingDetails} onChange={(e) => setDriverMobile(e.target.value)} placeholder="—" className={cn(inp, !editingDetails && "text-subtle")} /></Fld>
               <Fld label="Driver License No"><input value={driverLicenseNo} disabled={!editingDetails} onChange={(e) => setDriverLicenseNo(e.target.value)} placeholder="—" className={cn(inp, !editingDetails && "text-subtle")} /></Fld>

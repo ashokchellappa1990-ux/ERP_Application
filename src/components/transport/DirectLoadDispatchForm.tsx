@@ -707,15 +707,19 @@ export function DirectLoadDispatchForm() {
       </div>
 
       <SectionCard icon={PackagePlus} title="Items" allowOverflow>
-        <div className="relative mb-3">
-          <label className="mb-1 block text-2xs font-semibold text-muted">Add product</label>
-          <input value={pq} onChange={(e) => onPq(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); searchProducts(pq); } }} placeholder="Search product to add…" className={inp} />
-          {hits !== null && (hits.length ? (
-            <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border bg-card shadow-lg">
-              {hits.map((p) => <button key={p.id} onClick={() => addProductLine(p)} className="flex w-full items-center justify-between gap-2 border-b border-border px-3 py-2 text-left text-sm transition last:border-0 hover:bg-primary-subtle/40"><span className="min-w-0"><span className="block font-medium text-foreground">{p.name}</span><span className="block text-2xs text-subtle">{p.sku || "—"}{(p.batchTracked || p.invBatch) ? " · batch tracked" : ""}</span></span><Plus className="h-3.5 w-3.5 text-primary" /></button>)}
-            </div>
-          ) : <div className="absolute z-20 mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted shadow-lg">No products matched.</div>)}
-        </div>
+        {prefillGateEntryId ? (
+          <p className="mb-3 text-2xs text-subtle">Items are loaded from the linked Vehicle Gate Entry — no product search needed here. Adjust Qty/Rate below, or remove a line, if required.</p>
+        ) : (
+          <div className="relative mb-3">
+            <label className="mb-1 block text-2xs font-semibold text-muted">Add product</label>
+            <input value={pq} onChange={(e) => onPq(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); searchProducts(pq); } }} placeholder="Search product to add…" className={inp} />
+            {hits !== null && (hits.length ? (
+              <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border bg-card shadow-lg">
+                {hits.map((p) => <button key={p.id} onClick={() => addProductLine(p)} className="flex w-full items-center justify-between gap-2 border-b border-border px-3 py-2 text-left text-sm transition last:border-0 hover:bg-primary-subtle/40"><span className="min-w-0"><span className="block font-medium text-foreground">{p.name}</span><span className="block text-2xs text-subtle">{p.sku || "—"}{(p.batchTracked || p.invBatch) ? " · batch tracked" : ""}</span></span><Plus className="h-3.5 w-3.5 text-primary" /></button>)}
+              </div>
+            ) : <div className="absolute z-20 mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted shadow-lg">No products matched.</div>)}
+          </div>
+        )}
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full min-w-[900px] table-fixed text-sm">
             <colgroup>

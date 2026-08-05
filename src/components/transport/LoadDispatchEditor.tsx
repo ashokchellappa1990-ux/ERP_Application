@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Truck, FileText, Boxes, ScanLine, CheckCircle2, XCircle, PlayCircle,
-  MessageSquare, PackageCheck, Wallet, Save, ClipboardList, Layers, Receipt, Printer, Scale, Ticket,
+  MessageSquare, PackageCheck, Wallet, Save, ClipboardList, Layers, Receipt, Printer, Scale, Ticket, IndianRupee,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -90,6 +90,14 @@ export function LoadDispatchEditor({ id }: { id: number }) {
   const [pallets, setPallets] = useState("0");
   const [remarks, setRemarks] = useState("");
 
+  // Payment Details — Rent / Transit Pass Qty / Driver Batta mode stay
+  // editable while the doc is still Draft/Ready/Loading (Driver Batta and
+  // Transit Pass amounts themselves are always server-recomputed, never
+  // accepted verbatim — same rule as at creation time).
+  const [vehicleRentInput, setVehicleRentInput] = useState("0");
+  const [transitPassQtyInput, setTransitPassQtyInput] = useState("0");
+  const [driverBattaModeInput, setDriverBattaModeInput] = useState<"Adjustment" | "Payment">("Adjustment");
+
   const [items, setItems] = useState<EditableItem[]>([]);
   const [scanCode, setScanCode] = useState("");
   const [scanBusy, setScanBusy] = useState(false);
@@ -134,6 +142,10 @@ export function LoadDispatchEditor({ id }: { id: number }) {
     setPackages(String(d.packages ?? 0));
     setPallets(String(d.pallets ?? 0));
     setRemarks(d.remarks ?? "");
+
+    setVehicleRentInput(String(d.vehicleRent ?? 0));
+    setTransitPassQtyInput(d.transitPassQty != null ? String(d.transitPassQty) : "0");
+    setDriverBattaModeInput(d.driverBattaMode ?? "Adjustment");
 
     setItems(d.items.map((it) => ({ ...it, dispatchedQtyInput: String(it.dispatchedQty) })));
   }, []);
@@ -251,6 +263,7 @@ export function LoadDispatchEditor({ id }: { id: number }) {
       loadingStart: loadingStart || null, loadingEnd: loadingEnd || null,
       trailerNumber: trailerNumber || null, containerNumber: containerNumber || null,
       packages: Number(packages) || 0, pallets: Number(pallets) || 0, remarks: remarks || null,
+      vehicleRent: Number(vehicleRentInput) || 0, transitPassQty: Math.max(0, Number(transitPassQtyInput) || 0), driverBattaMode: driverBattaModeInput,
       items: items.map((it) => ({
         productId: it.productId, productName: it.productName, sku: it.sku, uom: it.uom, batchNo: it.batchNo,
         mfgDate: it.mfgDate, expiryDate: it.expiryDate, serialNo: it.serialNo, allocationLotId: it.allocationLotId,
@@ -259,6 +272,7 @@ export function LoadDispatchEditor({ id }: { id: number }) {
     };
     const res = await fetch(`/api/warehouse/load-dispatch/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     const j = await res.json().catch(() => ({}));
+    if (res.ok && j.ok && config?.flags.enableTransportCost && config.flags.allowCostEditing) await saveTransportCost();
     setSavingDraft(false);
     if (res.ok && j.ok) { toast.success(j.message || "Saved."); await load(); }
     else toast.error(j.message || "Could not save.");
@@ -302,6 +316,15 @@ export function LoadDispatchEditor({ id }: { id: number }) {
     for (const it of items) { taxable += it.taxableValue || 0; tax += it.taxAmount || 0; }
     return { taxable, tax, grandTotal: taxable + tax };
   }, [items]);
+
+  const vehicleRentVal = data?.vehicleRent ?? 0;
+  const transitPassAmountVal = data?.transitPassAmount ?? 0;
+  const driverBattaAmountVal = data?.driverBattaAmount ?? 0;
+  const totalInvoiceAmount = itemTotals.grandTotal + vehicleRentVal + transitPassAmountVal;
+  const totalAmountToCollect = data?.driverBattaMode === "Adjustment" ? totalInvoiceAmount - driverBattaAmountVal : totalInvoiceAmount;
+  const amountCollected = data?.paymentAmount ?? 0;
+  const balanceToCollect = Math.max(0, totalAmountToCollect - amountCollected);
+  const payStatus = data?.paymentMode === "Credit" && amountCollected <= 0 ? "Credit" : amountCollected >= totalAmountToCollect - 0.01 ? "Paid" : amountCollected > 0 ? "Partial" : "Credit";
 
   const tcTotal = useMemo(() => {
     const n = (v: string) => Number(v) || 0;
@@ -507,7 +530,7 @@ export function LoadDispatchEditor({ id }: { id: number }) {
       </SectionCard>
 
       {/* Transport Information + Driver Information — paired side by side, matching the add page. */}
-      {(transportInfoVisible || driverInfoVisible) && (
+      {(transportInfoVisible || driverInfoVisible || (x.vehicleGateEntryId && fieldOn(SCREEN, "weighmentManagement"))) && (
       <div className="grid gap-4 lg:grid-cols-2">
         {transportInfoVisible && (
         <SectionCard
@@ -559,51 +582,132 @@ export function LoadDispatchEditor({ id }: { id: number }) {
           </div>
         </SectionCard>
         )}
+
+        {/* Weighment Details — read-only, from the linked Vehicle Gate Entry's
+            Pre/Post-Loading Weighment. Placed alongside Transport/Driver
+            Information so it lines up in the same row rather than sitting
+            below as its own full-width block. */}
+        {x.vehicleGateEntryId && fieldOn(SCREEN, "weighmentManagement") && (
+          <SectionCard icon={Scale} title="Weighment Details">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Fld label="Tare Weight (Empty, In Kgs)"><input readOnly value={weighment.tare != null ? String(weighment.tare) : "Not yet weighed"} className={cn(inp, "cursor-not-allowed bg-surface-2")} /></Fld>
+              <Fld label="Gross Weight (Post Load, In Kgs)"><input readOnly value={weighment.gross != null ? String(weighment.gross) : "Not yet weighed"} className={cn(inp, "cursor-not-allowed bg-surface-2")} /></Fld>
+              <Fld label="Net Weight (In Kgs)"><input readOnly value={weighment.net != null ? String(weighment.net) : "—"} className={cn(inp, "cursor-not-allowed bg-surface-2 font-semibold text-foreground")} /></Fld>
+            </div>
+            {weighment.gross == null && (
+              <p className="mt-2 text-2xs text-subtle">Post-Loading weight not captured yet — record it from Transport &amp; Vehicle Operations → Post Loading Weighment.</p>
+            )}
+          </SectionCard>
+        )}
       </div>
       )}
 
-      {/* Weighment Details — read-only, from the linked Vehicle Gate Entry's
-          Pre/Post-Loading Weighment (replaces the old Loading Details section,
-          which tracked loading-bay/supervisor/start-end-time/packages/pallets
-          — those fields still exist on the record but no longer have UI here). */}
-      {x.vehicleGateEntryId && fieldOn(SCREEN, "weighmentManagement") && (
-        <SectionCard icon={Scale} title="Weighment Details">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Fld label="Tare Weight (Empty, In Kgs)"><input readOnly value={weighment.tare != null ? String(weighment.tare) : "Not yet weighed"} className={cn(inp, "cursor-not-allowed bg-surface-2")} /></Fld>
-            <Fld label="Gross Weight (Post Load, In Kgs)"><input readOnly value={weighment.gross != null ? String(weighment.gross) : "Not yet weighed"} className={cn(inp, "cursor-not-allowed bg-surface-2")} /></Fld>
-            <Fld label="Net Weight (In Kgs)"><input readOnly value={weighment.net != null ? String(weighment.net) : "—"} className={cn(inp, "cursor-not-allowed bg-surface-2 font-semibold text-foreground")} /></Fld>
-          </div>
-          {weighment.gross == null && (
-            <p className="mt-2 text-2xs text-subtle">Post-Loading weight not captured yet — record it from Transport &amp; Vehicle Operations → Post Loading Weighment.</p>
-          )}
-        </SectionCard>
-      )}
+      {/* Transport Cost / Payment Details / Payment Collection — aligned in
+          one row, matching the Direct Customer Dispatch create page's layout. */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        {config?.flags.enableTransportCost && fieldOn(SCREEN, "transportCost") && (
+          <SectionCard icon={Wallet} title="Transport Cost" allowOverflow>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {fieldOn(SCREEN, "freightCharge") && <Fld label="Freight Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.freightCharge} onChange={(e) => setTc((p) => ({ ...p, freightCharge: e.target.value }))} className={inp} /></Fld>}
+              {fieldOn(SCREEN, "loadingCharge") && <Fld label="Loading Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.loadingCharge} onChange={(e) => setTc((p) => ({ ...p, loadingCharge: e.target.value }))} className={inp} /></Fld>}
+              {fieldOn(SCREEN, "unloadingCharge") && <Fld label="Unloading Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.unloadingCharge} onChange={(e) => setTc((p) => ({ ...p, unloadingCharge: e.target.value }))} className={inp} /></Fld>}
+              {fieldOn(SCREEN, "fuelCharge") && <Fld label="Fuel Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.fuelCharge} onChange={(e) => setTc((p) => ({ ...p, fuelCharge: e.target.value }))} className={inp} /></Fld>}
+              {fieldOn(SCREEN, "tollCharge") && <Fld label="Toll Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.tollCharge} onChange={(e) => setTc((p) => ({ ...p, tollCharge: e.target.value }))} className={inp} /></Fld>}
+              {fieldOn(SCREEN, "driverAllowance") && <Fld label="Driver Allowance"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.driverAllowance} onChange={(e) => setTc((p) => ({ ...p, driverAllowance: e.target.value }))} className={inp} /></Fld>}
+              {fieldOn(SCREEN, "helperAllowance") && <Fld label="Helper Allowance"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.helperAllowance} onChange={(e) => setTc((p) => ({ ...p, helperAllowance: e.target.value }))} className={inp} /></Fld>}
+              {fieldOn(SCREEN, "driverBatta") && <Fld label="Driver Batta (auto)"><input readOnly value={driverBattaAmountVal.toFixed(2)} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>}
+              {fieldOn(SCREEN, "vehicleRent") && <Fld label="Vehicle Rent"><input readOnly value={vehicleRentVal.toFixed(2)} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>}
+              {fieldOn(SCREEN, "transitPass") && <Fld label="Transit Pass (auto)"><input readOnly value={transitPassAmountVal.toFixed(2)} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>}
+              {fieldOn(SCREEN, "otherTransportCharges") && <Fld label="Other Charges"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.otherCharges} onChange={(e) => setTc((p) => ({ ...p, otherCharges: e.target.value }))} className={inp} /></Fld>}
+              {fieldOn(SCREEN, "transportDiscount") && <Fld label="Discount"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.discount} onChange={(e) => setTc((p) => ({ ...p, discount: e.target.value }))} className={inp} /></Fld>}
+              {fieldOn(SCREEN, "transportGst") && <Fld label="GST Amount"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.gstAmount} onChange={(e) => setTc((p) => ({ ...p, gstAmount: e.target.value }))} className={inp} /></Fld>}
+              <Fld label="Total Transport Cost"><input value={fmt.money(tcTotal + driverBattaAmountVal + transitPassAmountVal)} disabled className={cn(inp, "font-semibold text-foreground")} /></Fld>
+            </div>
+            {config.flags.allowCostEditing && <p className="mt-2 text-2xs text-subtle">Saves together with Save Draft below.</p>}
+          </SectionCard>
+        )}
 
-      {/* Transport Cost — only when both the Dispatch Configuration flag AND
-          Document Field Settings allow it. */}
-      {config?.flags.enableTransportCost && fieldOn(SCREEN, "transportCost") && (
-        <SectionCard icon={Wallet} title="Transport Cost">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {fieldOn(SCREEN, "freightCharge") && <Fld label="Freight Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.freightCharge} onChange={(e) => setTc((p) => ({ ...p, freightCharge: e.target.value }))} className={inp} /></Fld>}
-            {fieldOn(SCREEN, "loadingCharge") && <Fld label="Loading Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.loadingCharge} onChange={(e) => setTc((p) => ({ ...p, loadingCharge: e.target.value }))} className={inp} /></Fld>}
-            {fieldOn(SCREEN, "unloadingCharge") && <Fld label="Unloading Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.unloadingCharge} onChange={(e) => setTc((p) => ({ ...p, unloadingCharge: e.target.value }))} className={inp} /></Fld>}
-            {fieldOn(SCREEN, "fuelCharge") && <Fld label="Fuel Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.fuelCharge} onChange={(e) => setTc((p) => ({ ...p, fuelCharge: e.target.value }))} className={inp} /></Fld>}
-            {fieldOn(SCREEN, "tollCharge") && <Fld label="Toll Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.tollCharge} onChange={(e) => setTc((p) => ({ ...p, tollCharge: e.target.value }))} className={inp} /></Fld>}
-            {fieldOn(SCREEN, "driverAllowance") && <Fld label="Driver Allowance"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.driverAllowance} onChange={(e) => setTc((p) => ({ ...p, driverAllowance: e.target.value }))} className={inp} /></Fld>}
-            {fieldOn(SCREEN, "helperAllowance") && <Fld label="Helper Allowance"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.helperAllowance} onChange={(e) => setTc((p) => ({ ...p, helperAllowance: e.target.value }))} className={inp} /></Fld>}
-            {fieldOn(SCREEN, "driverBatta") && <Fld label="Driver Batta"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.driverBatta} onChange={(e) => setTc((p) => ({ ...p, driverBatta: e.target.value }))} className={inp} /></Fld>}
-            {fieldOn(SCREEN, "vehicleRent") && <Fld label="Vehicle Rent"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.vehicleRent} onChange={(e) => setTc((p) => ({ ...p, vehicleRent: e.target.value }))} className={inp} /></Fld>}
-            {fieldOn(SCREEN, "transitPass") && <Fld label="Transit Pass"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.transitPass} onChange={(e) => setTc((p) => ({ ...p, transitPass: e.target.value }))} className={inp} /></Fld>}
-            {fieldOn(SCREEN, "otherTransportCharges") && <Fld label="Other Charges"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.otherCharges} onChange={(e) => setTc((p) => ({ ...p, otherCharges: e.target.value }))} className={inp} /></Fld>}
-            {fieldOn(SCREEN, "transportDiscount") && <Fld label="Discount"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.discount} onChange={(e) => setTc((p) => ({ ...p, discount: e.target.value }))} className={inp} /></Fld>}
-            {fieldOn(SCREEN, "transportGst") && <Fld label="GST Amount"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.gstAmount} onChange={(e) => setTc((p) => ({ ...p, gstAmount: e.target.value }))} className={inp} /></Fld>}
-            <Fld label="Total Transport Cost"><input value={fmt.money(tcTotal)} disabled className={cn(inp, "font-semibold text-foreground")} /></Fld>
+        <SectionCard icon={IndianRupee} title="Payment Details" allowOverflow>
+          <div className="space-y-2 text-base">
+            <Row k="Total Material Value" v={itemTotals.taxable.toFixed(2)} big />
+            <Row k="Total Tax Value" v={itemTotals.tax.toFixed(2)} big />
+            {canEdit ? (
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-base text-muted">Rent (Amount to be Recovered)</span>
+                <input type="number" min={0} value={vehicleRentInput} onChange={(e) => setVehicleRentInput(e.target.value)} className={cn(inp, "h-8 w-28 text-right")} />
+              </div>
+            ) : (
+              <Row k="Rent (Amount to be Recovered)" v={vehicleRentVal.toFixed(2)} big />
+            )}
+            <Row k="Transit Pass Amount" v={transitPassAmountVal.toFixed(2)} big />
+            {canEdit ? (
+              <div className="flex items-center justify-between gap-3">
+                <span className="shrink-0 text-2xs text-subtle">Transit Pass Qty (Ton)</span>
+                <input type="number" min={0} step="0.001" value={transitPassQtyInput} onChange={(e) => setTransitPassQtyInput(e.target.value)} className={cn(inp, "h-8 w-28 text-right")} />
+              </div>
+            ) : (
+              x.transitPassQty != null && <p className="text-2xs text-subtle">Transit Pass Qty: {x.transitPassQty.toFixed(3)} Ton</p>
+            )}
+            {canEdit && <p className="text-2xs text-subtle">Rent / Transit Pass Qty save with Save Draft below — Driver Batta &amp; Transit Pass Amount are always recalculated server-side.</p>}
+            <div className="my-1 h-px bg-border" />
+            <div className="flex items-center justify-between text-lg font-bold text-foreground"><span>Total Invoice Amount</span><span>{totalInvoiceAmount.toFixed(2)}</span></div>
           </div>
-          {config.flags.allowCostEditing && (
-            <div className="mt-3 flex justify-end"><Button variant="outline" size="md" onClick={saveTransportCost} disabled={tcSaving}><Save className="h-4 w-4" /> {tcSaving ? "Saving…" : "Save Transport Cost"}</Button></div>
-          )}
+
+          <div className="mt-3 border-t border-border pt-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-base font-semibold text-foreground">Driver Batta Amount</p>
+                <p className="text-2xs text-subtle">{x.driverBattaMode ?? "—"} mode</p>
+              </div>
+              <span className="text-lg font-bold tabular-nums text-foreground">{driverBattaAmountVal.toFixed(2)}</span>
+            </div>
+            {canEdit && (
+              <div className="mt-2 inline-flex w-full overflow-hidden rounded-md border border-border text-2xs">
+                {([["Adjustment", "Adjustment"], ["Payment", "Payment"]] as const).map(([m, lbl]) => (
+                  <button key={m} type="button" onClick={() => setDriverBattaModeInput(m)} className={cn("flex-1 px-2 py-1.5 font-semibold transition", driverBattaModeInput === m ? "bg-primary text-white" : "bg-surface text-muted hover:text-foreground")}>{lbl}</button>
+                ))}
+              </div>
+            )}
+            <p className="mt-1 text-2xs text-subtle">
+              {x.driverBattaMode === "Adjustment"
+                ? "Netted out of what's collected from the customer — the driver keeps this directly."
+                : "Full invoice amount is collected from the customer; the business pays the driver separately."}
+            </p>
+          </div>
+
+          <div className="mt-3 rounded-lg bg-primary-subtle/40 px-3 py-2.5">
+            <div className="flex items-center justify-between text-lg font-bold text-primary"><span>Total Amount to be Collected</span><span className="tabular-nums">{totalAmountToCollect.toFixed(2)}</span></div>
+          </div>
         </SectionCard>
-      )}
+
+        <SectionCard icon={IndianRupee} title="Payment Collection" allowOverflow>
+          <div className="space-y-2">
+            <Row k="Payment Type" v={x.paymentMode ?? "—"} />
+            <Row k="Amount Collected" v={amountCollected.toFixed(2)} />
+            {Array.isArray(x.paymentSplits) && x.paymentSplits.length > 0 ? (
+              <div className="space-y-1.5 rounded-md border border-border p-2">
+                <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Split Payment</p>
+                {x.paymentSplits.map((l, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <span className="text-muted">{l.mode}{l.reference ? ` · ${l.reference}` : ""}</span>
+                    <span className="font-semibold tabular-nums text-foreground">{Number(l.amount).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                <Row k="Payment Mode" v={x.paymentMethod ?? "—"} />
+                {x.bankName && <Row k="Bank" v={`${x.bankName}${x.bankAccount ? ` · ${x.bankAccount}` : ""}`} />}
+              </>
+            )}
+          </div>
+          <div className="mt-2 space-y-1.5 rounded-lg bg-surface-2 px-3 py-2 text-xs">
+            <div className="flex items-center justify-between"><span className="text-muted">Total Amount to be Collected</span><span className="font-semibold tabular-nums text-foreground">{totalAmountToCollect.toFixed(2)}</span></div>
+            <div className="flex items-center justify-between"><span className="text-muted">Balance Amount to be Collected</span><span className="font-semibold tabular-nums text-foreground">{balanceToCollect.toFixed(2)}</span></div>
+            <div className="flex items-center justify-between"><span className="text-muted">Status</span><span className={cn("font-bold", payStatus === "Paid" ? "text-success" : payStatus === "Partial" ? "text-warning" : "text-danger")}>{payStatus}</span></div>
+          </div>
+        </SectionCard>
+      </div>
 
       {((x.remarks && fieldOn(SCREEN, "remarks")) || x.cancelReason) && (
         <div className="grid gap-4 sm:grid-cols-2">
@@ -685,6 +789,9 @@ function KV({ k, v, strong, custom }: { k: string; v: string; strong?: boolean; 
       {custom ?? <div className={cn("text-sm", strong ? "font-bold text-foreground" : "font-medium text-foreground")}>{v || "—"}</div>}
     </div>
   );
+}
+function Row({ k, v, big }: { k: string; v: string; big?: boolean }) {
+  return <div className="flex items-center justify-between"><span className={cn("text-muted", big && "text-base")}>{k}</span><span className={cn("text-foreground", big ? "text-base font-semibold" : "")}>{v}</span></div>;
 }
 function NoteCard({ title, body }: { title: string; body: string }) {
   return <div className="rounded-2xl border border-border bg-card p-4 shadow-sm"><p className="mb-1.5 text-2xs font-bold uppercase tracking-wide text-subtle">{title}</p><p className="whitespace-pre-line text-xs text-muted">{body}</p></div>;

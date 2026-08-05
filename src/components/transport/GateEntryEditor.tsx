@@ -18,7 +18,7 @@ const req = (key: string) => (fieldMust(SCREEN, key) ? " *" : "");
 const TRANSPORT_MODES = ["", "Road", "Rail", "Air", "Courier", "Own Vehicle", "Third Party"];
 
 interface Opt { id: number; label: string }
-interface VehicleOpt extends Opt { vehicleType: string | null }
+interface VehicleOpt extends Opt { vehicleType: string | null; transportCompanyId: number | null }
 interface ProductHit { id: number; name: string; sku?: string; uom?: string }
 interface ItemLine { id: string; productId: number; productName: string; sku: string; uom: string; qty: string }
 interface SalesOrderHit { id: number; docNo: string; customerName: string }
@@ -45,7 +45,6 @@ export function GateEntryEditor() {
   const [vehicles, setVehicles] = useState<VehicleOpt[]>([]);
   const [companies, setCompanies] = useState<Opt[]>([]);
   const [loadingBays, setLoadingBays] = useState<Opt[]>([]);
-  const [driverMasters, setDriverMasters] = useState<{ id: number; name: string; phone: string | null; licenseNo: string | null }[]>([]);
 
   // Section 1 – Gate Information
   const [gateEntryNo, setGateEntryNo] = useState("");
@@ -95,6 +94,9 @@ export function GateEntryEditor() {
   // Section 5 – Driver Details
   const [driverMasterId, setDriverMasterId] = useState<number | "">("");
   const [driverName, setDriverName] = useState("");
+  const [driverQuery, setDriverQuery] = useState("");
+  const [driverHits, setDriverHits] = useState<{ id: number; name: string; phone: string | null; licenseNo: string | null }[] | null>(null);
+  const [searchingDriver, setSearchingDriver] = useState(false);
   const [driverMobile, setDriverMobile] = useState("");
   const [driverLicenseNo, setDriverLicenseNo] = useState("");
   const [helperName, setHelperName] = useState("");
@@ -123,7 +125,7 @@ export function GateEntryEditor() {
       fetch("/api/transport/masters/vehicle?status=Active", { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
       fetch("/api/transport/masters/transport-company?status=Active", { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
     ]).then(([v, c]) => {
-      if (v.ok) setVehicles(v.rows.map((x: { id: number; vehicleNo: string; vehicleType: string | null }) => ({ id: x.id, label: x.vehicleNo, vehicleType: x.vehicleType })));
+      if (v.ok) setVehicles(v.rows.map((x: { id: number; vehicleNo: string; vehicleType: string | null; transportCompanyId: number | null }) => ({ id: x.id, label: x.vehicleNo, vehicleType: x.vehicleType, transportCompanyId: x.transportCompanyId })));
       if (c.ok) setCompanies(c.rows.map((x: { id: number; name: string }) => ({ id: x.id, label: x.name })));
     });
   };
@@ -147,7 +149,6 @@ export function GateEntryEditor() {
     }).catch(() => {});
     const masters = loadMasters();
     const bays = fetch("/api/transport/masters/loading-bay?status=Active", { cache: "no-store" }).then((r) => r.json()).then((lb) => { if (lb.ok) setLoadingBays(lb.rows.map((x: { id: number; name: string }) => ({ id: x.id, label: x.name }))); }).catch(() => {});
-    const drivers = fetch("/api/transport/masters/driver?status=Active", { cache: "no-store" }).then((r) => r.json()).then((d) => { if (d.ok) setDriverMasters(d.rows.map((x: { id: number; name: string; phone: string | null; licenseNo: string | null }) => ({ id: x.id, name: x.name, phone: x.phone, licenseNo: x.licenseNo }))); }).catch(() => {});
     // Location — same source as the app's top bar (active business/branch scope).
     const scope = fetch("/api/system/scope", { cache: "no-store" }).then((r) => r.json()).then((j) => {
       if (!j.ok) return;
@@ -160,7 +161,7 @@ export function GateEntryEditor() {
         setLocation(`${branchIds.length} branches`);
       }
     }).catch(() => {});
-    Promise.allSettled([nextNumber, dispatchConfig, masters, bays, drivers, scope]).finally(() => setPageLoading(false));
+    Promise.allSettled([nextNumber, dispatchConfig, masters, bays, scope]).finally(() => setPageLoading(false));
   }, []);
 
   const soTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -238,10 +239,26 @@ export function GateEntryEditor() {
   const updItem = (id: string, qty: string) => setItems((p) => p.map((l) => (l.id === id ? { ...l, qty } : l)));
   const removeItem = (id: string) => setItems((p) => p.filter((l) => l.id !== id));
 
-  const pickDriverMaster = (id: number | "") => {
-    setDriverMasterId(id);
-    const d = driverMasters.find((x) => x.id === id);
-    if (d) { setDriverName(d.name); setDriverMobile(d.phone ?? ""); setDriverLicenseNo(d.licenseNo ?? ""); }
+  // Driver Name — type-ahead search against Driver Master (3+ letters),
+  // auto-filling Mobile + License No on pick. Typing without picking still
+  // saves whatever name was typed (a one-off driver not yet in the master).
+  const driverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchDrivers = async (q: string) => {
+    try {
+      const j = await fetch(`/api/transport/masters/driver?status=Active&q=${encodeURIComponent(q.trim())}`, { cache: "no-store" }).then((r) => r.json());
+      if (j.ok) setDriverHits((j.rows ?? []).map((x: { id: number; name: string; phone: string | null; licenseNo: string | null }) => ({ id: x.id, name: x.name, phone: x.phone, licenseNo: x.licenseNo })));
+    } catch { setDriverHits(null); } finally { setSearchingDriver(false); }
+  };
+  const onDriverQuery = (v: string) => {
+    setDriverQuery(v); setDriverName(v); setDriverMasterId("");
+    if (driverTimer.current) clearTimeout(driverTimer.current);
+    if (v.trim().length < 3) { setDriverHits(null); setSearchingDriver(false); return; }
+    setSearchingDriver(true);
+    driverTimer.current = setTimeout(() => searchDrivers(v), 250);
+  };
+  const pickDriverHit = (h: { id: number; name: string; phone: string | null; licenseNo: string | null }) => {
+    setDriverMasterId(h.id); setDriverName(h.name); setDriverQuery(h.name);
+    setDriverMobile(h.phone ?? ""); setDriverLicenseNo(h.licenseNo ?? ""); setDriverHits(null);
   };
 
   async function save() {
@@ -405,16 +422,6 @@ export function GateEntryEditor() {
 
       <SectionCard icon={Truck} title="Transport Details" allowOverflow>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {fieldOn(SCREEN, "transportCompany") && (
-          <div>
-            <label className="mb-1 block text-2xs font-semibold text-muted">Transport Company{req("transportCompany")}</label>
-            <div className="flex gap-1.5">
-              <select value={transportCompanyId} onChange={(e) => setTransportCompanyId(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">—</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select>
-              <button type="button" title="Add new transport company" onClick={() => setAddCompanyOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border-strong bg-surface text-muted hover:border-primary hover:text-primary"><Plus className="h-4 w-4" /></button>
-            </div>
-          </div>
-          )}
-          {fieldOn(SCREEN, "transportMode") && <Fld label={`Transport Mode${req("transportMode")}`}><select value={transportMode} onChange={(e) => setTransportMode(e.target.value)} className={inp}>{TRANSPORT_MODES.map((t) => <option key={t} value={t}>{t || "—"}</option>)}</select></Fld>}
           <div>
             <label className="mb-1 block text-2xs font-semibold text-muted">Vehicle Number{req("vehicleNumber")}</label>
             <div className="flex gap-1.5">
@@ -425,6 +432,7 @@ export function GateEntryEditor() {
                   setVehicleId(id);
                   const v = vehicles.find((x) => x.id === id);
                   if (v?.vehicleType) setVehicleType(v.vehicleType);
+                  if (v?.transportCompanyId) setTransportCompanyId(v.transportCompanyId);
                 }}
                 className={inp}
               >
@@ -435,6 +443,17 @@ export function GateEntryEditor() {
             </div>
           </div>
           {fieldOn(SCREEN, "vehicleType") && <Fld label={`Vehicle Type${req("vehicleType")}`}><select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} className={inp}><option value="">— Select —</option>{VEHICLE_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></Fld>}
+          {fieldOn(SCREEN, "transportCompany") && (
+          <div>
+            <label className="mb-1 block text-2xs font-semibold text-muted">Transport Company{req("transportCompany")}</label>
+            <div className="flex gap-1.5">
+              <select value={transportCompanyId} onChange={(e) => setTransportCompanyId(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">—</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select>
+              <button type="button" title="Add new transport company" onClick={() => setAddCompanyOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border-strong bg-surface text-muted hover:border-primary hover:text-primary"><Plus className="h-4 w-4" /></button>
+            </div>
+            <p className="mt-1 text-2xs text-subtle">Auto-fills from the selected vehicle&apos;s master record — adjust here if different.</p>
+          </div>
+          )}
+          {fieldOn(SCREEN, "transportMode") && <Fld label={`Transport Mode${req("transportMode")}`}><select value={transportMode} onChange={(e) => setTransportMode(e.target.value)} className={inp}>{TRANSPORT_MODES.map((t) => <option key={t} value={t}>{t || "—"}</option>)}</select></Fld>}
           {fieldOn(SCREEN, "trailerNumber") && <Fld label="Trailer Number (optional)"><input value={trailerNumber} onChange={(e) => setTrailerNumber(e.target.value)} className={inp} /></Fld>}
           {fieldOn(SCREEN, "containerNumber") && <Fld label="Container Number (optional)"><input value={containerNumber} onChange={(e) => setContainerNumber(e.target.value)} className={inp} /></Fld>}
         </div>
@@ -493,8 +512,22 @@ export function GateEntryEditor() {
       <SectionCard icon={Users} title="Driver Details" allowOverflow>
         <p className="mb-3 text-2xs text-subtle">Captured fresh at the gate — the actual driver entering may differ from anyone planned earlier.</p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {fieldOn(SCREEN, "driverMaster") && <Fld label="Known Driver (optional)"><select value={driverMasterId} onChange={(e) => pickDriverMaster(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">— Enter manually below —</option>{driverMasters.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select></Fld>}
-          <Fld label="Driver Name"><input value={driverName} onChange={(e) => setDriverName(e.target.value)} className={inp} /></Fld>
+          <div className="relative">
+            <label className="mb-1 block text-2xs font-semibold text-muted">Driver Name</label>
+            <div className="relative">
+              <input value={driverQuery} onChange={(e) => onDriverQuery(e.target.value)} placeholder="Type 3+ letters to search Driver Master…" className={cn(inp, searchingDriver && "pr-9")} />
+              {searchingDriver && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary" />}
+            </div>
+            {driverHits !== null && (
+              <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border bg-card shadow-lg">
+                {driverHits.length ? driverHits.map((h) => (
+                  <button key={h.id} onClick={() => pickDriverHit(h)} className="block w-full border-b border-border px-3 py-2 text-left text-sm last:border-0 hover:bg-primary-subtle/40">
+                    <span className="font-medium text-foreground">{h.name}</span>{h.phone ? <span className="text-2xs text-subtle"> — {h.phone}</span> : null}
+                  </button>
+                )) : <div className="px-3 py-2 text-sm text-muted">No matching drivers — will be saved as a one-off name.</div>}
+              </div>
+            )}
+          </div>
           {fieldOn(SCREEN, "driverMobile") && <Fld label={`Mobile Number${req("driverMobile")}`}><input value={driverMobile} onChange={(e) => setDriverMobile(e.target.value)} className={inp} /></Fld>}
           {fieldOn(SCREEN, "driverLicenseNo") && <Fld label={`License Number${req("driverLicenseNo")}`}><input value={driverLicenseNo} onChange={(e) => setDriverLicenseNo(e.target.value)} className={inp} /></Fld>}
           {fieldOn(SCREEN, "helperName") && <Fld label="Helper Name (optional)"><input value={helperName} onChange={(e) => setHelperName(e.target.value)} className={inp} /></Fld>}
@@ -529,7 +562,7 @@ export function GateEntryEditor() {
       </div>
 
       {addCompanyOpen && <AddTransportCompanyModal onClose={() => setAddCompanyOpen(false)} onAdded={(row) => { setCompanies((p) => [{ id: row.id, label: row.name }, ...p]); setTransportCompanyId(row.id); setAddCompanyOpen(false); }} />}
-      {addVehicleOpen && <AddVehicleModal onClose={() => setAddVehicleOpen(false)} onAdded={(row) => { setVehicles((p) => [{ id: row.id, label: row.vehicleNo, vehicleType: row.vehicleType ?? null }, ...p]); setVehicleId(row.id); if (row.vehicleType) setVehicleType(row.vehicleType); setAddVehicleOpen(false); }} />}
+      {addVehicleOpen && <AddVehicleModal onClose={() => setAddVehicleOpen(false)} onAdded={(row) => { setVehicles((p) => [{ id: row.id, label: row.vehicleNo, vehicleType: row.vehicleType ?? null, transportCompanyId: row.transportCompanyId ?? null }, ...p]); setVehicleId(row.id); if (row.vehicleType) setVehicleType(row.vehicleType); if (row.transportCompanyId) setTransportCompanyId(row.transportCompanyId); setAddVehicleOpen(false); }} />}
       {savedId != null && (
         <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
@@ -592,7 +625,7 @@ function AddTransportCompanyModal({ onClose, onAdded }: { onClose: () => void; o
   );
 }
 
-function AddVehicleModal({ onClose, onAdded }: { onClose: () => void; onAdded: (row: { id: number; vehicleNo: string; vehicleType: string | null }) => void }) {
+function AddVehicleModal({ onClose, onAdded }: { onClose: () => void; onAdded: (row: { id: number; vehicleNo: string; vehicleType: string | null; transportCompanyId: number | null }) => void }) {
   const toast = useToast();
   const [vehicleNo, setVehicleNo] = useState("");
   const [vehicleType, setVehicleType] = useState("");
