@@ -54,6 +54,11 @@ export async function POST(req: Request) {
   const existing = await prisma.preLoadingWeighment.findFirst({ where: { gateEntryId: input.gateEntryId, tenantId: user.tenantId }, select: { id: true } });
   if (existing) return NextResponse.json({ ok: false, message: "A pre-loading weighment already exists for this gate entry." }, { status: 422 });
 
+  // Completing the pre-loading weighment is the vehicle's cue to move inside —
+  // auto-advance Waiting -> Inside Factory instead of requiring a separate
+  // manual "Move Inside" click for what's really the same physical event.
+  const autoMovedInside = entry.status === "Waiting";
+
   try {
     const id = await prisma.$transaction(async (tx) => {
       const row = await tx.preLoadingWeighment.create({
@@ -75,10 +80,21 @@ export async function POST(req: Request) {
           remarks: `Pre-loading weighment ${weighmentNo} — tare ${input.tareWeight}`,
         },
       });
+      if (autoMovedInside) {
+        await tx.vehicleGateEntry.update({ where: { id: entry.id }, data: { status: "Inside Factory", updatedBy: user.id } });
+      }
       return row.id;
     });
     await writeAudit(prisma, user, { action: "pre_loading_weighment.create", entity: "PreLoadingWeighment", entityId: id, summary: `Pre-loading weighment recorded for gate entry ${entry.gateEntryNo}`, businessId: entry.businessId ?? null, branchId: entry.branchId ?? null, ip: requestMeta(req).ip });
-    return NextResponse.json({ ok: true, message: "Pre-loading weighment recorded.", id }, { status: 201 });
+    if (autoMovedInside) {
+      await writeAudit(prisma, user, { action: "vehicle_gate_entry.move-inside", entity: "VehicleGateEntry", entityId: entry.id, summary: `Gate entry ${entry.gateEntryNo} Waiting → Inside Factory (auto, on pre-loading weighment)`, businessId: entry.businessId ?? null, branchId: entry.branchId ?? null, ip: requestMeta(req).ip });
+    }
+    return NextResponse.json({
+      ok: true,
+      message: autoMovedInside ? "Pre-loading weighment recorded — vehicle moved inside." : "Pre-loading weighment recorded.",
+      id,
+      gateEntryStatus: autoMovedInside ? "Inside Factory" : entry.status,
+    }, { status: 201 });
   } catch (err) {
     console.error("[transport/pre-weighment] create error", err);
     return NextResponse.json({ ok: false, message: "Could not save the pre-loading weighment." }, { status: 500 });

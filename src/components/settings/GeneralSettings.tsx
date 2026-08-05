@@ -146,6 +146,7 @@ export function GeneralSettings({ embedded = false }: { embedded?: boolean }) {
           <Flag label="Compact Density" desc="Tighter row & list spacing for dense screens." checked={cfg.flags.compactDensity} onChange={(v) => setFlag("compactDensity", v)} />
           <Flag label="Sound on Action" desc="Play a beep on POS scan & save." checked={cfg.flags.soundOnAction} onChange={(v) => setFlag("soundOnAction", v)} />
           <Flag label="Terminal-based Setup Required" desc="Require every transaction to be billed at a registered POS terminal under an open session; users see only their mapped terminals' data." checked={cfg.flags.terminalSetupRequired} onChange={(v) => setFlag("terminalSetupRequired", v)} />
+          <Flag label="Show AI Copilot Bubble" desc="Show the floating AI Copilot icon on every page. Turn off to hide it app-wide." checked={cfg.flags.showAiCopilot} onChange={(v) => setFlag("showAiCopilot", v)} />
         </div>
       </SectionCard>
 

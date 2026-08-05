@@ -47,6 +47,7 @@ export const DEFAULT_GENERAL_CONFIG: GeneralConfigData = {
     compactDensity: false, // tighter table / list spacing
     soundOnAction: false, // play sound on POS scan / save
     terminalSetupRequired: false, // enforce terminal sessions + per-terminal data scoping on transactions
+    showAiCopilot: true, // show the floating AI Copilot bubble on every page
   },
 };
 

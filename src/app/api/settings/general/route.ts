@@ -10,7 +10,7 @@ import { writeAudit } from "@/lib/audit/log";
 // Column ⇄ editor shape mapping.
 const STRING_FIELDS = ["baseCurrency", "currencySymbol", "currencyPosition", "numberSystem", "thousandSeparator", "roundingMethod", "roundingPrecision", "dateFormat", "timeFormat", "timezone", "fiscalYearStart", "weekStart", "language"] as const;
 const INT_FIELDS = ["amountDecimals", "qtyDecimals", "rateDecimals", "defaultPageSize", "sessionTimeout"] as const;
-const FLAGS = ["enableRounding", "roundInPrint", "showCurrencyCode", "negativeInRed", "autoLogout", "confirmBeforeDelete", "compactDensity", "soundOnAction", "rptShowReceipt", "rptShowSales", "rptShowReturn", "rptShowDamage", "terminalSetupRequired"] as const;
+const FLAGS = ["enableRounding", "roundInPrint", "showCurrencyCode", "negativeInRed", "autoLogout", "confirmBeforeDelete", "compactDensity", "soundOnAction", "rptShowReceipt", "rptShowSales", "rptShowReturn", "rptShowDamage", "terminalSetupRequired", "showAiCopilot"] as const;
 
 type Row = Record<string, unknown>;
 

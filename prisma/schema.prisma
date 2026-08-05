@@ -76,6 +76,9 @@ model GeneralSetting {
   // session, and users see only their mapped terminals' data (see user_terminal_maps).
   terminalSetupRequired Boolean @default(false)
 
+  // Shows/hides the floating AI Copilot bubble app-wide.
+  showAiCopilot Boolean @default(true)
+
   updatedAt DateTime @updatedAt
 
   @@unique([tenantId, businessId, branchId])

@@ -56,6 +56,7 @@ export function Topbar({ onMenu }: TopbarProps) {
   const roleLabel = user ? ROLE_LABELS[user.role] ?? user.role : "Not signed in";
 
   return (
+    <>
     <header className="sticky top-0 z-30 flex h-topbar items-center gap-3 border-b border-border bg-surface/90 px-3 backdrop-blur md:px-5">
       <button
         type="button"
@@ -146,18 +147,19 @@ export function Topbar({ onMenu }: TopbarProps) {
           </button>
         </div>
       </div>
-
-      <ConfirmDialog
-        open={confirmingLogout}
-        icon={LogOut}
-        tone="danger"
-        title="Sign out?"
-        message="You'll need to sign in again to continue working."
-        confirmLabel="Sign Out"
-        onConfirm={confirmLogout}
-        onCancel={() => setConfirmingLogout(false)}
-      />
-      {loggingOut && <AppLoader fullScreen label="Signing out" />}
     </header>
+
+    <ConfirmDialog
+      open={confirmingLogout}
+      icon={LogOut}
+      tone="danger"
+      title="Sign out?"
+      message="You'll need to sign in again to continue working."
+      confirmLabel="Sign Out"
+      onConfirm={confirmLogout}
+      onCancel={() => setConfirmingLogout(false)}
+    />
+    {loggingOut && <AppLoader fullScreen label="Signing out" />}
+    </>
   );
 }

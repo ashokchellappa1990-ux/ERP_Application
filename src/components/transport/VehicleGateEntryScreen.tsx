@@ -270,7 +270,7 @@ export function VehicleGateEntryScreen() {
                       ) : (
                         <>
                           {r.status === "Waiting" && <Button size="sm" variant="primary" className="whitespace-nowrap" disabled={busy === r.id} onClick={() => runAction(r, "move-inside")}><LogIn className="h-3.5 w-3.5" /> Move Inside</Button>}
-                          {r.status === "Inside Factory" && <Button size="sm" variant="accent" className="whitespace-nowrap" disabled={busy === r.id} onClick={() => startLoadDispatch(r)}><PlayCircle className="h-3.5 w-3.5" /> Dispatch</Button>}
+                          {r.status === "Inside Factory" && <Button size="sm" variant="accent" className="whitespace-nowrap !text-white" disabled={busy === r.id} onClick={() => startLoadDispatch(r)}><PlayCircle className="h-3.5 w-3.5" /> Dispatch</Button>}
                           {r.status === "Loading" && <Button size="sm" variant="primary" className="whitespace-nowrap" disabled={busy === r.id} onClick={() => runAction(r, "complete")}><CheckCircle2 className="h-3.5 w-3.5" /> Complete</Button>}
                           {r.status === "Completed" && <Button size="sm" variant="danger" className="whitespace-nowrap" onClick={() => setExitRow(r)}><LogOut className="h-3.5 w-3.5" /> Exit</Button>}
                           {r.status === "Exited" && <Badge tone="success"><ShieldCheck className="h-3 w-3" /> Exited</Badge>}

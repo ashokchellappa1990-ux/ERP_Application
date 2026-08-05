@@ -4,12 +4,17 @@ import { useState } from "react";
 import Link from "next/link";
 import { Sparkles, X, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { useGeneralConfig } from "@/components/settings/GeneralConfigProvider";
 import { AiChat } from "./AiChat";
 
-/** Global floating AI assistant — available on every ERP page (mounted in AppShell). */
+/** Global floating AI assistant — available on every ERP page (mounted in AppShell),
+ *  unless turned off via General Settings > System Behaviour > Show AI Copilot Bubble. */
 export function FloatingAssistant() {
   const [open, setOpen] = useState(false);
   const [convId, setConvId] = useState<number | null>(null);
+  const { flags } = useGeneralConfig();
+
+  if (!flags.showAiCopilot) return null;
 
   return (
     <>
