@@ -826,11 +826,11 @@ export function DirectLoadDispatchForm() {
         )}
 
         <SectionCard icon={IndianRupee} title="Payment Details" allowOverflow>
-          <div className="space-y-1.5 text-sm">
-            <Row k="Total Material Value" v={totals.taxable.toFixed(2)} />
-            <Row k="Total Tax Value" v={totals.tax.toFixed(2)} />
-            <Row k="Rent (Amount to be Recovered)" v={n(vehicleRent).toFixed(2)} />
-            <Row k="Transit Pass Amount" v={transitPassAmount.toFixed(2)} />
+          <div className="space-y-2 text-base">
+            <Row k="Total Material Value" v={totals.taxable.toFixed(2)} big />
+            <Row k="Total Tax Value" v={totals.tax.toFixed(2)} big />
+            <Row k="Rent (Amount to be Recovered)" v={n(vehicleRent).toFixed(2)} big />
+            <Row k="Transit Pass Amount" v={transitPassAmount.toFixed(2)} big />
             {transitPassQtyMode === "Manual" ? (
               <div className="flex items-center justify-between gap-3">
                 <span className="shrink-0 text-2xs text-subtle">Transit Pass Qty (Ton) — ₹{transitPassPerTon}/Ton</span>
@@ -840,13 +840,13 @@ export function DirectLoadDispatchForm() {
               <p className="text-2xs text-subtle">Transit Pass Qty auto-fills from Net Weight: {tonQty.toFixed(3)} Ton × ₹{transitPassPerTon}/Ton.</p>
             )}
             <div className="my-1 h-px bg-border" />
-            <div className="flex items-center justify-between font-bold text-foreground"><span>Total Invoice Amount</span><span>{totalInvoiceAmount.toFixed(2)}</span></div>
+            <div className="flex items-center justify-between text-lg font-bold text-foreground"><span>Total Invoice Amount</span><span>{totalInvoiceAmount.toFixed(2)}</span></div>
           </div>
 
           <div className="mt-3 border-t border-border pt-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-foreground">Driver Batta Amount</p>
+                <p className="text-base font-semibold text-foreground">Driver Batta Amount</p>
                 <p className="text-2xs text-subtle">{roundedTonQty} Ton (rounded) × ₹{driverBattaPerTon}/Ton</p>
               </div>
               <span className="text-lg font-bold tabular-nums text-foreground">{driverBattaAmount.toFixed(2)}</span>
@@ -867,7 +867,7 @@ export function DirectLoadDispatchForm() {
           </div>
 
           <div className="mt-3 rounded-lg bg-primary-subtle/40 px-3 py-2.5">
-            <div className="flex items-center justify-between font-bold text-primary"><span>Total Amount to be Collected</span><span className="text-lg tabular-nums">{totalAmountToCollect.toFixed(2)}</span></div>
+            <div className="flex items-center justify-between text-lg font-bold text-primary"><span>Total Amount to be Collected</span><span className="tabular-nums">{totalAmountToCollect.toFixed(2)}</span></div>
           </div>
         </SectionCard>
 
@@ -884,10 +884,19 @@ export function DirectLoadDispatchForm() {
             {payCat !== "credit" && (
               <div className="grid gap-3 sm:grid-cols-2">
                 {!isSplit && <Fld label="Amount Received"><input type="number" value={payCat === "full" ? String(totalAmountToCollect) : amtPaid} readOnly={payCat === "full"} onChange={(e) => setAmtPaid(e.target.value)} placeholder="0.00" className={cn(inp, payCat === "full" && "bg-surface-2")} /></Fld>}
-                <Fld label="Payment Mode"><select value={payMode} onChange={(e) => setPayMode(e.target.value)} className={inp}>{["Bank Transfer", "Cash", "UPI", "Cheque", "Card", "Split"].map((m) => <option key={m}>{m}</option>)}</select></Fld>
+                {!isSplit && <Fld label="Payment Mode"><select value={payMode} onChange={(e) => setPayMode(e.target.value)} className={inp}>{["Bank Transfer", "Cash", "UPI", "Cheque", "Card"].map((m) => <option key={m}>{m}</option>)}</select></Fld>}
+                {!isSplit && (
+                  <div className="sm:col-span-2 -mt-1">
+                    <button type="button" onClick={() => setPayMode("Split")} className="text-2xs font-semibold text-primary hover:underline">+ Split across multiple payment modes (e.g. part Cash, part UPI)</button>
+                  </div>
+                )}
                 {!isSplit && <div className="sm:col-span-2"><BankPicker mode={paidNow > 0 ? payMode : undefined} value={bank} onChange={setBank} required /></div>}
                 {isSplit && (
                   <div className="sm:col-span-2 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xs font-semibold text-foreground">Split Payment</span>
+                      <button type="button" onClick={() => setPayMode("Cash")} className="text-2xs font-semibold text-primary hover:underline">← Use a single payment mode instead</button>
+                    </div>
                     {splitLines.map((l, i) => (
                       <div key={i} className="flex items-center gap-2">
                         <select value={l.mode} onChange={(e) => setSplitLines((p) => p.map((x, xi) => xi === i ? { ...x, mode: e.target.value } : x))} className={cn(inp, "flex-1")}>{["Cash", "Bank Transfer", "UPI", "Cheque", "Card"].map((m) => <option key={m}>{m}</option>)}</select>
@@ -949,4 +958,6 @@ export function DirectLoadDispatchForm() {
 const inp = "h-9 w-full rounded-md border border-border-strong bg-surface px-2.5 text-sm text-foreground placeholder:text-subtle focus:border-primary focus:outline-none";
 const inpSm = "h-8 rounded-md border border-border-strong bg-surface px-2 text-sm text-foreground focus:border-primary focus:outline-none";
 function Fld({ label, children }: { label: string; children: React.ReactNode }) { return <div><label className="mb-1 block text-2xs font-semibold text-muted">{label}</label>{children}</div>; }
-function Row({ k, v }: { k: string; v: string }) { return <div className="flex items-center justify-between"><span className="text-muted">{k}</span><span className="text-foreground">{v}</span></div>; }
+function Row({ k, v, big }: { k: string; v: string; big?: boolean }) {
+  return <div className="flex items-center justify-between"><span className={cn("text-muted", big && "text-base")}>{k}</span><span className={cn("text-foreground", big ? "text-base font-semibold" : "")}>{v}</span></div>;
+}
