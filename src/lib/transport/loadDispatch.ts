@@ -126,7 +126,7 @@ export interface DirectDispatchItemInput {
 }
 export interface PaymentSplitLine { mode: string; amount: number; reference?: string | null }
 export interface PaymentCollectionInput {
-  paymentMode: "Full" | "Partial" | "Credit" | "Split"; paymentAmount?: number | null; paymentMethod?: string | null;
+  paymentMode: "Full" | "Partial" | "Credit"; paymentAmount?: number | null; paymentMethod?: string | null;
   bankId?: number | null; bankName?: string | null; bankAccount?: string | null;
   paymentSplits?: PaymentSplitLine[] | null;
 }
@@ -555,17 +555,18 @@ async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc): 
   const recoveries = r2(num(doc.vehicleRent) + num(doc.transitPassAmount));
   const total = r2(taxableValue + taxTotal + recoveries);
 
-  // Payment collection — Full/Partial/Credit/Split, same terminology as the
-  // existing B2B Sales Invoice screen (src/components/sales/B2bInvoiceForm.tsx).
-  // "Full" still honors an explicit client-sent paymentAmount when present —
-  // Direct Customer Dispatch always sends one (already net of Driver Batta
-  // when driverBattaMode is "Adjustment"); falls back to the full total for
-  // older call sites that never sent an amount for "Full" collection.
+  // Payment collection — Full/Partial/Credit, same terminology as the existing
+  // B2B Sales Invoice screen (src/components/sales/B2bInvoiceForm.tsx). "Full"
+  // still honors an explicit client-sent paymentAmount when present — Direct
+  // Customer Dispatch always sends one (already net of Driver Batta when
+  // driverBattaMode is "Adjustment"); falls back to the full total for older
+  // call sites that never sent an amount for "Full" collection. Split isn't a
+  // collection mode of its own — it's a *tender* mode (paymentMethod
+  // "Split" + paymentSplits) available within Full or Partial, matching how
+  // Sale.paymentMode already lists Split as one mode value, not a category.
   const mode = doc.paymentMode ?? "Credit";
   const splits = Array.isArray(doc.paymentSplits) ? (doc.paymentSplits as unknown as { mode: string; amount: number; reference?: string | null }[]) : [];
-  const splitTotal = r2(splits.reduce((s, p) => s + (Number(p.amount) || 0), 0));
   const amountPaid = mode === "Credit" ? 0
-    : mode === "Split" ? r2(Math.min(splitTotal, total))
     : doc.paymentAmount != null ? r2(Math.min(num(doc.paymentAmount), total))
     : total;
   // "Credit" (not "Unpaid") for the zero-paid case — matches the vocabulary
@@ -574,7 +575,7 @@ async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc): 
   // Receivable screen's API filters on (paymentStatus in [Credit, Partial]).
   const paymentStatus = amountPaid <= 0 ? "Credit" : amountPaid >= total ? "Paid" : "Partial";
   const method = doc.paymentMethod || "Cash";
-  const payments = mode === "Split" && splits.length
+  const payments = splits.length
     ? splits.map((p) => ({ mode: p.mode, amount: Number(p.amount) || 0, reference: p.reference ?? null }))
     : amountPaid > 0 ? [{ mode: method, amount: amountPaid, reference: null }] : [];
 

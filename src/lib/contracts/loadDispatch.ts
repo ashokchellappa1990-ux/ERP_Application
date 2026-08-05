@@ -72,13 +72,14 @@ export const paymentSplitLineInput = z.object({
   reference: z.string().trim().max(80).optional().nullable(),
 });
 
-/** Full/Partial/Credit/Split — same terminology as the existing B2B Sales
- * Invoice screen (src/components/sales/B2bInvoiceForm.tsx), plus Split for
- * multi-mode tender. Captured at Load & Dispatch creation/edit time; applied
- * when the invoice actually posts (see buildPreparedSale in
- * src/lib/transport/loadDispatch.ts). */
+/** Full/Partial/Credit — same terminology as the existing B2B Sales Invoice
+ * screen (src/components/sales/B2bInvoiceForm.tsx). Captured at Load & Dispatch
+ * creation/edit time; applied when the invoice actually posts (see
+ * buildPreparedSale in src/lib/transport/loadDispatch.ts). Split isn't a mode
+ * of its own here — it's a paymentMethod value ("Split") paired with
+ * paymentSplits, selectable within Full or Partial collection. */
 export const paymentCollectionInput = z.object({
-  paymentMode: z.enum(["Full", "Partial", "Credit", "Split"]).default("Credit"),
+  paymentMode: z.enum(["Full", "Partial", "Credit"]).default("Credit"),
   paymentAmount: z.coerce.number().min(0).optional().nullable(),
   paymentMethod: z.string().trim().max(30).optional().nullable(),
   bankId: z.coerce.number().int().positive().optional().nullable(),
@@ -227,7 +228,7 @@ export interface LoadDispatchDetail {
   totalProducts: number; totalQty: number; totalWeight: number | null; totalPackages: number;
   remarks: string | null; cancelReason: string | null;
   deliveryChallanId: number | null; saleId: number | null;
-  paymentMode: "Full" | "Partial" | "Credit" | "Split" | null; paymentAmount: number | null; paymentMethod: string | null;
+  paymentMode: "Full" | "Partial" | "Credit" | null; paymentAmount: number | null; paymentMethod: string | null;
   bankId: number | null; bankName: string | null; bankAccount: string | null;
   paymentSplits: { mode: string; amount: number; reference?: string | null }[] | null;
   vehicleRent: number; transitPassQty: number | null; transitPassAmount: number;

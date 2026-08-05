@@ -64,7 +64,7 @@ function calcLine(l: Line) {
   return { gross, discAmount, taxable, taxAmount, net };
 }
 
-type PayCat = "full" | "partial" | "credit" | "split";
+type PayCat = "full" | "partial" | "credit";
 type PostStage = "draft" | "dispatched" | "dc" | "invoiced";
 
 export function DirectLoadDispatchForm() {
@@ -410,15 +410,22 @@ export function DirectLoadDispatchForm() {
   const totalInvoiceAmount = r2(totals.taxable + totals.tax + n(vehicleRent) + transitPassAmount);
   const totalAmountToCollect = r2(driverBattaMode === "adjustment" ? totalInvoiceAmount - driverBattaAmount : totalInvoiceAmount);
 
+  // Split isn't its own collection category — it's a tender mode selectable
+  // within Full or Partial (matching Sale.paymentMode already listing Split
+  // as one mode value, not a category); when chosen, the split lines' own
+  // sum becomes the amount actually collected.
   const splitTotal = r2(splitLines.reduce((s, l) => s + n(l.amount), 0));
-  const paidNow = payCat === "full" ? totalAmountToCollect : payCat === "partial" ? n(amtPaid) : payCat === "split" ? splitTotal : 0;
+  const isSplit = payMode === "Split" && payCat !== "credit";
+  const paidNow = payCat === "credit" ? 0 : payCat === "full" ? totalAmountToCollect : isSplit ? splitTotal : n(amtPaid);
   const payStatus = paidNow <= 0 ? "Credit" : paidNow >= totalAmountToCollect ? "Paid" : "Partial";
 
   async function save() {
     const valid = lines.filter((l) => l.productId && n(l.qty) > 0);
     if (!valid.length) { toast.error("Add at least one item with a valid quantity."); return; }
     if (payCat === "partial" && (paidNow <= 0 || paidNow >= totalAmountToCollect)) { toast.error("Enter a partial amount greater than 0 and less than the total amount to be collected."); return; }
-    if (payCat === "split" && (splitTotal <= 0 || splitTotal > totalAmountToCollect)) { toast.error("Split payment lines must add up to more than 0 and no more than the total amount to be collected."); return; }
+    if (isSplit && splitTotal <= 0) { toast.error("Enter at least one split payment line with an amount."); return; }
+    if (isSplit && payCat === "full" && Math.abs(splitTotal - totalAmountToCollect) > 0.01) { toast.error("Split payment lines must add up to the full total amount to be collected."); return; }
+    if (isSplit && payCat === "partial" && splitTotal >= totalAmountToCollect) { toast.error("Split payment lines must add up to less than the total amount to be collected for a partial collection."); return; }
     if (transitPassQtyMode === "Manual" && n(transitPassQtyManual) < 0) { toast.error("Enter a valid Transit Pass quantity."); return; }
     if (postWeightTiming === "now" && vehicleGateEntryId && n(postGrossWeight) <= 0) { toast.error("Enter a valid post-loading gross weight, or switch Weighment Management to “Later”."); return; }
     if (requireWeighment && vehicleGateEntryId && tareWeight == null) { toast.error("Pre-Loading Weighment must be completed for the linked Vehicle Gate Entry before this dispatch can be created (per Dispatch Configuration)."); return; }
@@ -444,13 +451,13 @@ export function DirectLoadDispatchForm() {
       transitPassQty: transitPassQty,
       driverBattaMode: (driverBattaMode === "adjustment" ? "Adjustment" : "Payment") as "Adjustment" | "Payment",
       payment: {
-        paymentMode: (payCat === "full" ? "Full" : payCat === "partial" ? "Partial" : payCat === "split" ? "Split" : "Credit") as "Full" | "Partial" | "Credit" | "Split",
+        paymentMode: (payCat === "full" ? "Full" : payCat === "partial" ? "Partial" : "Credit") as "Full" | "Partial" | "Credit",
         paymentAmount: paidNow,
-        paymentMethod: payCat === "split" ? null : paidNow > 0 ? payMode : null,
-        bankId: payCat === "split" ? null : paidNow > 0 ? bank.bankId : null,
-        bankName: payCat === "split" ? null : paidNow > 0 ? bank.bankName : null,
-        bankAccount: payCat === "split" ? null : paidNow > 0 ? bank.bankAccount : null,
-        paymentSplits: payCat === "split" ? splitLines.filter((l) => n(l.amount) > 0).map((l) => ({ mode: l.mode, amount: n(l.amount), reference: null })) : null,
+        paymentMethod: isSplit ? "Split" : paidNow > 0 ? payMode : null,
+        bankId: isSplit ? null : paidNow > 0 ? bank.bankId : null,
+        bankName: isSplit ? null : paidNow > 0 ? bank.bankName : null,
+        bankAccount: isSplit ? null : paidNow > 0 ? bank.bankAccount : null,
+        paymentSplits: isSplit ? splitLines.filter((l) => n(l.amount) > 0).map((l) => ({ mode: l.mode, amount: n(l.amount), reference: null })) : null,
       },
       remarks: remarks.trim() || null,
       items: valid.map((l) => ({
@@ -869,29 +876,32 @@ export function DirectLoadDispatchForm() {
             <div>
               <label className="mb-1 block text-2xs font-semibold text-muted">Payment</label>
               <div className="inline-flex w-full overflow-hidden rounded-md border border-border text-2xs">
-                {([["full", "Full Collection"], ["partial", "Partial Collection"], ["split", "Split Payment"], ["credit", "Credit Due"]] as const).map(([m, lbl]) => (
+                {([["full", "Full Collection"], ["partial", "Partial Collection"], ["credit", "Credit Due"]] as const).map(([m, lbl]) => (
                   <button key={m} type="button" onClick={() => setPayCat(m)} className={cn("flex-1 px-2 py-1.5 font-semibold transition", payCat === m ? "bg-primary text-white" : "bg-surface text-muted hover:text-foreground")}>{lbl}</button>
                 ))}
               </div>
             </div>
-            {payCat !== "credit" && payCat !== "split" && (
+            {payCat !== "credit" && (
               <div className="grid gap-3 sm:grid-cols-2">
-                <Fld label="Amount Received"><input type="number" value={payCat === "full" ? String(totalAmountToCollect) : amtPaid} readOnly={payCat === "full"} onChange={(e) => setAmtPaid(e.target.value)} placeholder="0.00" className={cn(inp, payCat === "full" && "bg-surface-2")} /></Fld>
-                <Fld label="Payment Mode"><select value={payMode} onChange={(e) => setPayMode(e.target.value)} className={inp}>{["Bank Transfer", "Cash", "UPI", "Cheque", "Card"].map((m) => <option key={m}>{m}</option>)}</select></Fld>
-                <div className="sm:col-span-2"><BankPicker mode={paidNow > 0 ? payMode : undefined} value={bank} onChange={setBank} required /></div>
-              </div>
-            )}
-            {payCat === "split" && (
-              <div className="space-y-2">
-                {splitLines.map((l, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <select value={l.mode} onChange={(e) => setSplitLines((p) => p.map((x, xi) => xi === i ? { ...x, mode: e.target.value } : x))} className={cn(inp, "flex-1")}>{["Cash", "Bank Transfer", "UPI", "Cheque", "Card"].map((m) => <option key={m}>{m}</option>)}</select>
-                    <input type="number" value={l.amount} onChange={(e) => setSplitLines((p) => p.map((x, xi) => xi === i ? { ...x, amount: e.target.value } : x))} placeholder="0.00" className={cn(inp, "flex-1")} />
-                    <button type="button" onClick={() => setSplitLines((p) => (p.length > 1 ? p.filter((_, xi) => xi !== i) : p))} className="shrink-0 text-subtle hover:text-danger"><X className="h-4 w-4" /></button>
+                {!isSplit && <Fld label="Amount Received"><input type="number" value={payCat === "full" ? String(totalAmountToCollect) : amtPaid} readOnly={payCat === "full"} onChange={(e) => setAmtPaid(e.target.value)} placeholder="0.00" className={cn(inp, payCat === "full" && "bg-surface-2")} /></Fld>}
+                <Fld label="Payment Mode"><select value={payMode} onChange={(e) => setPayMode(e.target.value)} className={inp}>{["Bank Transfer", "Cash", "UPI", "Cheque", "Card", "Split"].map((m) => <option key={m}>{m}</option>)}</select></Fld>
+                {!isSplit && <div className="sm:col-span-2"><BankPicker mode={paidNow > 0 ? payMode : undefined} value={bank} onChange={setBank} required /></div>}
+                {isSplit && (
+                  <div className="sm:col-span-2 space-y-2">
+                    {splitLines.map((l, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <select value={l.mode} onChange={(e) => setSplitLines((p) => p.map((x, xi) => xi === i ? { ...x, mode: e.target.value } : x))} className={cn(inp, "flex-1")}>{["Cash", "Bank Transfer", "UPI", "Cheque", "Card"].map((m) => <option key={m}>{m}</option>)}</select>
+                        <input type="number" value={l.amount} onChange={(e) => setSplitLines((p) => p.map((x, xi) => xi === i ? { ...x, amount: e.target.value } : x))} placeholder="0.00" className={cn(inp, "flex-1")} />
+                        <button type="button" onClick={() => setSplitLines((p) => (p.length > 1 ? p.filter((_, xi) => xi !== i) : p))} className="shrink-0 text-subtle hover:text-danger"><X className="h-4 w-4" /></button>
+                      </div>
+                    ))}
+                    <button type="button" onClick={() => setSplitLines((p) => [...p, { mode: "Cash", amount: "" }])} className="text-2xs font-semibold text-primary hover:underline">+ Add payment line</button>
+                    <div className="flex items-center justify-between rounded-md bg-surface-2 px-3 py-1.5 text-xs">
+                      <span className="text-muted">Split Total {payCat === "full" ? `(must equal ${totalAmountToCollect.toFixed(2)})` : ""}</span>
+                      <span className="font-semibold tabular-nums text-foreground">{splitTotal.toFixed(2)}</span>
+                    </div>
                   </div>
-                ))}
-                <button type="button" onClick={() => setSplitLines((p) => [...p, { mode: "Cash", amount: "" }])} className="text-2xs font-semibold text-primary hover:underline">+ Add payment line</button>
-                <div className="flex items-center justify-between rounded-md bg-surface-2 px-3 py-1.5 text-xs"><span className="text-muted">Split Total</span><span className="font-semibold tabular-nums text-foreground">{splitTotal.toFixed(2)}</span></div>
+                )}
               </div>
             )}
           </div>
