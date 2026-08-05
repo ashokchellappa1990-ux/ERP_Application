@@ -7,6 +7,7 @@ import { requirePermission } from "@/lib/auth/guard";
 import { writeAudit } from "@/lib/audit/log";
 import { gateEntryInput } from "@/lib/contracts/transport";
 import { getDispatchConfig } from "@/lib/settings/dispatchConfig";
+import { buildGateEntryNo } from "@/lib/settings/transportConfigDefaults";
 
 const PERM = "transport.gate-entry";
 
@@ -292,7 +293,6 @@ export async function POST(req: Request) {
   }
 
   const dispatchCfg = await getDispatchConfig(user);
-  const gateEntryPrefix = dispatchCfg.fields.gateEntryPrefix?.trim() || "GATE";
 
   const items = (input.items ?? []).filter((i) => i.qty > 0);
   const products = items.length
@@ -335,7 +335,7 @@ export async function POST(req: Request) {
         },
         select: { id: true },
       });
-      const gateEntryNo = input.gateEntryNo || `${gateEntryPrefix}-${String(entry.id).padStart(5, "0")}`;
+      const gateEntryNo = input.gateEntryNo || buildGateEntryNo(dispatchCfg, entry.id);
       if (!input.gateEntryNo) await tx.vehicleGateEntry.update({ where: { id: entry.id }, data: { gateEntryNo } });
       if (items.length) {
         await tx.vehicleGateEntryItem.createMany({

@@ -191,7 +191,14 @@ export function DocumentSettings() {
           <div className="mt-4 max-w-xs">
             <label className="mb-1.5 block text-xs font-semibold text-foreground">Gate Entry No Prefix</label>
             <input value={dispatchCfg.fields.gateEntryPrefix ?? ""} onChange={(e) => setDispatchField("gateEntryPrefix", e.target.value)} placeholder="GATE" className="h-10 w-full rounded-md border border-border-strong bg-surface px-3 text-sm text-foreground placeholder:text-subtle focus:border-primary focus:outline-none focus:shadow-focus" />
-            <p className="mt-1 text-2xs text-muted">Auto-generated as {`{prefix}-00001`}, {`{prefix}-00002`}, … whenever Gate Entry No is left as the suggested value.</p>
+            <p className="mt-1 text-2xs text-muted">
+              Auto-generated whenever Gate Entry No is left as the suggested value — currently
+              {" "}{dispatchCfg.flags.gateEntryNoIncludeMonthYear ? `{prefix}-{MMYY}-00001, {prefix}-{MMYY}-00002, …` : `{prefix}-00001, {prefix}-00002, …`}
+            </p>
+            <label className="mt-2 flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2.5">
+              <span><span className="block text-sm font-medium text-foreground">Include Month &amp; Year</span><span className="block text-2xs text-subtle">Adds the entry's creation month+year right after the prefix, e.g. GATE-0826-00001.</span></span>
+              <Switch checked={!!dispatchCfg.flags.gateEntryNoIncludeMonthYear} onChange={(v) => setDispatchFlag("gateEntryNoIncludeMonthYear", v)} aria-label="Include month and year in Gate Entry No" />
+            </label>
           </div>
         </div>
       )}

@@ -4,7 +4,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { requirePermission } from "@/lib/auth/guard";
 import { settingScope, resolveScoped } from "@/lib/settings/settingScope";
 import { mergeDispatchConfig } from "@/lib/settings/dispatchConfig";
-import type { TransportConfigData } from "@/lib/settings/transportConfigDefaults";
+import { buildGateEntryNo, type TransportConfigData } from "@/lib/settings/transportConfigDefaults";
 
 const PERM = "transport.gate-entry";
 
@@ -22,11 +22,10 @@ export async function GET() {
   const sc = await settingScope(user);
   const row = await resolveScoped((where) => prisma.dispatchConfiguration.findFirst({ where }), sc);
   const cfg = mergeDispatchConfig(row?.config as unknown as TransportConfigData | undefined);
-  const prefix = cfg.fields.gateEntryPrefix?.trim() || "GATE";
 
   // `id` is a single global auto-increment (not per-tenant), so the preview
   // must look at the true global max, not just this tenant's rows.
   const last = await prisma.vehicleGateEntry.findFirst({ orderBy: { id: "desc" }, select: { id: true } });
-  const nextNo = `${prefix}-${String((last?.id ?? 0) + 1).padStart(5, "0")}`;
+  const nextNo = buildGateEntryNo(cfg, (last?.id ?? 0) + 1);
   return NextResponse.json({ ok: true, nextNo });
 }

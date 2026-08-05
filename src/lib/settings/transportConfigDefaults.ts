@@ -20,7 +20,8 @@ export const DEFAULT_DISPATCH_CONFIG: TransportConfigData = {
     // preload, user picks as before) so most users never have to touch them.
     defaultDispatchType: "", // "" | Customer | StockTransfer | PurchaseReturn | ... (DispatchDocType)
     defaultReferenceType: "", // "" | Sales Order | Direct Customer Dispatch
-    // Gate Entry No auto-numbering prefix — e.g. "GATE" -> GATE-00001.
+    // Gate Entry No auto-numbering prefix — e.g. "GATE" -> GATE-00001, or
+    // GATE-0826-00001 with gateEntryNoIncludeMonthYear on (see flags below).
     gateEntryPrefix: "GATE",
     // Load & Dispatch No auto-numbering prefix — e.g. "LD" -> LD-00001
     // (docType-specific suffixes like -ST/-PR/-SR still append after this).
@@ -46,6 +47,10 @@ export const DEFAULT_DISPATCH_CONFIG: TransportConfigData = {
     // material dispatches; it gets derived later from the Post-Loading
     // Weighment's net weight on the Load & Dispatch screen instead.
     captureQtyAtGate: false,
+    // When on, the Gate Entry No includes the entry's creation month+year
+    // right after the prefix — GATE-0826-00001 (MM+YY) — instead of just
+    // GATE-00001, so the running sequence is visually scoped per month.
+    gateEntryNoIncludeMonthYear: true,
     // General
     enableDispatchPlanning: true,
     enableDispatchExecution: true,
@@ -99,4 +104,16 @@ export const DEFAULT_DISPATCH_CONFIG: TransportConfigData = {
 /** Deep clone so editable copies never mutate the shared default. */
 export function cloneTransportConfig(): TransportConfigData {
   return JSON.parse(JSON.stringify(DEFAULT_DISPATCH_CONFIG));
+}
+
+/** Builds a Gate Entry No from the configured prefix (+ month/year, if
+ * enabled) and a running sequence number — shared by the actual create route
+ * and the next-number preview so both always agree on the format. `at`
+ * defaults to now; the create route can pass the entry's own creation time. */
+export function buildGateEntryNo(cfg: Pick<TransportConfigData, "fields" | "flags">, seq: number, at: Date = new Date()): string {
+  const prefix = cfg.fields.gateEntryPrefix?.trim() || "GATE";
+  const seqPart = String(seq).padStart(5, "0");
+  if (!cfg.flags.gateEntryNoIncludeMonthYear) return `${prefix}-${seqPart}`;
+  const mmYY = `${String(at.getMonth() + 1).padStart(2, "0")}${String(at.getFullYear()).slice(-2)}`;
+  return `${prefix}-${mmYY}-${seqPart}`;
 }
