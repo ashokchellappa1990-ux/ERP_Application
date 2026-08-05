@@ -39,14 +39,60 @@ const nl2br = (s: string) => esc(s).replace(/\n/g, "<br/>");
 const money = (n: number) => (Number(n) || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const qty = (n: number) => (Number(n) || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-/** Template 3 — GST-style A4 tax invoice matching a standard e-invoicing-tool
- * layout: company/invoice-meta header with driver/vehicle/delivery fields,
- * Bill To block, a per-line Price/Taxable-Price/GST table, amount-in-words +
- * totals, an HSN-wise CGST/SGST summary table, and a footer with a Bank QR
- * code, terms, and an uploaded signature — none of which the existing B2B_T2
- * design has. Printed from Load & Dispatch and the standalone Sales Invoice
- * (B2B) page. */
-export function buildTaxInvoiceT3Html(data: TaxInvoiceT3Data, tpl: Pick<ReceiptTemplate, "title" | "footerNote">): string {
+function style(signatureImage: string | null) {
+  return `
+    .tinv3-wrap{font-family:ui-sans-serif,system-ui,Arial;color:#0f172a;font-size:11.5px}
+    .tinv3{max-width:800px;margin:0 auto;border:1px solid #94a3b8}
+    .tinv3 .hdr{text-align:center;padding:6px 0;position:relative;font-size:16px;font-weight:800;border-bottom:1px solid #94a3b8}
+    .tinv3 .orig{position:absolute;right:10px;top:8px;font-size:10px;font-weight:600;color:#475569}
+    .tinv3 .top{display:flex;border-bottom:1px solid #94a3b8}
+    .tinv3 .top .co{flex:1;padding:8px 10px;border-right:1px solid #94a3b8}
+    .tinv3 .top .meta{flex:1}
+    .tinv3 .co .name{font-size:15px;font-weight:800}
+    .tinv3 .co .line{font-size:10.5px;color:#334155;margin-top:2px}
+    .tinv3 table.meta-tbl{width:100%;border-collapse:collapse;height:100%}
+    .tinv3 table.meta-tbl td{border:1px solid #94a3b8;padding:4px 8px;font-size:10.5px;vertical-align:top}
+    .tinv3 table.meta-tbl .lbl{color:#475569;font-size:9.5px}
+    .tinv3 table.meta-tbl .val{font-weight:700}
+    .tinv3 .bill{padding:8px 10px;border-bottom:1px solid #94a3b8}
+    .tinv3 .bill .lbl{font-size:9.5px;color:#475569}
+    .tinv3 .bill .name{font-weight:800;font-size:13px;margin-top:2px}
+    .tinv3 .bill .line{font-size:10.5px;color:#334155;margin-top:1px}
+    .tinv3 table.items{width:100%;border-collapse:collapse}
+    .tinv3 table.items th,.tinv3 table.items td{border:1px solid #94a3b8;padding:5px 7px;font-size:10.5px;text-align:left;vertical-align:top}
+    .tinv3 table.items th{background:#f1f5f9;font-size:9.5px;text-transform:none;font-weight:700}
+    .tinv3 .r{text-align:right}
+    .tinv3 .sub{font-size:9px;color:#64748b}
+    .tinv3 .words-row{display:flex;border-bottom:1px solid #94a3b8}
+    .tinv3 .words{flex:1;padding:8px 10px;border-right:1px solid #94a3b8;font-size:10.5px}
+    .tinv3 .amts{flex:1}
+    .tinv3 table.amts-tbl{width:100%;border-collapse:collapse}
+    .tinv3 table.amts-tbl td{padding:4px 10px;font-size:11px}
+    .tinv3 table.amts-tbl .lbl{color:#334155}
+    .tinv3 table.amts-tbl tr.total td{font-weight:800;font-size:12.5px;border-top:1px solid #94a3b8}
+    .tinv3 .pay{padding:6px 10px 10px;font-size:10.5px}
+    .tinv3 .pay .lbl{color:#475569;font-size:9.5px}
+    .tinv3 .pay .val{font-weight:700}
+    .tinv3 table.hsn{width:100%;border-collapse:collapse;border-top:1px solid #94a3b8}
+    .tinv3 table.hsn th,.tinv3 table.hsn td{border:1px solid #94a3b8;padding:5px 7px;font-size:10.5px}
+    .tinv3 table.hsn th{background:#f1f5f9;font-size:9.5px;font-weight:700}
+    .tinv3 .foot{display:flex;border-top:1px solid #94a3b8}
+    .tinv3 .foot .col{flex:1;padding:10px;border-right:1px solid #94a3b8}
+    .tinv3 .foot .col:last-child{border-right:none}
+    .tinv3 .foot h3{font-size:10.5px;font-weight:700;margin:0 0 6px}
+    .tinv3 .qr img{width:90px;height:90px;object-fit:contain}
+    .tinv3 .qr .tag{font-size:9px;font-weight:700;color:#16a34a;margin-top:2px}
+    .tinv3 .sign{text-align:center}
+    .tinv3 .sign img{max-width:130px;max-height:50px;object-fit:contain;margin:6px 0}
+    .tinv3 .sign .box{margin-top:${signatureImage ? "0" : "34px"};font-size:10.5px;font-weight:600}
+    .tinv3 .footer{text-align:center;font-size:9px;color:#94a3b8;padding:6px 0;border-top:1px solid #e2e8f0}
+`;
+}
+
+/** Just this design's own CSS + inner markup (no <!doctype>/<html>/<body>
+ * wrapper, no auto-print script) — for embedding on an in-app preview page.
+ * buildTaxInvoiceT3Html (below) wraps this into a standalone popup document. */
+export function buildTaxInvoiceT3Parts(data: TaxInvoiceT3Data, tpl: Pick<ReceiptTemplate, "title" | "footerNote">): { style: string; bodyHtml: string } {
   const rows = data.lines.map((l, i) => `
     <tr>
       <td>${i + 1}</td>
@@ -77,53 +123,7 @@ export function buildTaxInvoiceT3Html(data: TaxInvoiceT3Data, tpl: Pick<ReceiptT
   const hsnCgst = data.hsnRows.reduce((s, h) => s + h.cgstAmount, 0);
   const hsnSgst = data.hsnRows.reduce((s, h) => s + h.sgstAmount, 0);
 
-  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(tpl.title || "Tax Invoice")} ${esc(data.invoiceNo)}</title><style>
-    @page{margin:10mm}*{box-sizing:border-box}body{font-family:ui-sans-serif,system-ui,Arial;margin:0;color:#0f172a;font-size:11.5px}
-    .wrap{max-width:800px;margin:0 auto;border:1px solid #94a3b8}
-    .hdr{text-align:center;padding:6px 0;position:relative;font-size:16px;font-weight:800;border-bottom:1px solid #94a3b8}
-    .orig{position:absolute;right:10px;top:8px;font-size:10px;font-weight:600;color:#475569}
-    .top{display:flex;border-bottom:1px solid #94a3b8}
-    .top .co{flex:1;padding:8px 10px;border-right:1px solid #94a3b8}
-    .top .meta{flex:1}
-    .co .name{font-size:15px;font-weight:800}
-    .co .line{font-size:10.5px;color:#334155;margin-top:2px}
-    table.meta-tbl{width:100%;border-collapse:collapse;height:100%}
-    table.meta-tbl td{border:1px solid #94a3b8;padding:4px 8px;font-size:10.5px;vertical-align:top}
-    table.meta-tbl .lbl{color:#475569;font-size:9.5px}
-    table.meta-tbl .val{font-weight:700}
-    .bill{padding:8px 10px;border-bottom:1px solid #94a3b8}
-    .bill .lbl{font-size:9.5px;color:#475569}
-    .bill .name{font-weight:800;font-size:13px;margin-top:2px}
-    .bill .line{font-size:10.5px;color:#334155;margin-top:1px}
-    table.items{width:100%;border-collapse:collapse}
-    table.items th,table.items td{border:1px solid #94a3b8;padding:5px 7px;font-size:10.5px;text-align:left;vertical-align:top}
-    table.items th{background:#f1f5f9;font-size:9.5px;text-transform:none;font-weight:700}
-    .r{text-align:right}
-    .sub{font-size:9px;color:#64748b}
-    .words-row{display:flex;border-bottom:1px solid #94a3b8}
-    .words{flex:1;padding:8px 10px;border-right:1px solid #94a3b8;font-size:10.5px}
-    .amts{flex:1}
-    table.amts-tbl{width:100%;border-collapse:collapse}
-    table.amts-tbl td{padding:4px 10px;font-size:11px}
-    table.amts-tbl .lbl{color:#334155}
-    table.amts-tbl tr.total td{font-weight:800;font-size:12.5px;border-top:1px solid #94a3b8}
-    .pay{padding:6px 10px 10px;font-size:10.5px}
-    .pay .lbl{color:#475569;font-size:9.5px}
-    .pay .val{font-weight:700}
-    table.hsn{width:100%;border-collapse:collapse;border-top:1px solid #94a3b8}
-    table.hsn th,table.hsn td{border:1px solid #94a3b8;padding:5px 7px;font-size:10.5px}
-    table.hsn th{background:#f1f5f9;font-size:9.5px;font-weight:700}
-    .foot{display:flex;border-top:1px solid #94a3b8}
-    .foot .col{flex:1;padding:10px;border-right:1px solid #94a3b8}
-    .foot .col:last-child{border-right:none}
-    .foot h3{font-size:10.5px;font-weight:700;margin:0 0 6px}
-    .qr img{width:90px;height:90px;object-fit:contain}
-    .qr .tag{font-size:9px;font-weight:700;color:#16a34a;margin-top:2px}
-    .sign{text-align:center}
-    .sign img{max-width:130px;max-height:50px;object-fit:contain;margin:6px 0}
-    .sign .box{margin-top:${data.signatureImage ? "0" : "34px"};font-size:10.5px;font-weight:600}
-    .footer{text-align:center;font-size:9px;color:#94a3b8;padding:6px 0;border-top:1px solid #e2e8f0}
-    </style></head><body><div class="wrap">
+  const bodyHtml = `<div class="tinv3-wrap"><div class="tinv3">
     <div class="hdr">TAX INVOICE<span class="orig">ORIGINAL</span></div>
     <div class="top">
       <div class="co">
@@ -190,6 +190,23 @@ export function buildTaxInvoiceT3Html(data: TaxInvoiceT3Data, tpl: Pick<ReceiptT
       </div>
     </div>
     <div class="footer">This is a computer generated invoice</div>
+    </div></div>`;
+  return { style: style(data.signatureImage), bodyHtml };
+}
+
+/** Template 3 — GST-style A4 tax invoice matching a standard e-invoicing-tool
+ * layout: company/invoice-meta header with driver/vehicle/delivery fields,
+ * Bill To block, a per-line Price/Taxable-Price/GST table, amount-in-words +
+ * totals, an HSN-wise CGST/SGST summary table, and a footer with a Bank QR
+ * code, terms, and an uploaded signature. Standalone popup-window document —
+ * the in-app preview page uses buildTaxInvoiceT3Parts() directly instead. */
+export function buildTaxInvoiceT3Html(data: TaxInvoiceT3Data, tpl: Pick<ReceiptTemplate, "title" | "footerNote">): string {
+  const { style: css, bodyHtml } = buildTaxInvoiceT3Parts(data, tpl);
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(tpl.title || "Tax Invoice")} ${esc(data.invoiceNo)}</title><style>
+    @page{margin:10mm}*{box-sizing:border-box}
+    ${css}
+    </style></head><body>
+    ${bodyHtml}
     <script>window.onload=function(){setTimeout(function(){window.print()},200)}</script>
-    </div></body></html>`;
+    </body></html>`;
 }

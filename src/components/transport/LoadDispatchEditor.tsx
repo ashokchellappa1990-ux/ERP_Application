@@ -17,10 +17,6 @@ import { cn } from "@/lib/cn";
 import { LOAD_DISPATCH_DOC_TYPES } from "@/lib/contracts/loadDispatch";
 import type { LoadDispatchDetail, LoadDispatchItemDto } from "@/lib/contracts/loadDispatch";
 import type { TransportConfigData } from "@/lib/settings/transportConfigDefaults";
-import { buildTaxInvoiceHtml, type TaxInvoiceData } from "@/lib/print/taxInvoiceHtml";
-import { buildTaxInvoiceT3Html, type TaxInvoiceT3Data } from "@/lib/print/taxInvoiceT3Html";
-import { buildWeightSlipHtml, type WeightSlipData } from "@/lib/print/weightSlipHtml";
-import { DEFAULT_RECEIPT } from "@/lib/settings/receiptTemplate";
 import { fieldOn, fieldMust } from "@/lib/settings/docFieldsConfig";
 
 const SCREEN = "load_dispatch";
@@ -101,7 +97,6 @@ export function LoadDispatchEditor({ id }: { id: number }) {
 
   const [savingDraft, setSavingDraft] = useState(false);
   const [actionBusy, setActionBusy] = useState<string | null>(null);
-  const [printBusy, setPrintBusy] = useState<"invoice" | "weight-slip" | "dc" | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
 
@@ -295,30 +290,11 @@ export function LoadDispatchEditor({ id }: { id: number }) {
     else toast.error(j?.message || "Could not post the Sales Invoice.");
   }
 
-  // Template 2 Tax Invoice + Weight Slip — printed straight from this view,
-  // reading the same data (Sale + Vehicle Gate Entry + weighments + transport
-  // cost) assembled server-side by the print-data route. Both templates' saved
-  // title/footerNote (Settings → Invoice Template) are fetched alongside.
-  async function printDocument(kind: "invoice" | "weight-slip" | "dc") {
-    setPrintBusy(kind);
-    try {
-      const [dataRes, tplRes] = await Promise.all([
-        fetch(`/api/warehouse/load-dispatch/${id}/print-data`, { cache: "no-store" }).then((r) => r.json()),
-        kind === "dc" ? Promise.resolve(null) : fetch(`/api/settings/invoice-template?type=${kind === "invoice" ? "B2B_T3" : "WEIGHT_SLIP"}`, { cache: "no-store" }).then((r) => r.json()),
-      ]);
-      if (!dataRes?.ok) { toast.error(dataRes?.message || "Could not load print data."); return; }
-      const tpl = tplRes?.ok ? { title: tplRes.template.title, footerNote: tplRes.template.footerNote } : DEFAULT_RECEIPT;
-      const html = kind === "invoice"
-        ? (dataRes.taxInvoiceT3 ? buildTaxInvoiceT3Html({ ...(dataRes.taxInvoiceT3 as TaxInvoiceT3Data), qrCodeImage: tplRes?.template?.qrCodeImage || null, signatureImage: tplRes?.template?.signatureImage || null }, tpl) : null)
-        : kind === "dc"
-        ? (dataRes.deliveryNote ? buildTaxInvoiceHtml(dataRes.deliveryNote as TaxInvoiceData, { title: "Delivery Note", footerNote: DEFAULT_RECEIPT.footerNote }) : null)
-        : (dataRes.weightSlip ? buildWeightSlipHtml(dataRes.weightSlip as WeightSlipData, tpl) : null);
-      if (!html) { toast.error(kind === "invoice" ? "No Sales Invoice has been posted for this dispatch yet." : kind === "dc" ? "No Delivery Challan has been generated for this dispatch yet." : "No Vehicle Gate Entry / weighment is linked to this dispatch."); return; }
-      const w = window.open("", "_blank", "width=900,height=800");
-      if (!w) return;
-      w.document.write(html); w.document.close();
-    } catch { toast.error("Could not prepare the document — please try again."); }
-    finally { setPrintBusy(null); }
+  // DC / Weight Slip / Invoice — reviewed on an in-app preview page
+  // (/warehouse/transfer/load-dispatch/print) before printing, same pattern
+  // as the Pre Load Weight Slip (Token); see printPreview() below.
+  function printPreview(kind: "invoice" | "weight-slip" | "dc") {
+    router.push(`/warehouse/transfer/load-dispatch/print?id=${id}&kind=${kind}&next=${encodeURIComponent(`/warehouse/transfer/load-dispatch/${id}`)}`);
   }
 
   const itemTotals = useMemo(() => {
@@ -376,19 +352,19 @@ export function LoadDispatchEditor({ id }: { id: number }) {
           <Button
             variant="secondary" size="md"
             onClick={() => router.push(`/transport/pre-weighment/token?gateEntryId=${x.vehicleGateEntryId}&next=${encodeURIComponent(`/warehouse/transfer/load-dispatch/${id}`)}`)}
-            disabled={printBusy != null || !x.vehicleGateEntryId}
+            disabled={!x.vehicleGateEntryId}
             title={x.vehicleGateEntryId ? "Preview & print the Pre Load Weight Slip" : "Available once a Vehicle Gate Entry is linked"}
           >
             <Ticket className="h-4 w-4" /> Print Pre Load
           </Button>
-          <Button variant="secondary" size="md" onClick={() => printDocument("dc")} disabled={printBusy != null || !x.deliveryChallanId} title={x.deliveryChallanId ? "Print the Delivery Challan" : "Available once a Delivery Challan has been generated"}>
-            <FileText className="h-4 w-4" /> {printBusy === "dc" ? "Preparing…" : "Print DC"}
+          <Button variant="secondary" size="md" onClick={() => printPreview("dc")} disabled={!x.deliveryChallanId} title={x.deliveryChallanId ? "Preview & print the Delivery Challan" : "Available once a Delivery Challan has been generated"}>
+            <FileText className="h-4 w-4" /> Print DC
           </Button>
-          <Button variant="accent" size="md" onClick={() => printDocument("weight-slip")} disabled={printBusy != null || !x.vehicleGateEntryId} title={x.vehicleGateEntryId ? "Print the Weight Slip" : "Available once a Vehicle Gate Entry is linked"}>
-            <Scale className="h-4 w-4" /> {printBusy === "weight-slip" ? "Preparing…" : "Print Weight Slip"}
+          <Button variant="accent" size="md" onClick={() => printPreview("weight-slip")} disabled={!x.vehicleGateEntryId} title={x.vehicleGateEntryId ? "Preview & print the Weight Slip" : "Available once a Vehicle Gate Entry is linked"}>
+            <Scale className="h-4 w-4" /> Print Weight Slip
           </Button>
-          <Button variant="primary" size="md" onClick={() => printDocument("invoice")} disabled={printBusy != null || !x.saleId} title={x.saleId ? "Print the Tax Invoice" : "Available once a Sales Invoice has been posted"}>
-            <Printer className="h-4 w-4" /> {printBusy === "invoice" ? "Preparing…" : "Print Invoice"}
+          <Button variant="primary" size="md" onClick={() => printPreview("invoice")} disabled={!x.saleId} title={x.saleId ? "Preview & print the Tax Invoice" : "Available once a Sales Invoice has been posted"}>
+            <Printer className="h-4 w-4" /> Print Invoice
           </Button>
           <Link href="/warehouse/transfer/load-dispatch"><Button variant="outline" size="md"><ArrowLeft className="h-4 w-4" /> Back</Button></Link>
         </div>

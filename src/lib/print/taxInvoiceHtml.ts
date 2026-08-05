@@ -33,13 +33,42 @@ const esc = (s: string) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&a
 const money = (n: number) => (Number(n) || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const qty = (n: number) => (Number(n) || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-/** Template 2 — "Tax Invoice" A4 design (Bill To/Bill No/Vehicle/Driver header
- * block, weighbridge-style item line with Empty/Load/Net weight, GST + Royalty
- * Pass + Round Off, amount-in-words). Alternate to the existing thermal-style
- * B2B receipt built in PosBilling.tsx's buildReceiptHtml — this one is chosen
- * explicitly from Load & Dispatch, which has the vehicle/driver/weight data
- * this layout needs. */
-export function buildTaxInvoiceHtml(data: TaxInvoiceData, tpl: Pick<ReceiptTemplate, "title" | "footerNote">): string {
+const TAX_INVOICE_STYLE = `
+    .tinv-wrap{font-family:ui-sans-serif,system-ui,Arial;color:#0f172a;font-size:12.5px}
+    .tinv{max-width:760px;margin:0 auto}
+    .tinv .hdr{text-align:center;border-bottom:2px solid #0f172a;padding-bottom:8px;margin-bottom:8px;position:relative}
+    .tinv .hdr .dt{position:absolute;right:0;top:0;font-size:10px;color:#475569}
+    .tinv .co{font-size:18px;font-weight:800;letter-spacing:.02em}
+    .tinv .addr{font-size:11px;color:#334155;margin-top:2px}
+    .tinv .gstin{font-size:11px;margin-top:2px;font-weight:600}
+    .tinv .title{margin-top:8px;font-size:14px;font-weight:800;text-decoration:underline}
+    .tinv .meta{display:flex;justify-content:space-between;gap:16px;margin:10px 0;font-size:11.5px}
+    .tinv .meta .col{flex:1}
+    .tinv .meta .lbl{color:#475569}
+    .tinv .meta .name{font-weight:800;font-size:13px}
+    .tinv table{width:100%;border-collapse:collapse;margin-top:4px}
+    .tinv th,.tinv td{border:1px solid #cbd5e1;padding:6px 8px;font-size:11.5px;text-align:left;vertical-align:top}
+    .tinv th{background:#f1f5f9;text-transform:uppercase;font-size:9.5px;letter-spacing:.04em}
+    .tinv .r{text-align:right}
+    .tinv .sub{font-size:10px;color:#64748b}
+    .tinv .wt{font-size:10px;color:#64748b;margin-top:2px}
+    .tinv .totals{margin-top:0}
+    .tinv .totals table{margin-top:0}
+    .tinv .totals td{border:none;padding:3px 8px}
+    .tinv .totals .lbl{color:#334155}
+    .tinv .grand{font-size:16px;font-weight:800}
+    .tinv .words{display:flex;justify-content:space-between;align-items:flex-end;margin-top:10px;border-top:1px dashed #94a3b8;padding-top:8px}
+    .tinv .words .txt{font-size:11px;max-width:70%}
+    .tinv .sign{display:flex;justify-content:space-between;margin-top:34px;font-size:11px}
+    .tinv .sign .box{text-align:center}
+    .tinv .decl{font-size:10px;color:#475569;margin-top:14px;max-width:65%}
+    .tinv .footer{text-align:center;font-size:9.5px;color:#94a3b8;border-top:1px solid #e2e8f0;margin-top:14px;padding-top:6px}
+`;
+
+/** Just this design's own CSS + inner markup (no <!doctype>/<html>/<body>
+ * wrapper, no auto-print script) — for embedding on an in-app preview page.
+ * buildTaxInvoiceHtml (below) wraps this into a standalone popup document. */
+export function buildTaxInvoiceParts(data: TaxInvoiceData, tpl: Pick<ReceiptTemplate, "title" | "footerNote">): { style: string; bodyHtml: string } {
   const rows = data.lines.map((l) => `
     <tr>
       <td>${esc(l.description)}${l.hsn ? ` <span class="sub">HSN : ${esc(l.hsn)}</span>` : ""}
@@ -51,37 +80,7 @@ export function buildTaxInvoiceHtml(data: TaxInvoiceData, tpl: Pick<ReceiptTempl
       <td class="r">${money(l.lineTotal)}</td>
     </tr>`).join("");
 
-  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(tpl.title || "Tax Invoice")} ${esc(data.invoiceNo)}</title><style>
-    @page{margin:10mm}*{box-sizing:border-box}body{font-family:ui-sans-serif,system-ui,Arial;margin:0;color:#0f172a;font-size:12.5px}
-    .wrap{max-width:760px;margin:0 auto}
-    .hdr{text-align:center;border-bottom:2px solid #0f172a;padding-bottom:8px;margin-bottom:8px;position:relative}
-    .hdr .dt{position:absolute;right:0;top:0;font-size:10px;color:#475569}
-    .co{font-size:18px;font-weight:800;letter-spacing:.02em}
-    .addr{font-size:11px;color:#334155;margin-top:2px}
-    .gstin{font-size:11px;margin-top:2px;font-weight:600}
-    .title{margin-top:8px;font-size:14px;font-weight:800;text-decoration:underline}
-    .meta{display:flex;justify-content:space-between;gap:16px;margin:10px 0;font-size:11.5px}
-    .meta .col{flex:1}
-    .meta .lbl{color:#475569}
-    .meta .name{font-weight:800;font-size:13px}
-    table{width:100%;border-collapse:collapse;margin-top:4px}
-    th,td{border:1px solid #cbd5e1;padding:6px 8px;font-size:11.5px;text-align:left;vertical-align:top}
-    th{background:#f1f5f9;text-transform:uppercase;font-size:9.5px;letter-spacing:.04em}
-    .r{text-align:right}
-    .sub{font-size:10px;color:#64748b}
-    .wt{font-size:10px;color:#64748b;margin-top:2px}
-    .totals{margin-top:0}
-    .totals table{margin-top:0}
-    .totals td{border:none;padding:3px 8px}
-    .totals .lbl{color:#334155}
-    .grand{font-size:16px;font-weight:800}
-    .words{display:flex;justify-content:space-between;align-items:flex-end;margin-top:10px;border-top:1px dashed #94a3b8;padding-top:8px}
-    .words .txt{font-size:11px;max-width:70%}
-    .sign{display:flex;justify-content:space-between;margin-top:34px;font-size:11px}
-    .sign .box{text-align:center}
-    .decl{font-size:10px;color:#475569;margin-top:14px;max-width:65%}
-    .footer{text-align:center;font-size:9.5px;color:#94a3b8;border-top:1px solid #e2e8f0;margin-top:14px;padding-top:6px}
-    </style></head><body><div class="wrap">
+  const bodyHtml = `<div class="tinv-wrap"><div class="tinv">
     <div class="hdr">
       <div class="dt">${esc(data.billDateTime)}</div>
       <div class="co">${esc(data.business.name)}</div>
@@ -120,6 +119,21 @@ export function buildTaxInvoiceHtml(data: TaxInvoiceData, tpl: Pick<ReceiptTempl
     <div class="decl">We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.</div>
     <div class="sign"><div></div><div class="box">Authorized Signatory<br/><br/>For ${esc(data.business.name)}</div></div>
     <div class="footer">${tpl.footerNote ? `${esc(tpl.footerNote)} — ` : ""}This is a computer generated invoice</div>
+    </div></div>`;
+  return { style: TAX_INVOICE_STYLE, bodyHtml };
+}
+
+/** Template 2 — "Tax Invoice" A4 design (Bill To/Bill No/Vehicle/Driver header
+ * block, weighbridge-style item line with Empty/Load/Net weight, GST + Royalty
+ * Pass + Round Off, amount-in-words). Standalone popup-window document — the
+ * in-app preview page uses buildTaxInvoiceParts() directly instead. */
+export function buildTaxInvoiceHtml(data: TaxInvoiceData, tpl: Pick<ReceiptTemplate, "title" | "footerNote">): string {
+  const { style, bodyHtml } = buildTaxInvoiceParts(data, tpl);
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(tpl.title || "Tax Invoice")} ${esc(data.invoiceNo)}</title><style>
+    @page{margin:10mm}*{box-sizing:border-box}
+    ${style}
+    </style></head><body>
+    ${bodyHtml}
     <script>window.onload=function(){setTimeout(function(){window.print()},200)}</script>
-    </div></body></html>`;
+    </body></html>`;
 }
