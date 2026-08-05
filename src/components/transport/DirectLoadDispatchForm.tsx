@@ -639,6 +639,12 @@ export function DirectLoadDispatchForm() {
                     <span className="text-muted">Net Weight (In Kgs)</span>
                     <span className="font-bold tabular-nums text-primary">{postNetWeight != null ? postNetWeight.toLocaleString() : "—"}</span>
                   </div>
+                  {postNetWeight != null && lines.length === 1 && lines[0].productId && (lines[0].uom || "").toLowerCase() === "ton" && (
+                    <div className="sm:col-span-2 flex items-center justify-between rounded-lg bg-primary-subtle/40 px-3 py-2 text-xs">
+                      <span className="text-muted">Converted to {lines[0].uom} for {lines[0].productName || "the item"} (1 Ton = 1000 Kg)</span>
+                      <span className="font-bold tabular-nums text-primary">{postNetWeight.toLocaleString()} Kg ÷ 1000 = {r2(postNetWeight / 1000)} Ton</span>
+                    </div>
+                  )}
                   <p className="sm:col-span-2 text-2xs text-subtle">Net weight is loaded into the item&apos;s quantity below automatically, and the taxable/tax/net-amount totals recalculate from it.</p>
                 </div>
               )}

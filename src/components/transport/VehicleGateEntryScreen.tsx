@@ -7,6 +7,7 @@ import { Truck, Search, Plus, X, LogIn, PlayCircle, CheckCircle2, LogOut, Shield
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { AppLoader } from "@/components/ui/AppLoader";
+import { Pagination } from "@/components/ui/Pagination";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { useFmt } from "@/components/settings/GeneralConfigProvider";
@@ -96,6 +97,8 @@ export function VehicleGateEntryScreen() {
   const [busy, setBusy] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [hover, setHover] = useState<{ row: Row; x: number; y: number } | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   // Product name + pre/post-loading weighment are only shown in the
   // hover popover / expand accordion — fetched lazily per row (once, cached
   // client-side) instead of eagerly joined for every row on every list load.
@@ -127,11 +130,15 @@ export function VehicleGateEntryScreen() {
       const res = await fetch(`/api/transport/gate-entry?${u}`, { cache: "no-store" });
       if (res.status === 401) { setNotAuthed(true); return; }
       const j = await res.json().catch(() => ({}));
-      if (j.ok) { setNotAuthed(false); setRows(j.rows); setStats(j.stats); }
+      if (j.ok) { setNotAuthed(false); setRows(j.rows); setStats(j.stats); setPage(1); }
     } catch { /* ignore */ } finally { setLoading(false); }
   }, [query, status, fromDate, toDate, dispatchFromDate, dispatchToDate, product, dcStatusFilter, invoiceStatusFilter]);
 
   useEffect(() => { const t = setTimeout(load, 250); return () => clearTimeout(t); }, [load]);
+
+  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const pagedRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   async function runAction(row: Row, action: "move-inside" | "complete") {
     setBusy(row.id);
@@ -231,7 +238,7 @@ export function VehicleGateEntryScreen() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {pagedRows.map((r) => (
                 <Fragment key={r.id}>
                 <tr
                   className="cursor-pointer border-b border-border last:border-0 transition hover:bg-primary-subtle/30"
@@ -293,6 +300,9 @@ export function VehicleGateEntryScreen() {
             </tbody>
           </table>
         </div>
+        {rows.length > 0 && (
+          <Pagination page={currentPage} pageSize={pageSize} total={rows.length} onPageChange={setPage} onPageSizeChange={(s) => { setPageSize(s); setPage(1); }} label="gate entries" />
+        )}
       </div>
 
       {hover && <RowHoverPopover row={hover.row} x={hover.x} y={hover.y} fmt={fmt} detail={detailCache[hover.row.id]} />}
