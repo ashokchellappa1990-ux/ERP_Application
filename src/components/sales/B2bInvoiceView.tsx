@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { AppLoader } from "@/components/ui/AppLoader";
 import { buildReceiptHtml } from "@/components/sales/PosBilling";
+import { buildTaxInvoiceT3Html, type TaxInvoiceT3Data } from "@/lib/print/taxInvoiceT3Html";
 import { formatMoneyWith, formatQtyWith } from "@/lib/settings/generalConfig";
 import { useGeneralConfig } from "@/components/settings/GeneralConfigProvider";
 
@@ -24,7 +25,11 @@ interface Sale {
 }
 
 export function B2bInvoiceView({ id }: { id: number }) {
-  const [data, setData] = useState<{ business: Record<string, string>; template: Record<string, unknown>; sale: Sale } | null>(null);
+  const [data, setData] = useState<{
+    business: Record<string, string>; template: Record<string, unknown>; sale: Sale;
+    taxInvoiceT3: TaxInvoiceT3Data | null;
+    t3Template: { title: string; footerNote: string; qrCodeImage: string | null; signatureImage: string | null } | null;
+  } | null>(null);
   const gcfg = useGeneralConfig();
   const [loading, setLoading] = useState(true);
   const inr = (x: number) => formatMoneyWith(gcfg, x);
@@ -41,9 +46,17 @@ export function B2bInvoiceView({ id }: { id: number }) {
 
   function print() {
     if (!data) return;
-    const html = buildReceiptHtml(data.business, data.template, data.sale as unknown as Record<string, unknown>);
-    const w = window.open("", "_blank", "width=420,height=640");
-    if (w) { w.document.write(html); w.document.close(); w.focus(); w.print(); }
+    // B2B invoices print via the Template 3 design (GST-style, Bank QR +
+    // Signature); buildReceiptHtml (the generic thermal/A5 layout) stays as a
+    // fallback only if T3 data somehow isn't available for this sale.
+    const html = data.taxInvoiceT3
+      ? buildTaxInvoiceT3Html(
+          { ...data.taxInvoiceT3, qrCodeImage: data.t3Template?.qrCodeImage ?? null, signatureImage: data.t3Template?.signatureImage ?? null },
+          { title: data.t3Template?.title || "Tax Invoice", footerNote: data.t3Template?.footerNote || "" },
+        )
+      : buildReceiptHtml(data.business, data.template, data.sale as unknown as Record<string, unknown>);
+    const w = window.open("", "_blank", "width=900,height=800");
+    if (w) { w.document.write(html); w.document.close(); }
   }
 
   if (loading) return <div className="rounded-2xl border border-border bg-card p-10 shadow-sm"><AppLoader label="Loading invoice…" size="sm" /></div>;

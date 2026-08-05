@@ -5,6 +5,7 @@ import { getActiveScope, scopeWhere } from "@/lib/auth/scope";
 import { requirePermission } from "@/lib/auth/guard";
 import type { TaxInvoiceData } from "@/lib/print/taxInvoiceHtml";
 import type { WeightSlipData } from "@/lib/print/weightSlipHtml";
+import type { TaxInvoiceT3Data } from "@/lib/print/taxInvoiceT3Html";
 
 const PERM = "warehouse.transfer";
 const num = (v: unknown) => (v == null ? 0 : Number(v));
@@ -30,10 +31,10 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     doc.vehicleId ? prisma.vehicleMaster.findFirst({ where: { id: doc.vehicleId }, select: { vehicleNo: true } }) : Promise.resolve(null),
     prisma.transportCost.findFirst({ where: { loadDispatchId: doc.id } }),
     doc.vehicleGateEntryId ? prisma.vehicleGateEntry.findFirst({ where: { id: doc.vehicleGateEntryId, tenantId: user.tenantId } }) : Promise.resolve(null),
-    prisma.companySetup.findFirst({ where: { tenantId: user.tenantId, NOT: { companyName: null } }, orderBy: { updatedAt: "desc" }, select: { companyName: true, gstNumber: true, addressLine: true, city: true, state: true, pincode: true } }),
+    prisma.companySetup.findFirst({ where: { tenantId: user.tenantId, NOT: { companyName: null } }, orderBy: { updatedAt: "desc" }, select: { companyName: true, gstNumber: true, addressLine: true, city: true, state: true, pincode: true, companyPhone: true, companyEmail: true } }),
     prisma.tenant.findUnique({ where: { id: user.tenantId }, select: { name: true } }),
     doc.deliveryChallanId ? prisma.deliveryChallan.findFirst({ where: { id: doc.deliveryChallanId, tenantId: user.tenantId } }) : Promise.resolve(null),
-    doc.partyType === "Customer" && doc.partyId ? prisma.customer.findFirst({ where: { id: doc.partyId, tenantId: user.tenantId }, select: { gstin: true } }) : Promise.resolve(null),
+    doc.partyType === "Customer" && doc.partyId ? prisma.customer.findFirst({ where: { id: doc.partyId, tenantId: user.tenantId }, select: { address: true, city: true, state: true, phone: true, gstin: true } }) : Promise.resolve(null),
   ]);
 
   const business = {
@@ -50,6 +51,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   ]);
 
   let taxInvoice: TaxInvoiceData | null = null;
+  let taxInvoiceT3: TaxInvoiceT3Data | null = null;
   let weightSlip: WeightSlipData | null = null;
   let deliveryNote: TaxInvoiceData | null = null;
 
@@ -76,6 +78,47 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         totalTax: num(sale.taxTotal), sgstPct: halfPct, sgstAmount: num(sale.sgst), cgstPct: halfPct, cgstAmount: num(sale.cgst),
         royaltyPassLabel: "Royalty Pass", royaltyPass: num(transportCost?.otherCharges),
         roundOff: num(sale.roundOff), total: num(sale.total),
+      };
+
+      // ---- Tax Invoice (Template 3) — same prerequisite (Sales Invoice
+      // posted), built for the GST-style design with per-HSN CGST/SGST rows.
+      // qrCodeImage/signatureImage aren't assembled here — the caller merges
+      // those in from the B2B_T3 InvoiceTemplate row it already fetches
+      // alongside this route, same as title/footerNote for every other design.
+      const hsnTotals = new Map<string, { taxableAmount: number; taxAmount: number }>();
+      for (const l of sale.lines) {
+        const hsn = l.hsn || "—";
+        const cur = hsnTotals.get(hsn) ?? { taxableAmount: 0, taxAmount: 0 };
+        cur.taxableAmount += num(l.taxableValue); cur.taxAmount += num(l.taxAmount);
+        hsnTotals.set(hsn, cur);
+      }
+      taxInvoiceT3 = {
+        business: {
+          name: business.name, address: business.address, gstin: business.gstin,
+          phone: setup?.companyPhone || "", email: setup?.companyEmail || "", state: setup?.state || "",
+        },
+        invoiceNo: sale.invoiceNo, date: sale.saleDate, placeOfSupply: setup?.state || "", deliveryDate: doc.dispatchDate,
+        driverName: doc.driverName, vehicleNumber: vehicle?.vehicleNo ?? null, driverMobile: doc.driverMobile,
+        deliveryLocation: doc.deliveryAddress || gateEntry?.deliveryAddress || null,
+        customer: {
+          name: sale.customerName || "Walk-in",
+          address: [customer?.address, customer?.city].filter(Boolean).join(", ") || doc.deliveryAddress || gateEntry?.deliveryAddress || "",
+          contact: sale.customerPhone || customer?.phone || null, gstin: sale.customerGstin || customer?.gstin || null,
+          state: customer?.state || setup?.state || "",
+        },
+        lines: sale.lines.map((l) => ({
+          productName: l.productName, hsn: l.hsn, qty: num(l.qty), uom: l.uom || "",
+          pricePerUnit: num(l.rate), taxablePricePerUnit: num(l.qty) ? num(l.taxableValue) / num(l.qty) : num(l.rate),
+          gstPct: l.taxPct != null ? num(l.taxPct) : null, gstAmount: num(l.taxAmount), amount: num(l.value),
+        })),
+        subTotal: num(sale.total) - num(sale.roundOff), roundOff: num(sale.roundOff), total: num(sale.total),
+        paymentMode: sale.paymentStatus === "Unpaid" ? "Credit" : (sale.paymentMode || "Cash"),
+        hsnRows: Array.from(hsnTotals.entries()).map(([hsn, v]) => ({
+          hsn, taxableAmount: v.taxableAmount,
+          cgstPct: 2.5, cgstAmount: v.taxAmount / 2, sgstPct: 2.5, sgstAmount: v.taxAmount / 2, totalTax: v.taxAmount,
+        })),
+        totalTax: num(sale.taxTotal),
+        qrCodeImage: null, signatureImage: null, termsNote: "",
       };
     }
   }
@@ -140,5 +183,5 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     };
   }
 
-  return NextResponse.json({ ok: true, taxInvoice, weightSlip, deliveryNote });
+  return NextResponse.json({ ok: true, taxInvoice, taxInvoiceT3, weightSlip, deliveryNote });
 }

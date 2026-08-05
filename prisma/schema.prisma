@@ -1397,6 +1397,13 @@ model InvoiceTemplate {
   showContact      Boolean @default(false) // print a contact / toll-free number
   contactNumber    String? @db.VarChar(40)
 
+  // B2B_T3 only — data: URIs uploaded in the template settings screen (same
+  // FileReader.readAsDataURL pattern as the company logo upload elsewhere in
+  // this app; no separate file-storage endpoint). LongText since a base64
+  // image comfortably exceeds a normal VarChar/Text column.
+  qrCodeImage    String? @db.LongText
+  signatureImage String? @db.LongText
+
   updatedAt DateTime @updatedAt
 
   @@unique([tenantId, type])

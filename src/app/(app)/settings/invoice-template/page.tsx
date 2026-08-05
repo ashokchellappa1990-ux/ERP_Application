@@ -9,6 +9,7 @@ import { DEFAULT_RECEIPT, PAPER_SIZES, type ReceiptTemplate } from "@/lib/settin
 import { buildTaxInvoiceHtml, TAX_INVOICE_SAMPLE } from "@/lib/print/taxInvoiceHtml";
 import { buildWeightSlipHtml, WEIGHT_SLIP_SAMPLE } from "@/lib/print/weightSlipHtml";
 import { buildTokenSlipHtml, TOKEN_SLIP_SAMPLE } from "@/lib/print/tokenSlipHtml";
+import { buildTaxInvoiceT3Html, TAX_INVOICE_T3_SAMPLE } from "@/lib/print/taxInvoiceT3Html";
 import { cn } from "@/lib/cn";
 
 const FLAGS: { k: keyof ReceiptTemplate; label: string; desc: string }[] = [
@@ -24,8 +25,9 @@ const FLAGS: { k: keyof ReceiptTemplate; label: string; desc: string }[] = [
 const TABS = [
   { id: "B2C", label: "Sales Invoice B2C", desc: "Printed POS bill / thermal receipt." },
   { id: "B2B", label: "Sales Invoice B2B", desc: "Tax invoice for business customers." },
-  { id: "B2B_T2", label: "Sales Invoice B2B (Template 2)", desc: "Alternate A4 tax invoice design — Bill To/Vehicle/Driver/weight detail, printed from Load & Dispatch." },
-  { id: "WEIGHT_SLIP", label: "Weight Slip", desc: "Weighbridge slip printed alongside the Template 2 invoice from Load & Dispatch." },
+  { id: "B2B_T2", label: "Sales Invoice B2B (Template 2)", desc: "Alternate A4 tax invoice design — Bill To/Vehicle/Driver/weight detail. Configurable, but no longer printed by default (superseded by Template 3 below)." },
+  { id: "B2B_T3", label: "Sales Invoice B2B (Template 3)", desc: "GST-style A4 tax invoice with a Bank QR code + Signature — this is the design printed from Load & Dispatch and the Sales Invoice page." },
+  { id: "WEIGHT_SLIP", label: "Weight Slip", desc: "Weighbridge slip printed alongside the invoice from Load & Dispatch." },
   { id: "TOKEN", label: "Pre Load Weight Slip (Token)", desc: "Gate token printed right after a Pre-Loading Weighment — Empty weight only, Load/Net Weight blank until loading is done." },
   { id: "COLLECTION", label: "Customer Collection", desc: "Receipt given on collecting payment." },
 ] as const;
@@ -33,12 +35,16 @@ type TplType = (typeof TABS)[number]["id"];
 // These documents are dynamic, generated-HTML designs (src/lib/print/*Html.ts)
 // rather than the toggle-driven receipt this page otherwise edits — only the
 // text fields below apply; "What to Print" toggles don't.
-const CUSTOM_DESIGN_TYPES: TplType[] = ["B2B_T2", "WEIGHT_SLIP", "TOKEN"];
+const CUSTOM_DESIGN_TYPES: TplType[] = ["B2B_T2", "B2B_T3", "WEIGHT_SLIP", "TOKEN"];
 
 export default function InvoiceTemplatePage() {
   const toast = useToast();
   const [type, setType] = useState<TplType>("B2C");
   const [tpl, setTpl] = useState<ReceiptTemplate>(DEFAULT_RECEIPT);
+  // B2B_T3 only — not part of the shared ReceiptTemplate shape (every other
+  // template type has no use for them), so kept as separate local state.
+  const [qrCodeImage, setQrCodeImage] = useState("");
+  const [signatureImage, setSignatureImage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -47,7 +53,14 @@ export default function InvoiceTemplatePage() {
     let active = true;
     setLoading(true);
     (async () => {
-      try { const j = await fetch(`/api/settings/invoice-template?type=${type}`, { cache: "no-store" }).then((r) => r.json()); if (active && j.ok) setTpl({ ...DEFAULT_RECEIPT, ...j.template }); } catch { /**/ } finally { if (active) setLoading(false); }
+      try {
+        const j = await fetch(`/api/settings/invoice-template?type=${type}`, { cache: "no-store" }).then((r) => r.json());
+        if (active && j.ok) {
+          setTpl({ ...DEFAULT_RECEIPT, ...j.template });
+          setQrCodeImage(j.template.qrCodeImage || "");
+          setSignatureImage(j.template.signatureImage || "");
+        }
+      } catch { /**/ } finally { if (active) setLoading(false); }
     })();
     return () => { active = false; };
   }, [type]);
@@ -56,10 +69,17 @@ export default function InvoiceTemplatePage() {
   async function save() {
     setSaving(true);
     try {
-      const j = await fetch(`/api/settings/invoice-template?type=${type}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...tpl, type }) }).then((r) => r.json());
+      const body = type === "B2B_T3" ? { ...tpl, type, qrCodeImage, signatureImage } : { ...tpl, type };
+      const j = await fetch(`/api/settings/invoice-template?type=${type}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then((r) => r.json());
       if (toast.result(j, "Invoice template saved.", "Could not save the invoice template.")) { setSaved(true); window.setTimeout(() => setSaved(false), 2000); }
     } catch { toast.error("Could not reach the server. Please try again."); }
     setSaving(false);
+  }
+  function onImageFile(kind: "qr" | "signature", file: File | undefined) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { const url = String(reader.result); if (kind === "qr") setQrCodeImage(url); else setSignatureImage(url); };
+    reader.readAsDataURL(file);
   }
 
   const activeTab = TABS.find((t) => t.id === type)!;
@@ -69,6 +89,8 @@ export default function InvoiceTemplatePage() {
     ? buildWeightSlipHtml(WEIGHT_SLIP_SAMPLE, { title: tpl.title, footerNote: tpl.footerNote })
     : type === "TOKEN"
     ? buildTokenSlipHtml(TOKEN_SLIP_SAMPLE, { title: tpl.title, footerNote: tpl.footerNote })
+    : type === "B2B_T3"
+    ? buildTaxInvoiceT3Html({ ...TAX_INVOICE_T3_SAMPLE, qrCodeImage: qrCodeImage || null, signatureImage: signatureImage || null, termsNote: tpl.footerNote || TAX_INVOICE_T3_SAMPLE.termsNote }, { title: tpl.title, footerNote: tpl.footerNote })
     : buildTaxInvoiceHtml(TAX_INVOICE_SAMPLE, { title: tpl.title, footerNote: tpl.footerNote }));
   const isSlip = type === "WEIGHT_SLIP" || type === "TOKEN";
   const previewHtmlNoAutoPrint = isCustomDesign ? stripAutoPrint(buildPreviewHtml()) : "";
@@ -140,11 +162,27 @@ export default function InvoiceTemplatePage() {
             <Section title="About this design">
               <p className="text-2xs text-muted">
                 {type === "B2B_T2"
-                  ? "This is a purpose-built A4 Tax Invoice layout (Bill To / Bill No / Vehicle Number / Delivery To / Driver, a weighbridge-style item line with Empty/Load/Net weight, GST breakup, Royalty Pass and Round Off) printed from a Load & Dispatch record's \"Print Sales Invoice\" button — separate from the standard Sales Invoice (B2B) receipt above. Only Title and Footer Note are configurable here; every other field (customer, amounts, vehicle, weights) is filled in per-invoice automatically."
+                  ? "This is a purpose-built A4 Tax Invoice layout (Bill To / Bill No / Vehicle Number / Delivery To / Driver, a weighbridge-style item line with Empty/Load/Net weight, GST breakup, Royalty Pass and Round Off) — kept configurable, but no longer printed by default from anywhere (Template 3 below replaced it). Only Title and Footer Note are configurable here; every other field (customer, amounts, vehicle, weights) is filled in per-invoice automatically."
+                  : type === "B2B_T3"
+                  ? "This is the GST-style A4 Tax Invoice (company + invoice-meta header with Driver/Vehicle/Delivery, Bill To, a Price/Taxable Price/GST item table, an HSN-wise CGST/SGST summary table, Bank QR + Signature) printed from a Load & Dispatch record's \"Print Invoice\" button AND from the Sales Invoice (B2B) page's \"Print\" button — this is the design actually used by both, replacing Template 2. Title and Footer Note (used as the Terms note) are configurable here, along with the Bank QR code and Signature images below; everything else is filled in per-invoice automatically."
                   : type === "TOKEN"
                   ? "This is the gate token printed right after a Pre-Loading Weighment is recorded (Token No, product, Ref No, date/in-time, customer, vehicle, Empty weight, payment, delivery) — Load & Net Weight always print blank since they aren't known until the vehicle is loaded and weighed out. Only Title and Footer Note are configurable here; a fixed safety notice always prints below the fields."
                   : "This is the weighbridge slip (Token No, Ref No, In/Out time, vehicle, Empty/Load/Net weight, payment, delivery) printed from a Load & Dispatch record's \"Print Weight Slip\" button. Only Title and Footer Note are configurable here — the rest is filled in per-dispatch automatically."}
               </p>
+            </Section>
+          )}
+          {type === "B2B_T3" && (
+            <Section title="Bank QR & Signature">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <ImageUpload
+                  label="Bank QR Code" desc={'Shown under "Bank Details" — scannable UPI QR for payment.'}
+                  value={qrCodeImage} onFile={(f) => onImageFile("qr", f)} onRemove={() => setQrCodeImage("")}
+                />
+                <ImageUpload
+                  label="Authorized Signatory Signature" desc={'Printed above "Authorized Signatory" in the footer.'}
+                  value={signatureImage} onFile={(f) => onImageFile("signature", f)} onRemove={() => setSignatureImage("")}
+                />
+              </div>
             </Section>
           )}
         </div>
@@ -213,3 +251,23 @@ function HeaderToggle({ label, desc, checked, onChange }: { label: string; desc:
   );
 }
 function Section({ title, children }: { title: string; children: React.ReactNode }) { return <div className="rounded-2xl border border-border bg-card p-5 shadow-sm"><h2 className="mb-4 text-sm font-bold text-foreground">{title}</h2>{children}</div>; }
+function ImageUpload({ label, desc, value, onFile, onRemove }: { label: string; desc: string; value: string; onFile: (f: File | undefined) => void; onRemove: () => void }) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-xs font-semibold text-foreground">{label}</label>
+      <p className="mb-2 text-2xs text-subtle">{desc}</p>
+      {value ? (
+        <div className="flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={value} alt={label} className="h-16 w-16 rounded-md border border-border object-contain bg-white p-1" />
+          <button type="button" onClick={onRemove} className="text-xs font-medium text-muted transition hover:text-danger">Remove</button>
+        </div>
+      ) : (
+        <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-md border border-dashed border-border-strong bg-surface text-2xs font-medium text-muted hover:border-primary hover:text-primary">
+          Upload
+          <input type="file" accept="image/*" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+        </label>
+      )}
+    </div>
+  );
+}

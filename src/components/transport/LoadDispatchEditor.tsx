@@ -18,6 +18,7 @@ import { LOAD_DISPATCH_DOC_TYPES } from "@/lib/contracts/loadDispatch";
 import type { LoadDispatchDetail, LoadDispatchItemDto } from "@/lib/contracts/loadDispatch";
 import type { TransportConfigData } from "@/lib/settings/transportConfigDefaults";
 import { buildTaxInvoiceHtml, type TaxInvoiceData } from "@/lib/print/taxInvoiceHtml";
+import { buildTaxInvoiceT3Html, type TaxInvoiceT3Data } from "@/lib/print/taxInvoiceT3Html";
 import { buildWeightSlipHtml, type WeightSlipData } from "@/lib/print/weightSlipHtml";
 import { DEFAULT_RECEIPT } from "@/lib/settings/receiptTemplate";
 import { fieldOn, fieldMust } from "@/lib/settings/docFieldsConfig";
@@ -303,12 +304,12 @@ export function LoadDispatchEditor({ id }: { id: number }) {
     try {
       const [dataRes, tplRes] = await Promise.all([
         fetch(`/api/warehouse/load-dispatch/${id}/print-data`, { cache: "no-store" }).then((r) => r.json()),
-        kind === "dc" ? Promise.resolve(null) : fetch(`/api/settings/invoice-template?type=${kind === "invoice" ? "B2B_T2" : "WEIGHT_SLIP"}`, { cache: "no-store" }).then((r) => r.json()),
+        kind === "dc" ? Promise.resolve(null) : fetch(`/api/settings/invoice-template?type=${kind === "invoice" ? "B2B_T3" : "WEIGHT_SLIP"}`, { cache: "no-store" }).then((r) => r.json()),
       ]);
       if (!dataRes?.ok) { toast.error(dataRes?.message || "Could not load print data."); return; }
       const tpl = tplRes?.ok ? { title: tplRes.template.title, footerNote: tplRes.template.footerNote } : DEFAULT_RECEIPT;
       const html = kind === "invoice"
-        ? (dataRes.taxInvoice ? buildTaxInvoiceHtml(dataRes.taxInvoice as TaxInvoiceData, tpl) : null)
+        ? (dataRes.taxInvoiceT3 ? buildTaxInvoiceT3Html({ ...(dataRes.taxInvoiceT3 as TaxInvoiceT3Data), qrCodeImage: tplRes?.template?.qrCodeImage || null, signatureImage: tplRes?.template?.signatureImage || null }, tpl) : null)
         : kind === "dc"
         ? (dataRes.deliveryNote ? buildTaxInvoiceHtml(dataRes.deliveryNote as TaxInvoiceData, { title: "Delivery Note", footerNote: DEFAULT_RECEIPT.footerNote }) : null)
         : (dataRes.weightSlip ? buildWeightSlipHtml(dataRes.weightSlip as WeightSlipData, tpl) : null);
@@ -386,7 +387,7 @@ export function LoadDispatchEditor({ id }: { id: number }) {
           >
             <Ticket className="h-4 w-4" /> Print Token
           </Button>
-          <Button variant="primary" size="md" onClick={() => printDocument("invoice")} disabled={printBusy != null || !x.saleId} title={x.saleId ? "Print the Tax Invoice (Template 2)" : "Available once a Sales Invoice has been posted"}>
+          <Button variant="primary" size="md" onClick={() => printDocument("invoice")} disabled={printBusy != null || !x.saleId} title={x.saleId ? "Print the Tax Invoice" : "Available once a Sales Invoice has been posted"}>
             <Printer className="h-4 w-4" /> {printBusy === "invoice" ? "Preparing…" : "Print Invoice"}
           </Button>
           <Link href="/warehouse/transfer/load-dispatch"><Button variant="outline" size="md"><ArrowLeft className="h-4 w-4" /> Back</Button></Link>
