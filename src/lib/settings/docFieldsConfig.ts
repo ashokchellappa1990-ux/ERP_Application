@@ -35,14 +35,21 @@ const purchaseFields: DocFieldDef[] = [
 
 // Vehicle Gate Entry — field keys match GateEntryEditor.tsx's own state names 1:1
 // so the settings screen can drive that form's show/hide + required-ness directly.
-// Core identifiers (Vehicle Number, Entry Date & Time, Location, Gate Entry No)
-// aren't listed — those always show, mirroring how Vehicle Number/Buyer etc.
-// aren't optional on the commercial docs above.
+// Entry Date & Time, Location, Gate Entry No always show (never optional, not
+// listed here). Vehicle Number/Customer/Product ARE listed below despite being
+// "core" fields — unlike the others, Vehicle Number defaults to mandatory:true
+// (see the override right after DEFAULT_DOC_FIELDS_CONFIG's construction) so
+// disabling it is an explicit admin choice, not a silent regression; the API
+// still requires a vehicle regardless (a non-nullable FK), so turning this off
+// only skips the friendly client-side check, not backend validation.
 // Dispatch Type / Reference Type are NOT here — those are handled by Dispatch
 // Configuration's own default-value + lock mechanism (a preload/changeability
 // concern, not a show/hide one — hiding them would break this form's
 // downstream conditional sections).
 const vehicleGateEntryFields: DocFieldDef[] = [
+  { key: "vehicleNumber", label: "Vehicle Number", mandatoryable: true, group: "Transport Details" },
+  { key: "customer", label: "Customer (Direct Customer Dispatch)", mandatoryable: true, group: "Dispatch & Reference" },
+  { key: "product", label: "At Least One Item in Item Details", mandatoryable: true, group: "Items" },
   { key: "securityOfficer", label: "Security Officer", mandatoryable: true, group: "Gate Information" },
   { key: "location", label: "Location (Branch)", mandatoryable: false, group: "Gate Information" },
   { key: "deliveryAddress", label: "Delivery Address (Direct Customer Dispatch)", mandatoryable: true, group: "Dispatch & Reference" },
@@ -136,6 +143,11 @@ function buildDefault(): DocFieldsConfig {
 }
 
 export const DEFAULT_DOC_FIELDS_CONFIG: DocFieldsConfig = buildDefault();
+// Vehicle Number is structurally required (non-nullable FK, API always
+// rejects a missing one) — defaults to mandatory:true unlike every other
+// mandatoryable field above, so listing it here doesn't silently make it
+// optional for existing tenants until an admin deliberately turns it off.
+DEFAULT_DOC_FIELDS_CONFIG.vehicle_gate_entry.vehicleNumber.mandatory = true;
 
 /** Resolve a module + feature key to a configured screen key (or null if not configured). */
 export function screenKeyFor(module: "sales" | "purchase", feature: string): string | null {

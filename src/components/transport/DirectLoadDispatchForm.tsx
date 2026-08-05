@@ -125,6 +125,11 @@ export function DirectLoadDispatchForm() {
   const [postWeightCaptureMode, setPostWeightCaptureMode] = useState<"Both" | "CaptureLater" | "CaptureNow">("Both");
   const [postGrossWeight, setPostGrossWeight] = useState("");
   const [postOperator, setPostOperator] = useState("");
+  // Dispatch Configuration's "Require Weighment" flag — when on, a linked
+  // Vehicle Gate Entry must already have a completed Pre-Loading Weighment
+  // before this dispatch can be created (mirrors the same check the
+  // completeLoadDispatch engine enforces server-side — see loadDispatch.ts).
+  const [requireWeighment, setRequireWeighment] = useState(false);
   const tareWeight = preWeighment && preWeighment.length ? preWeighment[0].tareWeight : null;
   const postNetWeight = tareWeight != null ? r2(n(postGrossWeight) - tareWeight) : null;
 
@@ -206,6 +211,7 @@ export function DirectLoadDispatchForm() {
       if (!j.ok) return;
       const m = j.config?.fields?.postLoadWeightCaptureMode;
       if (m === "Both" || m === "CaptureLater" || m === "CaptureNow") setPostWeightCaptureMode(m);
+      setRequireWeighment(!!j.config?.flags?.requireWeighment);
     }).catch(() => {});
   }, []);
 
@@ -377,6 +383,7 @@ export function DirectLoadDispatchForm() {
     if (!valid.length) { toast.error("Add at least one item with a valid quantity."); return; }
     if (payCat === "partial" && (paidNow <= 0 || paidNow >= totals.grandTotal)) { toast.error("Enter a partial amount greater than 0 and less than the grand total."); return; }
     if (postWeightTiming === "now" && vehicleGateEntryId && n(postGrossWeight) <= 0) { toast.error("Enter a valid post-loading gross weight, or switch Weighment Management to “Later”."); return; }
+    if (requireWeighment && vehicleGateEntryId && tareWeight == null) { toast.error("Pre-Loading Weighment must be completed for the linked Vehicle Gate Entry before this dispatch can be created (per Dispatch Configuration)."); return; }
     setSubmitting(true);
     const payload = {
       source: "DIRECT_CUSTOMER" as const,
@@ -600,8 +607,9 @@ export function DirectLoadDispatchForm() {
           ) : (
             <>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Fld label="Pre-Loading Tare Weight (In Kgs)">
-                  <input readOnly value={preWeighmentLoading ? "Loading…" : tareWeight != null ? String(tareWeight) : "Not yet weighed"} className={cn(inp, "cursor-not-allowed bg-surface-2 font-semibold text-foreground")} />
+                <Fld label={`Pre-Loading Tare Weight (In Kgs)${requireWeighment ? " *" : ""}`}>
+                  <input readOnly value={preWeighmentLoading ? "Loading…" : tareWeight != null ? String(tareWeight) : "Not yet weighed"} className={cn(inp, "cursor-not-allowed bg-surface-2 font-semibold", tareWeight == null && requireWeighment ? "text-danger" : "text-foreground")} />
+                  {tareWeight == null && requireWeighment && !preWeighmentLoading && <p className="mt-1 text-2xs text-danger">Required by Dispatch Configuration — complete the Pre-Loading Weighment first.</p>}
                 </Fld>
                 <Fld label="Weighed On">
                   <input readOnly value={preWeighmentLoading ? "" : preWeighment?.[0] ? `${preWeighment[0].weighDate ?? "—"}${preWeighment[0].weighTime ? ` ${preWeighment[0].weighTime}` : ""}` : "—"} className={cn(inp, "cursor-not-allowed bg-surface-2")} />

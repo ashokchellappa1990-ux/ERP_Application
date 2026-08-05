@@ -245,8 +245,12 @@ export function GateEntryEditor() {
   };
 
   async function save() {
-    if (!vehicleId) { toast.error("Vehicle Number is required."); return; }
-    const checks: [string, boolean, string][] = [
+    // Vehicle Number is structurally required (the API rejects a missing one
+    // regardless of this setting) — default true, but still routed through
+    // the same configurable check as everything else per Document Field
+    // Settings, rather than a separate hardcoded guard.
+    const checks: [string, boolean, string, boolean?][] = [
+      ["vehicleNumber", !vehicleId, "Vehicle Number", true],
       ["securityOfficer", !securityOfficer.trim(), "Security Officer"],
       ["transportCompany", !transportCompanyId, "Transport Company"],
       ["transportMode", !transportMode, "Transport Mode"],
@@ -254,9 +258,11 @@ export function GateEntryEditor() {
       ["driverMobile", !driverMobile.trim(), "Driver Mobile"],
       ["driverLicenseNo", !driverLicenseNo.trim(), "Driver License No."],
       ["deliveryAddress", dispatchType === "Customer" && referenceType === "Direct Customer Dispatch" && !deliveryAddress.trim(), "Delivery Address"],
+      ["customer", dispatchType === "Customer" && referenceType === "Direct Customer Dispatch" && !customerId, "Customer"],
+      ["product", fieldOn(SCREEN, "itemDetails") && items.length === 0, "At least one item"],
     ];
-    for (const [key, missing, label] of checks) {
-      if (fieldOn(SCREEN, key) && fieldMust(SCREEN, key) && missing) { toast.error(`${label} is required.`); return; }
+    for (const [key, missing, label, fallback] of checks) {
+      if (fieldOn(SCREEN, key) && fieldMust(SCREEN, key, fallback) && missing) { toast.error(`${label} is required.`); return; }
     }
     setSaving(true);
     try {
@@ -333,7 +339,7 @@ export function GateEntryEditor() {
           )}
           {dispatchType === "Customer" && referenceType === "Direct Customer Dispatch" && (
             <div className="relative">
-              <label className="mb-1 block text-2xs font-semibold text-muted">Customer</label>
+              <label className="mb-1 block text-2xs font-semibold text-muted">Customer{req("customer")}</label>
               <div className="relative">
                 <input value={customerQuery} onChange={(e) => onCustomerQuery(e.target.value)} placeholder="Search customer master…" className={cn(inp, searchingCustomer && "pr-9")} />
                 {searchingCustomer && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary" />}
@@ -410,7 +416,7 @@ export function GateEntryEditor() {
           )}
           {fieldOn(SCREEN, "transportMode") && <Fld label={`Transport Mode${req("transportMode")}`}><select value={transportMode} onChange={(e) => setTransportMode(e.target.value)} className={inp}>{TRANSPORT_MODES.map((t) => <option key={t} value={t}>{t || "—"}</option>)}</select></Fld>}
           <div>
-            <label className="mb-1 block text-2xs font-semibold text-muted">Vehicle Number *</label>
+            <label className="mb-1 block text-2xs font-semibold text-muted">Vehicle Number{req("vehicleNumber")}</label>
             <div className="flex gap-1.5">
               <select
                 value={vehicleId}
@@ -435,7 +441,7 @@ export function GateEntryEditor() {
       </SectionCard>
 
       {fieldOn(SCREEN, "itemDetails") && itemCaptureMode !== "None" && (
-      <SectionCard icon={Boxes} title="Item Details (optional)" allowOverflow>
+      <SectionCard icon={Boxes} title={`Item Details${fieldMust(SCREEN, "product") ? " *" : " (optional)"}`} allowOverflow>
         <p className="mb-3 text-2xs text-subtle">
           {itemCaptureMode === "Single" ? "The single product " : "What the vehicle is expected to carry — "}
           {captureQtyAtGate ? "captured here, informational only at this stage — no stock/allocation impact." : "captured by name only — quantity is derived later from the Post-Loading Weighment's net weight on Load & Dispatch."}
