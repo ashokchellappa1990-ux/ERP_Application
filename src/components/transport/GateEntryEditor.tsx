@@ -86,10 +86,13 @@ export function GateEntryEditor() {
   const [transportMode, setTransportMode] = useState("");
   const [vehicleType, setVehicleType] = useState("");
   const [vehicleId, setVehicleId] = useState<number | "">("");
+  const [vehicleQuery, setVehicleQuery] = useState("");
+  const [vehicleHits, setVehicleHits] = useState<VehicleOpt[] | null>(null);
   const [trailerNumber, setTrailerNumber] = useState("");
   const [containerNumber, setContainerNumber] = useState("");
   const [addCompanyOpen, setAddCompanyOpen] = useState(false);
   const [addVehicleOpen, setAddVehicleOpen] = useState(false);
+  const [addDriverOpen, setAddDriverOpen] = useState(false);
 
   // Section 5 – Driver Details
   const [driverMasterId, setDriverMasterId] = useState<number | "">("");
@@ -200,6 +203,20 @@ export function GateEntryEditor() {
   const pickCustomer = (hit: CustomerHit) => {
     setCustomerId(hit.id); setCustomerName(hit.name); setCustomerQuery(hit.name); setCustomerHits(null);
     setDeliveryAddress(hit.address ?? ""); setDeliveryAddressLocked(false);
+  };
+
+  // Vehicle Number — type-ahead search (client-side filter over the already-
+  // loaded active vehicle list; there's rarely more than a few hundred, so no
+  // server round trip needed like Customer/Driver search).
+  const onVehicleQuery = (v: string) => {
+    setVehicleQuery(v);
+    if (!v.trim()) { setVehicleHits(null); return; }
+    setVehicleHits(vehicles.filter((x) => x.label.toLowerCase().includes(v.trim().toLowerCase())));
+  };
+  const pickVehicle = (v: VehicleOpt) => {
+    setVehicleId(v.id); setVehicleQuery(v.label); setVehicleHits(null);
+    if (v.vehicleType) setVehicleType(v.vehicleType);
+    if (v.transportCompanyId) setTransportCompanyId(v.transportCompanyId);
   };
 
   const trTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -422,23 +439,25 @@ export function GateEntryEditor() {
 
       <SectionCard icon={Truck} title="Transport Details" allowOverflow>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <div>
+          <div className="relative">
             <label className="mb-1 block text-2xs font-semibold text-muted">Vehicle Number{req("vehicleNumber")}</label>
             <div className="flex gap-1.5">
-              <select
-                value={vehicleId}
-                onChange={(e) => {
-                  const id = e.target.value ? Number(e.target.value) : "";
-                  setVehicleId(id);
-                  const v = vehicles.find((x) => x.id === id);
-                  if (v?.vehicleType) setVehicleType(v.vehicleType);
-                  if (v?.transportCompanyId) setTransportCompanyId(v.transportCompanyId);
-                }}
-                className={inp}
-              >
-                <option value="">Select vehicle…</option>
-                {vehicles.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
-              </select>
+              <div className="relative flex-1">
+                <input
+                  value={vehicleQuery}
+                  onChange={(e) => onVehicleQuery(e.target.value)}
+                  onFocus={() => setVehicleHits(vehicles.filter((v) => v.label.toLowerCase().includes(vehicleQuery.trim().toLowerCase())))}
+                  placeholder="Search vehicle number…"
+                  className={inp}
+                />
+                {vehicleHits !== null && (
+                  <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border bg-card shadow-lg">
+                    {vehicleHits.length ? vehicleHits.map((v) => (
+                      <button key={v.id} type="button" onClick={() => pickVehicle(v)} className="block w-full border-b border-border px-3 py-2 text-left text-sm last:border-0 hover:bg-primary-subtle/40">{v.label}{v.vehicleType ? <span className="ml-1.5 text-2xs text-subtle">{v.vehicleType}</span> : null}</button>
+                    )) : <div className="px-3 py-2 text-sm text-muted">No matching vehicles.</div>}
+                  </div>
+                )}
+              </div>
               <button type="button" title="Add new vehicle" onClick={() => setAddVehicleOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border-strong bg-surface text-muted hover:border-primary hover:text-primary"><Plus className="h-4 w-4" /></button>
             </div>
           </div>
@@ -514,9 +533,12 @@ export function GateEntryEditor() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div className="relative">
             <label className="mb-1 block text-2xs font-semibold text-muted">Driver Name</label>
-            <div className="relative">
-              <input value={driverQuery} onChange={(e) => onDriverQuery(e.target.value)} placeholder="Type 3+ letters to search Driver Master…" className={cn(inp, searchingDriver && "pr-9")} />
-              {searchingDriver && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary" />}
+            <div className="flex gap-1.5">
+              <div className="relative flex-1">
+                <input value={driverQuery} onChange={(e) => onDriverQuery(e.target.value)} placeholder="Type 3+ letters to search Driver Master…" className={cn(inp, searchingDriver && "pr-9")} />
+                {searchingDriver && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary" />}
+              </div>
+              <button type="button" title="Add new driver" onClick={() => setAddDriverOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border-strong bg-surface text-muted hover:border-primary hover:text-primary"><Plus className="h-4 w-4" /></button>
             </div>
             {driverHits !== null && (
               <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border bg-card shadow-lg">
@@ -562,7 +584,8 @@ export function GateEntryEditor() {
       </div>
 
       {addCompanyOpen && <AddTransportCompanyModal onClose={() => setAddCompanyOpen(false)} onAdded={(row) => { setCompanies((p) => [{ id: row.id, label: row.name }, ...p]); setTransportCompanyId(row.id); setAddCompanyOpen(false); }} />}
-      {addVehicleOpen && <AddVehicleModal onClose={() => setAddVehicleOpen(false)} onAdded={(row) => { setVehicles((p) => [{ id: row.id, label: row.vehicleNo, vehicleType: row.vehicleType ?? null, transportCompanyId: row.transportCompanyId ?? null }, ...p]); setVehicleId(row.id); if (row.vehicleType) setVehicleType(row.vehicleType); if (row.transportCompanyId) setTransportCompanyId(row.transportCompanyId); setAddVehicleOpen(false); }} />}
+      {addVehicleOpen && <AddVehicleModal companies={companies} onClose={() => setAddVehicleOpen(false)} onAdded={(row) => { setVehicles((p) => [{ id: row.id, label: row.vehicleNo, vehicleType: row.vehicleType ?? null, transportCompanyId: row.transportCompanyId ?? null }, ...p]); setVehicleId(row.id); setVehicleQuery(row.vehicleNo); if (row.vehicleType) setVehicleType(row.vehicleType); if (row.transportCompanyId) setTransportCompanyId(row.transportCompanyId); setAddVehicleOpen(false); }} />}
+      {addDriverOpen && <AddDriverModal companies={companies} onClose={() => setAddDriverOpen(false)} onAdded={(row) => { setDriverMasterId(row.id); setDriverName(row.name); setDriverQuery(row.name); setDriverMobile(row.phone ?? ""); setDriverLicenseNo(row.licenseNo ?? ""); setAddDriverOpen(false); }} />}
       {savedId != null && (
         <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
@@ -586,18 +609,28 @@ export function GateEntryEditor() {
 }
 
 /* ---------------------------------------------------- quick-add modals ---- */
+// Every field the standalone Transport Company/Vehicle/Driver master forms
+// have (src/components/transport/masters/*.tsx) is repeated here so nothing
+// needs a follow-up trip to Masters to fill in later.
 function AddTransportCompanyModal({ onClose, onAdded }: { onClose: () => void; onAdded: (row: { id: number; name: string }) => void }) {
   const toast = useToast();
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
+  const [contactPerson, setContactPerson] = useState("");
   const [phone, setPhone] = useState("");
+  const [gstin, setGstin] = useState("");
+  const [address, setAddress] = useState("");
+  const [remarks, setRemarks] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function save() {
     if (!code.trim() || !name.trim()) { toast.error("Code and name are required."); return; }
     setSaving(true);
     try {
-      const res = await fetch("/api/transport/masters/transport-company", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, name, phone: phone || null, status: "Active" }) });
+      const res = await fetch("/api/transport/masters/transport-company", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, name, contactPerson: contactPerson || null, phone: phone || null, gstin: gstin || null, address: address || null, remarks: remarks || null, status: "Active" }),
+      });
       const j = await res.json().catch(() => ({}));
       if (res.ok && j.ok) { toast.success("Transport company added."); onAdded(j.row); }
       else { toast.error(j.message || "Could not add the transport company."); setSaving(false); }
@@ -606,15 +639,21 @@ function AddTransportCompanyModal({ onClose, onAdded }: { onClose: () => void; o
 
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="max-h-[92vh] w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-border bg-surface-2 px-5 py-3.5">
           <h2 className="text-sm font-bold text-foreground">Add Transport Company</h2>
           <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-surface hover:text-foreground"><X className="h-4 w-4" /></button>
         </div>
-        <div className="space-y-3 p-5">
-          <Fld label="Code *"><input value={code} onChange={(e) => setCode(e.target.value)} className={inp} /></Fld>
-          <Fld label="Name *"><input value={name} onChange={(e) => setName(e.target.value)} className={inp} /></Fld>
-          <Fld label="Phone"><input value={phone} onChange={(e) => setPhone(e.target.value)} className={inp} /></Fld>
+        <div className="max-h-[70vh] overflow-y-auto p-5">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Fld label="Code *"><input value={code} onChange={(e) => setCode(e.target.value)} className={inp} /></Fld>
+            <Fld label="Name *"><input value={name} onChange={(e) => setName(e.target.value)} className={inp} /></Fld>
+            <Fld label="Contact Person"><input value={contactPerson} onChange={(e) => setContactPerson(e.target.value)} className={inp} /></Fld>
+            <Fld label="Phone"><input value={phone} onChange={(e) => setPhone(e.target.value)} className={inp} /></Fld>
+            <Fld label="GSTIN"><input value={gstin} onChange={(e) => setGstin(e.target.value)} className={inp} /></Fld>
+            <div className="sm:col-span-2"><Fld label="Address"><input value={address} onChange={(e) => setAddress(e.target.value)} className={inp} /></Fld></div>
+            <div className="sm:col-span-2"><Fld label="Remarks"><input value={remarks} onChange={(e) => setRemarks(e.target.value)} className={inp} /></Fld></div>
+          </div>
         </div>
         <div className="flex items-center justify-end gap-2 border-t border-border bg-surface-2 px-5 py-3">
           <Button variant="ghost" size="md" onClick={onClose}>Cancel</Button>
@@ -625,17 +664,25 @@ function AddTransportCompanyModal({ onClose, onAdded }: { onClose: () => void; o
   );
 }
 
-function AddVehicleModal({ onClose, onAdded }: { onClose: () => void; onAdded: (row: { id: number; vehicleNo: string; vehicleType: string | null; transportCompanyId: number | null }) => void }) {
+function AddVehicleModal({ companies, onClose, onAdded }: { companies: Opt[]; onClose: () => void; onAdded: (row: { id: number; vehicleNo: string; vehicleType: string | null; transportCompanyId: number | null }) => void }) {
   const toast = useToast();
   const [vehicleNo, setVehicleNo] = useState("");
   const [vehicleType, setVehicleType] = useState("");
+  const [capacity, setCapacity] = useState("");
+  const [capacityUnit, setCapacityUnit] = useState("");
+  const [transportCompanyId, setTransportCompanyId] = useState<number | "">("");
+  const [ownerType, setOwnerType] = useState<"Own" | "Hired" | "Transporter">("Own");
+  const [remarks, setRemarks] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function save() {
     if (!vehicleNo.trim()) { toast.error("Vehicle number is required."); return; }
     setSaving(true);
     try {
-      const res = await fetch("/api/transport/masters/vehicle", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ vehicleNo, vehicleType: vehicleType || null, ownerType: "Own", status: "Active" }) });
+      const res = await fetch("/api/transport/masters/vehicle", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vehicleNo, vehicleType: vehicleType || null, capacity: Number(capacity) || 0, capacityUnit: capacityUnit || null, transportCompanyId: transportCompanyId || null, ownerType, remarks: remarks || null, status: "Active" }),
+      });
       const j = await res.json().catch(() => ({}));
       if (res.ok && j.ok) { toast.success("Vehicle added."); onAdded(j.row); }
       else { toast.error(j.message || "Could not add the vehicle."); setSaving(false); }
@@ -644,14 +691,71 @@ function AddVehicleModal({ onClose, onAdded }: { onClose: () => void; onAdded: (
 
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="max-h-[92vh] w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-border bg-surface-2 px-5 py-3.5">
           <h2 className="text-sm font-bold text-foreground">Add Vehicle</h2>
           <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-surface hover:text-foreground"><X className="h-4 w-4" /></button>
         </div>
-        <div className="space-y-3 p-5">
-          <Fld label="Vehicle Number *"><input value={vehicleNo} onChange={(e) => setVehicleNo(e.target.value)} className={inp} /></Fld>
-          <Fld label="Vehicle Type"><select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} className={inp}><option value="">— Select —</option>{VEHICLE_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></Fld>
+        <div className="max-h-[70vh] overflow-y-auto p-5">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Fld label="Vehicle Number *"><input value={vehicleNo} onChange={(e) => setVehicleNo(e.target.value)} className={inp} /></Fld>
+            <Fld label="Vehicle Type"><select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} className={inp}><option value="">— Select —</option>{VEHICLE_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></Fld>
+            <Fld label="Capacity"><input type="number" value={capacity} onChange={(e) => setCapacity(e.target.value)} className={inp} /></Fld>
+            <Fld label="Capacity Unit"><input value={capacityUnit} onChange={(e) => setCapacityUnit(e.target.value)} className={inp} /></Fld>
+            <Fld label="Transport Company"><select value={transportCompanyId} onChange={(e) => setTransportCompanyId(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">— None —</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select></Fld>
+            <Fld label="Owner Type"><select value={ownerType} onChange={(e) => setOwnerType(e.target.value as typeof ownerType)} className={inp}><option value="Own">Own</option><option value="Hired">Hired</option><option value="Transporter">Transporter</option></select></Fld>
+            <div className="sm:col-span-2"><Fld label="Remarks"><input value={remarks} onChange={(e) => setRemarks(e.target.value)} className={inp} /></Fld></div>
+          </div>
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t border-border bg-surface-2 px-5 py-3">
+          <Button variant="ghost" size="md" onClick={onClose}>Cancel</Button>
+          <Button size="md" onClick={save} disabled={saving}>{saving ? "Saving…" : "Add"}</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AddDriverModal({ companies, onClose, onAdded }: { companies: Opt[]; onClose: () => void; onAdded: (row: { id: number; name: string; phone: string | null; licenseNo: string | null }) => void }) {
+  const toast = useToast();
+  const [name, setName] = useState("");
+  const [licenseNo, setLicenseNo] = useState("");
+  const [licenseExpiry, setLicenseExpiry] = useState("");
+  const [phone, setPhone] = useState("");
+  const [transportCompanyId, setTransportCompanyId] = useState<number | "">("");
+  const [remarks, setRemarks] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    if (!name.trim()) { toast.error("Driver name is required."); return; }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/transport/masters/driver", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, licenseNo: licenseNo || null, licenseExpiry: licenseExpiry || null, phone: phone || null, transportCompanyId: transportCompanyId || null, remarks: remarks || null, status: "Active" }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (res.ok && j.ok) { toast.success("Driver added."); onAdded(j.row); }
+      else { toast.error(j.message || "Could not add the driver."); setSaving(false); }
+    } catch { toast.error("Network error."); setSaving(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="max-h-[92vh] w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-border bg-surface-2 px-5 py-3.5">
+          <h2 className="text-sm font-bold text-foreground">Add Driver</h2>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-surface hover:text-foreground"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="max-h-[70vh] overflow-y-auto p-5">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2"><Fld label="Driver Name *"><input value={name} onChange={(e) => setName(e.target.value)} className={inp} /></Fld></div>
+            <Fld label="License No"><input value={licenseNo} onChange={(e) => setLicenseNo(e.target.value)} className={inp} /></Fld>
+            <Fld label="License Expiry"><input type="date" value={licenseExpiry} onChange={(e) => setLicenseExpiry(e.target.value)} className={inp} /></Fld>
+            <Fld label="Phone"><input value={phone} onChange={(e) => setPhone(e.target.value)} className={inp} /></Fld>
+            <Fld label="Transport Company"><select value={transportCompanyId} onChange={(e) => setTransportCompanyId(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">— None —</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select></Fld>
+            <div className="sm:col-span-2"><Fld label="Remarks"><input value={remarks} onChange={(e) => setRemarks(e.target.value)} className={inp} /></Fld></div>
+          </div>
         </div>
         <div className="flex items-center justify-end gap-2 border-t border-border bg-surface-2 px-5 py-3">
           <Button variant="ghost" size="md" onClick={onClose}>Cancel</Button>

@@ -751,11 +751,16 @@ async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc, c
   // Dispatch Clearing Liability settlement — mirrors how GRN Clearing is
   // settled at Purchase Invoice time (src/lib/purchase/createPurchaseInvoice.ts):
   // a direct debit line in this SAME voucher, not a separate reversal entry.
-  // The invoice-total round-off is only ever discovered here (the Dispatch
-  // Accounting Voucher posted before any rounding was computed), so it rides
-  // along on this same settlement amount — otherwise Sales+GST+Round Off
-  // credits would have no matching debit and the journal wouldn't balance.
-  const clearingSettlement = dispatchClearingAmt > 0 ? { code: ACC.DISPATCH_CLEARING_LIABILITY, amount: r2(dispatchClearingAmt + invoiceRoundOff) } : undefined;
+  // Settles for exactly what the DAV credited — the invoice-total round-off
+  // (only ever discovered here) adjusts Receivable directly instead (see
+  // receivableRoundOff below), since Receivable — not the clearing account —
+  // is the customer-facing balance that must equal the rounded total.
+  const clearingSettlement = dispatchClearingAmt > 0 ? { code: ACC.DISPATCH_CLEARING_LIABILITY, amount: dispatchClearingAmt } : undefined;
+  // When Receivable was already recognized at Dispatch (pre-rounding), the
+  // round-off discovered here would otherwise vanish — Sales+GST+Round Off
+  // credits change but nothing adjusts what the customer's ledger balance
+  // says they owe. This tops Receivable up (or down) to the rounded total.
+  const receivableRoundOff = recognizedAtDispatch ? invoiceRoundOff : 0;
   // Driver Batta now posts its own JV at Complete Load & Dispatch time (see
   // postDriverBattaVoucher, called from completeLoadDispatch) — never here.
   // Receivable/COGS were already recognized at Dispatch (postDispatchAccountingVoucher)
@@ -803,7 +808,7 @@ async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc, c
     membershipDiscount: 0, membershipLevelId: null, membershipDiscountCode: "",
     giftVoucherId: null, giftVoucherNo: null, giftVoucherAmount: 0,
     engineDiscount: 0, engineApplied: [],
-    otherIncome, clearingSettlement, receivableAlreadyBooked, cogsAlreadyBooked,
+    otherIncome, clearingSettlement, receivableAlreadyBooked, cogsAlreadyBooked, receivableRoundOff,
   };
 }
 

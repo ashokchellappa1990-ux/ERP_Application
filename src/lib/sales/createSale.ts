@@ -72,6 +72,10 @@ export interface PreparedSale {
   clearingSettlement?: { code: string; amount: number };
   receivableAlreadyBooked?: boolean;
   cogsAlreadyBooked?: "none" | "direct" | "goodsInTransit";
+  // Tops Receivable up (or down) to the rounded invoice total when it was
+  // already recognized pre-rounding at Dispatch — otherwise the round-off
+  // silently vanishes from what the customer's ledger balance says they owe.
+  receivableRoundOff?: number;
 }
 
 /** Validate + compute a sale from a create request (no DB writes). Returns either a
@@ -366,7 +370,7 @@ export async function createSaleTx(
     cashAmount, bankAmount, billDiscount: p.billDiscount, loyaltyRedeem: p.loyaltyRedeemValue, couponDiscount: p.couponDiscount, promoDiscount: p.promoDiscount, membershipDiscount: p.membershipDiscount, membershipDiscountCode: p.membershipDiscountCode,
     engineDiscounts: p.engineApplied.filter((e) => e.taxableReduction > 0).map((e) => ({ code: e.account, amount: e.taxableReduction })),
     giftVoucher: p.giftVoucherAmount, createdBy: user.id, otherIncome: p.otherIncome, clearingSettlement: p.clearingSettlement,
-    receivableAlreadyBooked: p.receivableAlreadyBooked, cogsAlreadyBooked: p.cogsAlreadyBooked,
+    receivableAlreadyBooked: p.receivableAlreadyBooked, cogsAlreadyBooked: p.cogsAlreadyBooked, receivableRoundOff: p.receivableRoundOff,
   });
   if (bankAmount > 0 && p.bankId) await recordBankMovement(tx, { tenantId: user.tenantId, businessId: seg.businessId ?? null, branchId: seg.branchId ?? null, userId: user.id, userName: null }, { bankId: p.bankId, bankName: p.bankName, bankAccount: p.bankAccount, date: p.saleDate, direction: "in", amount: bankAmount, mode: p.paymentMode, reference: invoiceNo, sourceType: "Sale", sourceId: sale.id, sourceNo: invoiceNo, partyName: p.customerName, journalId: null, narration: `Sales ${invoiceNo}` });
 

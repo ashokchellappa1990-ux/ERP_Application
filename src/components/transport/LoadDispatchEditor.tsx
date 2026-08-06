@@ -324,15 +324,23 @@ export function LoadDispatchEditor({ id }: { id: number }) {
   const preRoundInvoiceAmount = itemTotals.grandTotal + vehicleRentVal + transitPassAmountVal;
   const invoiceRoundOff = config?.flags.roundOffInvoiceTotal ? Math.round(preRoundInvoiceAmount / (Number(config.fields.roundOffNearest) || 10)) * (Number(config.fields.roundOffNearest) || 10) - preRoundInvoiceAmount : 0;
   const totalInvoiceAmount = preRoundInvoiceAmount + invoiceRoundOff;
-  const totalAmountToCollect = data?.driverBattaMode === "Adjustment" ? totalInvoiceAmount - driverBattaAmountVal : totalInvoiceAmount;
+  // Driver Batta always posts as "Payment" (full invoice collected from the
+  // customer, business pays the driver separately) — Balance/Status work off
+  // the full total; referenceAmountAfterBatta below is display-only.
+  const totalAmountToCollect = totalInvoiceAmount;
+  const referenceAmountAfterBatta = totalInvoiceAmount - driverBattaAmountVal;
   const amountCollected = data?.paymentAmount ?? 0;
   const balanceToCollect = Math.max(0, totalAmountToCollect - amountCollected);
   const payStatus = data?.paymentMode === "Credit" && amountCollected <= 0 ? "Credit" : amountCollected >= totalAmountToCollect - 0.01 ? "Paid" : amountCollected > 0 ? "Partial" : "Credit";
 
+  // Driver Batta/Vehicle Rent/Transit Pass are deliberately excluded here —
+  // those live on LoadDispatch itself (driverBattaAmountVal/vehicleRentVal/
+  // transitPassAmountVal below are the authoritative source); the TransportCost
+  // row's own same-named fields are legacy and would double-count/disagree.
   const tcTotal = useMemo(() => {
     const n = (v: string) => Number(v) || 0;
     return n(tc.freightCharge) + n(tc.loadingCharge) + n(tc.unloadingCharge) + n(tc.fuelCharge) + n(tc.tollCharge)
-      + n(tc.driverAllowance) + n(tc.helperAllowance) + n(tc.driverBatta) + n(tc.vehicleRent) + n(tc.transitPass)
+      + n(tc.driverAllowance) + n(tc.helperAllowance)
       + n(tc.otherCharges) - n(tc.discount) + n(tc.gstAmount);
   }, [tc]);
 
@@ -618,13 +626,13 @@ export function LoadDispatchEditor({ id }: { id: number }) {
               {fieldOn(SCREEN, "tollCharge") && <Fld label="Toll Charge"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.tollCharge} onChange={(e) => setTc((p) => ({ ...p, tollCharge: e.target.value }))} className={inp} /></Fld>}
               {fieldOn(SCREEN, "driverAllowance") && <Fld label="Driver Allowance"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.driverAllowance} onChange={(e) => setTc((p) => ({ ...p, driverAllowance: e.target.value }))} className={inp} /></Fld>}
               {fieldOn(SCREEN, "helperAllowance") && <Fld label="Helper Allowance"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.helperAllowance} onChange={(e) => setTc((p) => ({ ...p, helperAllowance: e.target.value }))} className={inp} /></Fld>}
-              {fieldOn(SCREEN, "driverBatta") && <Fld label="Driver Batta (auto)"><input readOnly value={driverBattaAmountVal.toFixed(2)} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>}
-              {fieldOn(SCREEN, "vehicleRent") && <Fld label="Vehicle Rent"><input readOnly value={vehicleRentVal.toFixed(2)} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>}
-              {fieldOn(SCREEN, "transitPass") && <Fld label="Transit Pass (auto)"><input readOnly value={transitPassAmountVal.toFixed(2)} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>}
+              {fieldOn(SCREEN, "driverBatta") && <Fld label="Driver Batta (auto)"><input readOnly value={`₹${driverBattaAmountVal.toFixed(2)}`} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>}
+              {fieldOn(SCREEN, "vehicleRent") && <Fld label="Vehicle Rent"><input readOnly value={`₹${vehicleRentVal.toFixed(2)}`} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>}
+              {fieldOn(SCREEN, "transitPass") && <Fld label="Transit Pass (auto)"><input readOnly value={`₹${transitPassAmountVal.toFixed(2)}`} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>}
               {fieldOn(SCREEN, "otherTransportCharges") && <Fld label="Other Charges"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.otherCharges} onChange={(e) => setTc((p) => ({ ...p, otherCharges: e.target.value }))} className={inp} /></Fld>}
               {fieldOn(SCREEN, "transportDiscount") && <Fld label="Discount"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.discount} onChange={(e) => setTc((p) => ({ ...p, discount: e.target.value }))} className={inp} /></Fld>}
               {fieldOn(SCREEN, "transportGst") && <Fld label="GST Amount"><input type="number" min={0} disabled={!config.flags.allowCostEditing} value={tc.gstAmount} onChange={(e) => setTc((p) => ({ ...p, gstAmount: e.target.value }))} className={inp} /></Fld>}
-              <Fld label="Total Transport Cost"><input value={fmt.money(tcTotal + driverBattaAmountVal + transitPassAmountVal)} disabled className={cn(inp, "font-semibold text-foreground")} /></Fld>
+              <Fld label="Total Transport Cost"><input value={fmt.money(tcTotal + driverBattaAmountVal + vehicleRentVal + transitPassAmountVal)} disabled className={cn(inp, "font-semibold text-foreground")} /></Fld>
             </div>
             {config.flags.allowCostEditing && <p className="mt-2 text-2xs text-subtle">Saves together with Save Draft below.</p>}
           </SectionCard>
@@ -632,17 +640,17 @@ export function LoadDispatchEditor({ id }: { id: number }) {
 
         <SectionCard icon={IndianRupee} title="Payment Details" allowOverflow>
           <div className="space-y-2 text-base">
-            <Row k="Total Material Value" v={itemTotals.taxable.toFixed(2)} big />
-            <Row k="Total Tax Value" v={itemTotals.tax.toFixed(2)} big />
+            <Row k="Total Material Value" v={itemTotals.taxable.toFixed(2)} big money />
+            <Row k="Total Tax Value" v={itemTotals.tax.toFixed(2)} big money />
             {canEdit ? (
               <div className="flex items-center justify-between gap-3">
                 <span className="text-base text-muted">Rent (Amount to be Recovered)</span>
                 <input type="number" min={0} value={vehicleRentInput} onChange={(e) => setVehicleRentInput(e.target.value)} className={cn(inp, "h-8 w-28 text-right")} />
               </div>
             ) : (
-              <Row k="Rent (Amount to be Recovered)" v={vehicleRentVal.toFixed(2)} big />
+              <Row k="Rent (Amount to be Recovered)" v={vehicleRentVal.toFixed(2)} big money />
             )}
-            <Row k="Transit Pass Amount" v={transitPassAmountVal.toFixed(2)} big />
+            <Row k="Transit Pass Amount" v={transitPassAmountVal.toFixed(2)} big money />
             {canEdit ? (
               <div className="flex items-center justify-between gap-3">
                 <span className="shrink-0 text-2xs text-subtle">Transit Pass Qty (Ton)</span>
@@ -653,9 +661,9 @@ export function LoadDispatchEditor({ id }: { id: number }) {
             )}
             {canEdit && <p className="text-2xs text-subtle">Rent / Transit Pass Qty save with Save Draft below — Driver Batta &amp; Transit Pass Amount are always recalculated server-side.</p>}
             <div className="my-1 h-px bg-border" />
-            <Row k="Total" v={preRoundInvoiceAmount.toFixed(2)} big />
-            {invoiceRoundOff !== 0 && <Row k="Round Off" v={`${invoiceRoundOff > 0 ? "+" : ""}${invoiceRoundOff.toFixed(2)}`} />}
-            <div className="flex items-center justify-between text-lg font-bold text-foreground"><span>Total Invoice Amount</span><span>{totalInvoiceAmount.toFixed(2)}</span></div>
+            <Row k="Total" v={preRoundInvoiceAmount.toFixed(2)} big money />
+            {invoiceRoundOff !== 0 && <Row k="Round Off" v={`${invoiceRoundOff > 0 ? "+" : ""}${invoiceRoundOff.toFixed(2)}`} money />}
+            <div className="flex items-center justify-between text-lg font-bold text-foreground"><span>Total Invoice Amount</span><span>₹{totalInvoiceAmount.toFixed(2)}</span></div>
           </div>
 
           <div className="mt-3 border-t border-border pt-3">
@@ -664,7 +672,7 @@ export function LoadDispatchEditor({ id }: { id: number }) {
                 <p className="text-base font-semibold text-foreground">Driver Batta Amount</p>
                 <p className="text-2xs text-subtle">{x.driverBattaMode ?? "—"} mode</p>
               </div>
-              <span className="text-lg font-bold tabular-nums text-foreground">{driverBattaAmountVal.toFixed(2)}</span>
+              <span className="text-lg font-bold tabular-nums text-foreground">₹{driverBattaAmountVal.toFixed(2)}</span>
             </div>
             {canEdit && (
               <div className="mt-2 inline-flex w-full overflow-hidden rounded-md border border-border text-2xs">
@@ -678,24 +686,25 @@ export function LoadDispatchEditor({ id }: { id: number }) {
                 ? "Netted out of what's collected from the customer — the driver keeps this directly."
                 : "Full invoice amount is collected from the customer; the business pays the driver separately."}
             </p>
+            <div className="mt-2 flex items-center justify-between gap-3 rounded-lg bg-warning-subtle px-3 py-2 text-sm"><span className="font-medium text-foreground">Reference Only— Amount If Batta Netted Out</span><span className="text-lg font-bold tabular-nums text-foreground">₹{referenceAmountAfterBatta.toFixed(2)}</span></div>
           </div>
 
           <div className="mt-3 rounded-lg bg-primary-subtle/40 px-3 py-2.5">
-            <div className="flex items-center justify-between text-lg font-bold text-primary"><span>Total Amount to be Collected</span><span className="tabular-nums">{totalAmountToCollect.toFixed(2)}</span></div>
+            <div className="flex items-center justify-between text-lg font-bold text-primary"><span>Total Amount to be Collected</span><span className="tabular-nums">₹{totalAmountToCollect.toFixed(2)}</span></div>
           </div>
         </SectionCard>
 
         <SectionCard icon={IndianRupee} title="Payment Collection" allowOverflow>
           <div className="space-y-2">
             <Row k="Payment Type" v={x.paymentMode ?? "—"} />
-            <Row k="Amount Collected" v={amountCollected.toFixed(2)} />
+            <Row k="Amount Collected" v={amountCollected.toFixed(2)} money />
             {Array.isArray(x.paymentSplits) && x.paymentSplits.length > 0 ? (
               <div className="space-y-1.5 rounded-md border border-border p-2">
                 <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Split Payment</p>
                 {x.paymentSplits.map((l, i) => (
                   <div key={i} className="flex items-center justify-between text-xs">
                     <span className="text-muted">{l.mode}{l.reference ? ` · ${l.reference}` : ""}</span>
-                    <span className="font-semibold tabular-nums text-foreground">{Number(l.amount).toFixed(2)}</span>
+                    <span className="font-semibold tabular-nums text-foreground">₹{Number(l.amount).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -707,8 +716,8 @@ export function LoadDispatchEditor({ id }: { id: number }) {
             )}
           </div>
           <div className="mt-2 space-y-1.5 rounded-lg bg-surface-2 px-3 py-2 text-xs">
-            <div className="flex items-center justify-between"><span className="text-muted">Total Amount to be Collected</span><span className="font-semibold tabular-nums text-foreground">{totalAmountToCollect.toFixed(2)}</span></div>
-            <div className="flex items-center justify-between"><span className="text-muted">Balance Amount to be Collected</span><span className="font-semibold tabular-nums text-foreground">{balanceToCollect.toFixed(2)}</span></div>
+            <div className="flex items-center justify-between"><span className="text-muted">Total Amount to be Collected</span><span className="font-semibold tabular-nums text-foreground">₹{totalAmountToCollect.toFixed(2)}</span></div>
+            <div className="flex items-center justify-between"><span className="text-muted">Balance Amount to be Collected</span><span className="font-semibold tabular-nums text-foreground">₹{balanceToCollect.toFixed(2)}</span></div>
             <div className="flex items-center justify-between"><span className="text-muted">Status</span><span className={cn("font-bold", payStatus === "Paid" ? "text-success" : payStatus === "Partial" ? "text-warning" : "text-danger")}>{payStatus}</span></div>
           </div>
         </SectionCard>
@@ -717,6 +726,7 @@ export function LoadDispatchEditor({ id }: { id: number }) {
       <AccountingPostingDetails
         taxableValue={itemTotals.taxable} taxTotal={itemTotals.tax} vehicleRent={vehicleRentVal} transitPassAmount={transitPassAmountVal}
         driverBattaAmount={driverBattaAmountVal} driverBattaMode={x.driverBattaMode}
+        roundOff={invoiceRoundOff}
       />
 
       {((x.remarks && fieldOn(SCREEN, "remarks")) || x.cancelReason) && (
@@ -800,8 +810,11 @@ function KV({ k, v, strong, custom }: { k: string; v: string; strong?: boolean; 
     </div>
   );
 }
-function Row({ k, v, big }: { k: string; v: string; big?: boolean }) {
-  return <div className="flex items-center justify-between"><span className={cn("text-muted", big && "text-base")}>{k}</span><span className={cn("text-foreground", big ? "text-base font-semibold" : "")}>{v}</span></div>;
+function Row({ k, v, big, money }: { k: string; v: string; big?: boolean; money?: boolean }) {
+  // Keeps a leading sign (Round Off's "+") ahead of the ₹ symbol, not in front of it.
+  const sign = money && v.startsWith("+") ? "+" : "";
+  const amount = money ? v.slice(sign.length) : v;
+  return <div className="flex items-center justify-between"><span className={cn("text-muted", big && "text-base")}>{k}</span><span className={cn("text-foreground", big ? "text-base font-semibold" : "")}>{money ? `${sign}₹${amount}` : amount}</span></div>;
 }
 function NoteCard({ title, body }: { title: string; body: string }) {
   return <div className="rounded-2xl border border-border bg-card p-4 shadow-sm"><p className="mb-1.5 text-2xs font-bold uppercase tracking-wide text-subtle">{title}</p><p className="whitespace-pre-line text-xs text-muted">{body}</p></div>;

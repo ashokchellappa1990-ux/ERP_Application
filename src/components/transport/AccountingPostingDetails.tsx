@@ -17,6 +17,7 @@ interface Props {
   transitPassAmount: number;
   driverBattaAmount: number;
   driverBattaMode: "Adjustment" | "Payment" | null;
+  roundOff: number;
 }
 
 const TIMING_LABEL: Record<string, string> = { OnDispatch: "On Dispatch", OnInvoice: "On Sales Invoice" };
@@ -26,7 +27,7 @@ const TIMING_LABEL: Record<string, string> = { OnDispatch: "On Dispatch", OnInvo
  * src/lib/transport/loadDispatch.ts) will post and when, driven by live
  * Accounting Configuration — kept in this one shared component so the add
  * page and the view page can never drift out of sync with each other. */
-export function AccountingPostingDetails({ taxableValue, taxTotal, vehicleRent, transitPassAmount, driverBattaAmount, driverBattaMode }: Props) {
+export function AccountingPostingDetails({ taxableValue, taxTotal, vehicleRent, transitPassAmount, driverBattaAmount, driverBattaMode, roundOff }: Props) {
   const fmt = useFmt();
   const [cfg, setCfg] = useState<AccountingConfigData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,13 +45,18 @@ export function AccountingPostingDetails({ taxableValue, taxTotal, vehicleRent, 
   const transitPassAtDispatch = receivableOnDispatch && transitPassRecoverable;
   const vehicleRentAtDispatch = receivableOnDispatch && vehicleRentRecoverable;
 
+  const receivableAtDispatch = taxableValue + taxTotal + (transitPassAtDispatch ? transitPassAmount : 0) + (vehicleRentAtDispatch ? vehicleRent : 0);
   const rows: { label: string; amount: string; when: string }[] = [];
-  rows.push({ label: "Customer Receivable", amount: fmt.money(taxableValue + taxTotal + (transitPassAtDispatch ? transitPassAmount : 0) + (vehicleRentAtDispatch ? vehicleRent : 0)), when: separateVoucher ? TIMING_LABEL[c.fields.customerReceivableTiming || "OnDispatch"] : "On Sales Invoice" });
+  rows.push({
+    label: "Customer Receivable", amount: fmt.money(receivableAtDispatch + roundOff),
+    when: separateVoucher ? TIMING_LABEL[c.fields.customerReceivableTiming || "OnDispatch"] + (roundOff !== 0 ? " (+ Round Off at Sales Invoice)" : "") : "On Sales Invoice",
+  });
   rows.push({ label: "Sales Revenue", amount: fmt.money(taxableValue), when: separateVoucher ? TIMING_LABEL[c.fields.salesRevenueTiming || "OnInvoice"] : "On Sales Invoice" });
   rows.push({ label: "GST", amount: fmt.money(taxTotal), when: separateVoucher ? TIMING_LABEL[c.fields.gstRecognitionTiming || "OnInvoice"] : "On Sales Invoice" });
   rows.push({ label: "Inventory / Cost of Goods Sold", amount: "—", when: separateVoucher ? TIMING_LABEL[c.fields.inventoryCogsTiming || "OnDispatch"] : "On Dispatch" });
   if (transitPassAmount > 0) rows.push({ label: `Transit Pass (${transitPassRecoverable ? "Operating Income" : "Company Expense"})`, amount: fmt.money(transitPassAmount), when: transitPassRecoverable ? (transitPassAtDispatch ? "On Dispatch" : "On Sales Invoice") : "On Dispatch (company-paid)" });
   if (vehicleRent > 0) rows.push({ label: `Vehicle Rent (${vehicleRentRecoverable ? "Operating Income" : "Company Expense"})`, amount: fmt.money(vehicleRent), when: vehicleRentRecoverable ? (vehicleRentAtDispatch ? "On Dispatch" : "On Sales Invoice") : "On Dispatch (company-paid)" });
+  if (roundOff !== 0) rows.push({ label: "Round Off", amount: `${roundOff > 0 ? "+" : ""}${fmt.money(roundOff)}`, when: "On Sales Invoice" });
   if (driverBattaAmount > 0) rows.push({ label: `Driver Batta (${driverBattaMode === "Payment" ? "Payment" : "Adjustment"})`, amount: fmt.money(driverBattaAmount), when: driverBattaMode === "Payment" ? "On Dispatch — paid to driver" : "On Dispatch — nets off Receivable" });
 
   return (

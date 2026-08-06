@@ -184,10 +184,11 @@ export function DirectLoadDispatchForm() {
   const [transitPassQtyManual, setTransitPassQtyManual] = useState("");
   const [roundOffInvoiceTotal, setRoundOffInvoiceTotal] = useState(false);
   const [roundOffNearest, setRoundOffNearest] = useState(10);
-  // Adjustment: Driver Batta is netted out of what's collected from the
-  // customer (driver keeps it directly). Payment: the full invoice amount is
-  // collected and the business pays the driver separately — captured below.
-  const [driverBattaMode, setDriverBattaMode] = useState<"adjustment" | "payment">("adjustment");
+  // Always "Payment" — the full invoice amount is collected from the
+  // customer and the business pays the driver separately (payment mode
+  // captured below); "Total Amount to be Collected" still nets Driver Batta
+  // out for the user's own reference, purely display, no posting change.
+  const driverBattaMode: "adjustment" | "payment" = "payment";
   const [battaPaymentMode, setBattaPaymentMode] = useState("Cash");
 
   const totalTransportCost = r2(
@@ -415,7 +416,14 @@ export function DirectLoadDispatchForm() {
   const preRoundInvoiceAmount = r2(totals.taxable + totals.tax + n(vehicleRent) + transitPassAmount);
   const invoiceRoundOff = roundOffInvoiceTotal ? r2(Math.round(preRoundInvoiceAmount / roundOffNearest) * roundOffNearest - preRoundInvoiceAmount) : 0;
   const totalInvoiceAmount = r2(preRoundInvoiceAmount + invoiceRoundOff);
-  const totalAmountToCollect = r2(driverBattaMode === "adjustment" ? totalInvoiceAmount - driverBattaAmount : totalInvoiceAmount);
+  // Driver Batta always posts as "Payment" — the full invoice amount is what
+  // actually gets collected from the customer (the business pays the driver
+  // separately), so Payment Collection always works off the full total here.
+  const totalAmountToCollect = totalInvoiceAmount;
+  // Reference-only for the user (shown once, under Driver Batta Amount) —
+  // what's left if Batta were netted out instead. Doesn't drive collection,
+  // posting, or any other calculation.
+  const referenceAmountAfterBatta = r2(totalInvoiceAmount - driverBattaAmount);
 
   // Split isn't its own collection category — it's a tender mode selectable
   // within Full or Partial (matching Sale.paymentMode already listing Split
@@ -825,13 +833,13 @@ export function DirectLoadDispatchForm() {
             {fieldOn(SCREEN, "tollCharge") && <Fld label="Toll Charge"><input type="number" value={tollCharge} onChange={(e) => setTollCharge(e.target.value)} className={inp} /></Fld>}
             {fieldOn(SCREEN, "driverAllowance") && <Fld label="Driver Allowance (Bata)"><input type="number" value={driverAllowance} onChange={(e) => setDriverAllowance(e.target.value)} className={inp} /></Fld>}
             {fieldOn(SCREEN, "helperAllowance") && <Fld label="Helper Allowance"><input type="number" value={helperAllowance} onChange={(e) => setHelperAllowance(e.target.value)} className={inp} /></Fld>}
-            {fieldOn(SCREEN, "driverBatta") && <Fld label="Driver Batta (auto)"><input readOnly value={driverBattaAmount.toFixed(2)} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>}
+            {fieldOn(SCREEN, "driverBatta") && <Fld label="Driver Batta (auto)"><input readOnly value={`₹${driverBattaAmount.toFixed(2)}`} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>}
             {fieldOn(SCREEN, "vehicleRent") && <Fld label="Vehicle Rent"><input type="number" value={vehicleRent} onChange={(e) => setVehicleRent(e.target.value)} className={inp} /></Fld>}
-            {fieldOn(SCREEN, "transitPass") && <Fld label="Transit Pass (auto)"><input readOnly value={transitPassAmount.toFixed(2)} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>}
+            {fieldOn(SCREEN, "transitPass") && <Fld label="Transit Pass (auto)"><input readOnly value={`₹${transitPassAmount.toFixed(2)}`} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>}
             {fieldOn(SCREEN, "otherTransportCharges") && <Fld label="Other Charges"><input type="number" value={otherCharges} onChange={(e) => setOtherCharges(e.target.value)} className={inp} /></Fld>}
             {fieldOn(SCREEN, "transportDiscount") && <Fld label="Discount"><input type="number" value={tcDiscount} onChange={(e) => setTcDiscount(e.target.value)} className={inp} /></Fld>}
             {fieldOn(SCREEN, "transportGst") && <Fld label="GST Amount"><input type="number" value={tcGst} onChange={(e) => setTcGst(e.target.value)} className={inp} /></Fld>}
-            <Fld label="Total Transport Cost"><input readOnly value={r2(totalTransportCost + driverBattaAmount + transitPassAmount).toFixed(2)} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>
+            <Fld label="Total Transport Cost"><input readOnly value={`₹${r2(totalTransportCost + driverBattaAmount + transitPassAmount).toFixed(2)}`} className={cn(inp, "bg-surface-2 font-semibold text-foreground")} /></Fld>
           </div>
           <p className="mt-2 text-2xs text-subtle">Driver Batta &amp; Transit Pass are auto-calculated in Payment Details below (Dispatch Configuration rates) — not editable here. The rest is saved separately after the dispatch is created; left blank/zero, it won&apos;t be saved at all.</p>
         </SectionCard>
@@ -854,7 +862,7 @@ export function DirectLoadDispatchForm() {
             <div className="my-1 h-px bg-border" />
             <Row k="Total" v={preRoundInvoiceAmount.toFixed(2)} big />
             {roundOffInvoiceTotal && invoiceRoundOff !== 0 && <Row k="Round Off" v={`${invoiceRoundOff > 0 ? "+" : ""}${invoiceRoundOff.toFixed(2)}`} />}
-            <div className="flex items-center justify-between text-lg font-bold text-foreground"><span>Total Invoice Amount</span><span>{totalInvoiceAmount.toFixed(2)}</span></div>
+            <div className="flex items-center justify-between text-lg font-bold text-foreground"><span>Total Invoice Amount</span><span>₹{totalInvoiceAmount.toFixed(2)}</span></div>
           </div>
 
           <div className="mt-3 border-t border-border pt-3">
@@ -863,25 +871,15 @@ export function DirectLoadDispatchForm() {
                 <p className="text-base font-semibold text-foreground">Driver Batta Amount</p>
                 <p className="text-2xs text-subtle">{roundedTonQty} Ton (rounded) × ₹{driverBattaPerTon}/Ton</p>
               </div>
-              <span className="text-lg font-bold tabular-nums text-foreground">{driverBattaAmount.toFixed(2)}</span>
+              <span className="text-lg font-bold tabular-nums text-foreground">₹{driverBattaAmount.toFixed(2)}</span>
             </div>
-            <div className="mt-2 inline-flex w-full overflow-hidden rounded-md border border-border text-2xs">
-              {([["adjustment", "Adjustment"], ["payment", "Payment"]] as const).map(([m, lbl]) => (
-                <button key={m} type="button" onClick={() => setDriverBattaMode(m)} className={cn("flex-1 px-2 py-1.5 font-semibold transition", driverBattaMode === m ? "bg-primary text-white" : "bg-surface text-muted hover:text-foreground")}>{lbl}</button>
-              ))}
-            </div>
-            <p className="mt-1 text-2xs text-subtle">
-              {driverBattaMode === "adjustment"
-                ? "Netted out of what's collected from the customer — the driver keeps this directly."
-                : "Full invoice amount is collected from the customer; the business pays the driver separately below."}
-            </p>
-            {driverBattaMode === "payment" && (
-              <div className="mt-2 max-w-xs"><Fld label="Batta Payment Mode"><select value={battaPaymentMode} onChange={(e) => setBattaPaymentMode(e.target.value)} className={inp}>{["Cash", "Bank Transfer", "UPI", "Cheque", "Card"].map((m) => <option key={m}>{m}</option>)}</select></Fld></div>
-            )}
+            <p className="mt-1 text-2xs text-subtle">Full invoice amount is collected from the customer; the business pays the driver separately.</p>
+            <div className="mt-2 max-w-xs"><Fld label="Batta Payment Mode"><select value={battaPaymentMode} onChange={(e) => setBattaPaymentMode(e.target.value)} className={inp}>{["Cash", "Bank Transfer", "UPI", "Cheque", "Card"].map((m) => <option key={m}>{m}</option>)}</select></Fld></div>
+            <div className="mt-2 flex items-center justify-between gap-3 rounded-lg bg-warning-subtle px-3 py-2 text-sm"><span className="font-medium text-foreground">Reference Only— Amount If Batta Netted Out</span><span className="text-lg font-bold tabular-nums text-foreground">₹{referenceAmountAfterBatta.toFixed(2)}</span></div>
           </div>
 
           <div className="mt-3 rounded-lg bg-primary-subtle/40 px-3 py-2.5">
-            <div className="flex items-center justify-between text-lg font-bold text-primary"><span>Total Amount to be Collected</span><span className="tabular-nums">{totalAmountToCollect.toFixed(2)}</span></div>
+            <div className="flex items-center justify-between text-lg font-bold text-primary"><span>Total Amount to be Collected</span><span className="tabular-nums">₹{totalAmountToCollect.toFixed(2)}</span></div>
           </div>
         </SectionCard>
 
@@ -920,8 +918,8 @@ export function DirectLoadDispatchForm() {
                     ))}
                     <button type="button" onClick={() => setSplitLines((p) => [...p, { mode: "Cash", amount: "" }])} className="text-2xs font-semibold text-primary hover:underline">+ Add payment line</button>
                     <div className="flex items-center justify-between rounded-md bg-surface-2 px-3 py-1.5 text-xs">
-                      <span className="text-muted">Split Total {payCat === "full" ? `(must equal ${totalAmountToCollect.toFixed(2)})` : ""}</span>
-                      <span className="font-semibold tabular-nums text-foreground">{splitTotal.toFixed(2)}</span>
+                      <span className="text-muted">Split Total {payCat === "full" ? `(must equal ₹${totalAmountToCollect.toFixed(2)})` : ""}</span>
+                      <span className="font-semibold tabular-nums text-foreground">₹{splitTotal.toFixed(2)}</span>
                     </div>
                   </div>
                 )}
@@ -929,8 +927,8 @@ export function DirectLoadDispatchForm() {
             )}
           </div>
           <div className="mt-2 space-y-1.5 rounded-lg bg-surface-2 px-3 py-2 text-xs">
-            <div className="flex items-center justify-between"><span className="text-muted">Total Amount to be Collected</span><span className="font-semibold tabular-nums text-foreground">{totalAmountToCollect.toFixed(2)}</span></div>
-            <div className="flex items-center justify-between"><span className="text-muted">Balance Amount to be Collected</span><span className="font-semibold tabular-nums text-foreground">{Math.max(0, totalAmountToCollect - paidNow).toFixed(2)}</span></div>
+            <div className="flex items-center justify-between"><span className="text-muted">Total Amount to be Collected</span><span className="font-semibold tabular-nums text-foreground">₹{totalAmountToCollect.toFixed(2)}</span></div>
+            <div className="flex items-center justify-between"><span className="text-muted">Balance Amount to be Collected</span><span className="font-semibold tabular-nums text-foreground">₹{Math.max(0, totalAmountToCollect - paidNow).toFixed(2)}</span></div>
             <div className="flex items-center justify-between"><span className="text-muted">Status</span><span className={cn("font-bold", payStatus === "Paid" ? "text-success" : payStatus === "Partial" ? "text-warning" : "text-danger")}>{payStatus}</span></div>
           </div>
         </SectionCard>
@@ -939,6 +937,7 @@ export function DirectLoadDispatchForm() {
       <AccountingPostingDetails
         taxableValue={totals.taxable} taxTotal={totals.tax} vehicleRent={n(vehicleRent)} transitPassAmount={transitPassAmount}
         driverBattaAmount={driverBattaAmount} driverBattaMode={driverBattaMode === "payment" ? "Payment" : "Adjustment"}
+        roundOff={invoiceRoundOff}
       />
 
       {fieldOn(SCREEN, "remarks") && (
@@ -978,5 +977,9 @@ const inp = "h-9 w-full rounded-md border border-border-strong bg-surface px-2.5
 const inpSm = "h-8 rounded-md border border-border-strong bg-surface px-2 text-sm text-foreground focus:border-primary focus:outline-none";
 function Fld({ label, children }: { label: string; children: React.ReactNode }) { return <div><label className="mb-1 block text-2xs font-semibold text-muted">{label}</label>{children}</div>; }
 function Row({ k, v, big }: { k: string; v: string; big?: boolean }) {
-  return <div className="flex items-center justify-between"><span className={cn("text-muted", big && "text-base")}>{k}</span><span className={cn("text-foreground", big ? "text-base font-semibold" : "")}>{v}</span></div>;
+  // Keeps a leading sign (Discount's "- ", Round Off's "+") ahead of the ₹
+  // symbol rather than in front of it — "- ₹123.45", not "-123.45₹".
+  const sign = v.startsWith("- ") ? "- " : v.startsWith("+") ? "+" : "";
+  const amount = v.slice(sign.length);
+  return <div className="flex items-center justify-between"><span className={cn("text-muted", big && "text-base")}>{k}</span><span className={cn("text-foreground", big ? "text-base font-semibold" : "")}>{sign}₹{amount}</span></div>;
 }

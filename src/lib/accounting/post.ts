@@ -124,6 +124,10 @@ export interface SalesJournalInput {
   // this voucher now reclassifies it (Dr COGS / Cr Goods-in-Transit) instead
   // of touching Inventory again. Omit/"none" for the original one-shot flow.
   cogsAlreadyBooked?: "none" | "direct" | "goodsInTransit";
+  // Tops Receivable up (or down) when it was already recognized pre-rounding
+  // at Dispatch, so the customer's ledger balance ends up matching `total`
+  // exactly instead of the round-off silently vanishing into Round Off alone.
+  receivableRoundOff?: number;
 }
 /** Sales voucher: Dr Cash/Bank/Receivable + TDS Receivable + COGS, Cr Sales +
  * Output GST + Inventory + TCS Payable (+ Round Off). `total` already includes TCS.
@@ -183,6 +187,9 @@ export async function postSalesJournal(tx: Prisma.TransactionClient, s: SalesJou
   }
   if (s.roundOff > 0.004) lines.push({ code: ACC.ROUND_OFF, credit: r2(s.roundOff), narration: "Round off gain" });
   else if (s.roundOff < -0.004) lines.push({ code: ACC.ROUND_OFF, debit: r2(-s.roundOff), narration: "Round off loss" });
+  const receivableRoundOff = r2(s.receivableRoundOff ?? 0);
+  if (receivableRoundOff > 0.004) lines.push({ code: ACC.RECEIVABLE, debit: receivableRoundOff, narration: "Round off adjustment to receivable" });
+  else if (receivableRoundOff < -0.004) lines.push({ code: ACC.RECEIVABLE, credit: r2(-receivableRoundOff), narration: "Round off adjustment to receivable" });
   return postJournal(tx, {
     tenantId: s.tenantId, businessId: s.businessId, branchId: s.branchId, voucherType: "SALES", prefix: "SV", date: s.date,
     narration: `Sale — ${s.invoiceNo}${s.customerName ? ` — ${s.customerName}` : ""}`,
