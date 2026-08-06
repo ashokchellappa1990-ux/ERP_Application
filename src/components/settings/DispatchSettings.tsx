@@ -100,6 +100,9 @@ const TRANSIT_PASS_QTY_MODE_OPTS = [
   { value: "Manual", label: "Manual — user enters the Ton qty" },
   { value: "AutoNetWeight", label: "Auto — same Ton qty as Net Weight" },
 ];
+const ROUND_OFF_NEAREST_OPTS = [
+  { value: "1", label: "₹1" }, { value: "5", label: "₹5" }, { value: "10", label: "₹10" }, { value: "50", label: "₹50" }, { value: "100", label: "₹100" },
+];
 const TRANSPORT_COST_METHOD_OPTS = [
   { value: "Fixed", label: "Fixed" },
   { value: "Per KM", label: "Per KM" },
@@ -224,6 +227,16 @@ export function DispatchSettings() {
         <p className="text-2xs text-muted">
           Automatic: invoice auto-posts when DC is generated, quantities not editable. Manual: user reviews and clicks Post Sales Invoice, quantities editable if business rules permit.
         </p>
+        <div className="border-t border-border pt-4">
+          <Grid>
+            <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-surface p-3.5">
+              <span><span className="block text-sm font-medium text-foreground">Round Off Total Invoice Amount</span><span className="text-2xs text-muted">Rounds the invoice total; the difference posts to Round Off.</span></span>
+              <Switch checked={flag("roundOffInvoiceTotal")} onChange={(v) => setFlag("roundOffInvoiceTotal", v)} aria-label="Round off total invoice amount" />
+            </label>
+            {flag("roundOffInvoiceTotal") && <Select label="Round To Nearest" options={ROUND_OFF_NEAREST_OPTS} value={field("roundOffNearest") || "10"} onChange={(e) => setField("roundOffNearest", e.target.value)} />}
+          </Grid>
+          <p className="mt-2 text-2xs text-muted">Applies to Direct Customer Dispatch/Load &amp; Dispatch&apos;s Total Invoice Amount, the posted Sales Invoice, and its printed PDF — a &quot;Total&quot; line above still shows the pre-round figure.</p>
+        </div>
       </Section>
 
       <Section icon={Coins} title="Transport Cost Configuration">

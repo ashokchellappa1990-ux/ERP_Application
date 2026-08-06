@@ -124,6 +124,7 @@ export const NAV_SECTIONS: NavSection[] = [
         children: [
           { label: "Chart of Accounts", href: "/accounting/chart-of-accounts", icon: BookOpen },
           { label: "Opening Balance", href: "/accounting/opening-balance", icon: Wallet },
+          { label: "Dispatch & Sales Accounting", href: "/accounting/dispatch-sales-accounting", icon: Landmark },
           { label: "Petty Cash Configuration", href: "/accounting/petty-cash-config", icon: Coins },
           { label: "Recurring Transaction Configuration", href: "/system/recurring-config", icon: Repeat },
           { label: "Accounting Rule Engine", href: "/accounting/rule-engine", icon: Workflow },

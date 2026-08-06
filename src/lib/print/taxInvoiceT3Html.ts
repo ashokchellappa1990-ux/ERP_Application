@@ -14,6 +14,11 @@ export interface TaxInvoiceT3Data {
   driverName: string | null; vehicleNumber: string | null; driverMobile: string | null; deliveryLocation: string | null;
   customer: { name: string; address: string; contact: string | null; gstin: string | null; state: string };
   lines: TaxInvoiceT3Line[];
+  // Non-taxable recoverable charges (Load & Dispatch's Vehicle Rent/Transit
+  // Pass) folded into the invoice total beyond the item lines — shown as
+  // their own rows between the item Total and Sub Total so the figures
+  // visibly tally (Item Total + these = Sub Total).
+  otherCharges?: { label: string; amount: number }[];
   subTotal: number; roundOff: number; total: number; paymentMode: string;
   hsnRows: TaxInvoiceT3HsnRow[]; totalTax: number;
   /** base64 data: URIs from Settings > Invoice Template, or null if not uploaded. */
@@ -161,6 +166,7 @@ export function buildTaxInvoiceT3Parts(data: TaxInvoiceT3Data, tpl: Pick<Receipt
       <div class="words"><div class="lbl" style="color:#475569;font-size:9.5px">Invoice Amount In Words</div><strong>${esc(amountInWords(data.total))}</strong></div>
       <div class="amts">
         <table class="amts-tbl"><tbody>
+          ${(data.otherCharges ?? []).filter((o) => o.amount).map((o) => `<tr><td class="lbl">${esc(o.label)}</td><td class="r">${money(o.amount)}</td></tr>`).join("")}
           <tr><td class="lbl">Sub Total</td><td class="r">${money(data.subTotal)}</td></tr>
           <tr><td class="lbl">Round off</td><td class="r">${data.roundOff < 0 ? "-" : ""}${money(Math.abs(data.roundOff))}</td></tr>
           <tr class="total"><td>Total</td><td class="r">${money(data.total)}</td></tr>

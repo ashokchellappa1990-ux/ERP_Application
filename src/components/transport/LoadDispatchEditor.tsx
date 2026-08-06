@@ -18,6 +18,7 @@ import { LOAD_DISPATCH_DOC_TYPES } from "@/lib/contracts/loadDispatch";
 import type { LoadDispatchDetail, LoadDispatchItemDto } from "@/lib/contracts/loadDispatch";
 import type { TransportConfigData } from "@/lib/settings/transportConfigDefaults";
 import { fieldOn, fieldMust } from "@/lib/settings/docFieldsConfig";
+import { AccountingPostingDetails } from "@/components/transport/AccountingPostingDetails";
 
 const SCREEN = "load_dispatch";
 const req = (key: string) => (fieldMust(SCREEN, key) ? " *" : "");
@@ -320,7 +321,9 @@ export function LoadDispatchEditor({ id }: { id: number }) {
   const vehicleRentVal = data?.vehicleRent ?? 0;
   const transitPassAmountVal = data?.transitPassAmount ?? 0;
   const driverBattaAmountVal = data?.driverBattaAmount ?? 0;
-  const totalInvoiceAmount = itemTotals.grandTotal + vehicleRentVal + transitPassAmountVal;
+  const preRoundInvoiceAmount = itemTotals.grandTotal + vehicleRentVal + transitPassAmountVal;
+  const invoiceRoundOff = config?.flags.roundOffInvoiceTotal ? Math.round(preRoundInvoiceAmount / (Number(config.fields.roundOffNearest) || 10)) * (Number(config.fields.roundOffNearest) || 10) - preRoundInvoiceAmount : 0;
+  const totalInvoiceAmount = preRoundInvoiceAmount + invoiceRoundOff;
   const totalAmountToCollect = data?.driverBattaMode === "Adjustment" ? totalInvoiceAmount - driverBattaAmountVal : totalInvoiceAmount;
   const amountCollected = data?.paymentAmount ?? 0;
   const balanceToCollect = Math.max(0, totalAmountToCollect - amountCollected);
@@ -650,6 +653,8 @@ export function LoadDispatchEditor({ id }: { id: number }) {
             )}
             {canEdit && <p className="text-2xs text-subtle">Rent / Transit Pass Qty save with Save Draft below — Driver Batta &amp; Transit Pass Amount are always recalculated server-side.</p>}
             <div className="my-1 h-px bg-border" />
+            <Row k="Total" v={preRoundInvoiceAmount.toFixed(2)} big />
+            {invoiceRoundOff !== 0 && <Row k="Round Off" v={`${invoiceRoundOff > 0 ? "+" : ""}${invoiceRoundOff.toFixed(2)}`} />}
             <div className="flex items-center justify-between text-lg font-bold text-foreground"><span>Total Invoice Amount</span><span>{totalInvoiceAmount.toFixed(2)}</span></div>
           </div>
 
@@ -708,6 +713,11 @@ export function LoadDispatchEditor({ id }: { id: number }) {
           </div>
         </SectionCard>
       </div>
+
+      <AccountingPostingDetails
+        taxableValue={itemTotals.taxable} taxTotal={itemTotals.tax} vehicleRent={vehicleRentVal} transitPassAmount={transitPassAmountVal}
+        driverBattaAmount={driverBattaAmountVal} driverBattaMode={x.driverBattaMode}
+      />
 
       {((x.remarks && fieldOn(SCREEN, "remarks")) || x.cancelReason) && (
         <div className="grid gap-4 sm:grid-cols-2">

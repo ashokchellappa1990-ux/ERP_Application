@@ -6,7 +6,12 @@ import { createDispatch, postDispatch, loadRequestForDispatch } from "@/lib/ware
 import { postMovement, consumeLots } from "@/lib/inventory/ledger";
 import { createSaleTx, type PreparedSale } from "@/lib/sales/createSale";
 import { getDispatchConfig } from "@/lib/settings/dispatchConfig";
-import { computeDriverBatta, computeTransitPass } from "@/lib/settings/transportConfigDefaults";
+import { getAccountingConfig } from "@/lib/settings/accountingConfig";
+import type { AccountingConfigData } from "@/lib/settings/accountingConfigDefaults";
+import { ACC } from "@/lib/accounting/accounts";
+import { postJournal, type JLineInput } from "@/lib/accounting/post";
+import { computeDriverBatta, computeTransitPass, roundInvoiceTotal } from "@/lib/settings/transportConfigDefaults";
+import type { TransportConfigData } from "@/lib/settings/transportConfigDefaults";
 import type { TerminalStamp } from "@/lib/pos/terminalContext";
 import type { LoadDispatchItemDto } from "@/lib/contracts/loadDispatch";
 
@@ -139,7 +144,7 @@ export interface DirectCustomerDispatchInput {
   payment?: PaymentCollectionInput;
   // Payment Details section — see the field comments on directCustomerDispatchInput
   // in src/lib/contracts/loadDispatch.ts for exactly what each one means.
-  vehicleRent?: number; transitPassQty?: number; driverBattaMode?: "Adjustment" | "Payment";
+  vehicleRent?: number; transitPassQty?: number; driverBattaMode?: "Adjustment" | "Payment"; driverBattaPaymentMode?: string | null;
   remarks?: string | null; items: DirectDispatchItemInput[];
 }
 
@@ -219,6 +224,7 @@ export async function createDirectCustomerDispatch(scope: ActiveScope, user: Act
         paymentSplits: (payment?.paymentSplits as Prisma.InputJsonValue | undefined) ?? undefined,
         vehicleRent, transitPassQty, transitPassAmount, driverBattaAmount,
         driverBattaMode: input.driverBattaMode ?? "Adjustment",
+        driverBattaPaymentMode: input.driverBattaPaymentMode ?? undefined,
         remarks: input.remarks ?? undefined,
         status: "Draft", totalProducts: items.length, totalQty: r3(totalQty), totalPackages: 0,
         createdBy: user.id, createdByName: user.fullName ?? undefined,
@@ -371,11 +377,14 @@ export async function completeLoadDispatch(scope: ActiveScope, user: Actor, id: 
     await postDispatch(scope, user, doc.stockTransferDispatchId); // existing engine — full stock + GL movement
   }
 
+  let dav = { posted: false, dispatchClearingAmount: 0, dispatchReceivableAmount: 0 };
   if (doc.docType === "Customer") {
     await consumeInventoryForCustomerDispatch(scope, user, doc);
+    dav = await postDispatchAccountingVoucher(scope, user, doc);
+    await postDriverBattaVoucher(scope, user, doc);
   }
 
-  await prisma.loadDispatch.update({ where: { id }, data: { status: "Dispatched", completedBy: user.id, completedAt: new Date() } });
+  await prisma.loadDispatch.update({ where: { id }, data: { status: "Dispatched", completedBy: user.id, completedAt: new Date(), dispatchVoucherPosted: dav.posted, dispatchClearingAmount: dav.dispatchClearingAmount, dispatchReceivableAmount: dav.dispatchReceivableAmount } });
   await writeAudit(prisma, user, { action: "load_dispatch.complete", entity: "LoadDispatch", entityId: id, summary: `Completed Load & Dispatch ${doc.dispatchNo}${doc.docType === "StockTransfer" ? " — posted via existing dispatch engine" : doc.docType === "Customer" ? " — stock reduced" : ""}`, businessId: scope.businessId ?? null, branchId: scope.branchId ?? null });
   return { status: "Dispatched" as const };
 }
@@ -413,6 +422,165 @@ async function consumeInventoryForCustomerDispatch(
       });
     }
     await tx.loadDispatch.update({ where: { id: doc.id }, data: { inventoryPostedAt: new Date() } });
+  }, { maxWait: 10_000, timeout: 30_000 });
+}
+
+/** Resolves taxableValue/taxTotal for a set of dispatch items, using each
+ * item's OWN stored tax (set at creation) when present, falling back to the
+ * product's gstRate for items that never captured per-line tax (the
+ * Sales-Order-loaded path, where dispatch is qty-only) — same fallback rule
+ * buildPreparedSale uses below, kept in sync so the Dispatch Accounting
+ * Voucher and the Sales Invoice Voucher always agree on these totals. */
+async function resolveItemTaxTotals(tenantId: number, items: { productId: number; taxPct: Prisma.Decimal | null; taxableValue: Prisma.Decimal; taxAmount: Prisma.Decimal; dispatchedQty: Prisma.Decimal; rate: Prisma.Decimal | null }[]): Promise<{ taxableValue: number; taxTotal: number }> {
+  const needsGst = items.filter((it) => it.taxPct == null);
+  const productIds = Array.from(new Set(needsGst.map((i) => i.productId)));
+  const prods = productIds.length ? await prisma.product.findMany({ where: { id: { in: productIds }, tenantId }, select: { id: true, gstRate: true } }) : [];
+  const gstById = new Map(prods.map((p) => [p.id, Number(String(p.gstRate ?? "0").replace(/[^0-9.]/g, "")) || 0]));
+  let taxableValue = 0, taxTotal = 0;
+  for (const it of items) {
+    const hasStoredTax = it.taxPct != null;
+    const gross = r2(num(it.dispatchedQty) * num(it.rate));
+    const taxable = hasStoredTax ? num(it.taxableValue) : gross;
+    const gst = hasStoredTax ? num(it.taxPct) : (gstById.get(it.productId) ?? 0);
+    const tax = hasStoredTax ? num(it.taxAmount) : (gst > 0 ? r2(taxable * (gst / 100)) : 0);
+    taxableValue += taxable; taxTotal += tax;
+  }
+  return { taxableValue: r2(taxableValue), taxTotal: r2(taxTotal) };
+}
+
+/** Driver Batta JV — posted the moment Complete Load & Dispatch finishes
+ * (not deferred to the Sales Invoice), independent of the Dispatch Accounting
+ * Voucher master switch: Adjustment nets it out of what the customer owes
+ * (Dr Driver Batta Expense / Cr Customer Receivable); Payment means the
+ * business paid the driver separately (Dr Driver Batta Expense / Cr
+ * Cash-or-Bank per the chosen payment mode). completeLoadDispatch only ever
+ * runs once per dispatch (it rejects an already-Dispatched doc), so this
+ * never double-posts. */
+async function postDriverBattaVoucher(
+  scope: ActiveScope, user: Actor,
+  doc: { id: number; businessId: number | null; branchId: number | null; dispatchDate: string; dispatchNo: string; driverBattaAmount: Prisma.Decimal; driverBattaMode: string | null; driverBattaPaymentMode: string | null },
+): Promise<void> {
+  const amount = num(doc.driverBattaAmount);
+  if (amount <= 0) return;
+  const mode = doc.driverBattaMode === "Payment" ? "Payment" : "Adjustment";
+  const creditCode = mode === "Adjustment" ? ACC.RECEIVABLE : ((doc.driverBattaPaymentMode || "").toLowerCase().includes("cash") ? ACC.CASH : ACC.BANK);
+  await prisma.$transaction(async (tx) => {
+    await postJournal(tx, {
+      tenantId: scope.tenantId, businessId: doc.businessId ?? scope.businessId ?? undefined, branchId: doc.branchId ?? scope.branchId ?? undefined,
+      voucherType: "DISPATCH", prefix: "DAV", date: doc.dispatchDate,
+      narration: `Driver Batta (${mode}) — ${doc.dispatchNo}`,
+      sourceType: "LOAD_DISPATCH", sourceId: doc.id, refNo: doc.dispatchNo, createdBy: user.id,
+      lines: [
+        { code: ACC.DRIVER_BATTA_EXPENSE, debit: amount, narration: `Driver Batta — ${mode}` },
+        { code: creditCode, credit: amount, narration: mode === "Adjustment" ? "Netted out of customer receivable" : "Paid to driver" },
+      ],
+    });
+  }, { maxWait: 10_000, timeout: 30_000 });
+}
+
+/** Dispatch Accounting Voucher (Stage 1) — posted once, the moment Complete
+ * Load & Dispatch finishes, only for Customer dispatches and only when
+ * Accounting Configuration's "Create Separate Dispatch Voucher" is on
+ * (src/components/settings/AccountingConfigSettings.tsx). Recognizes
+ * Customer Receivable / Inventory-COGS / recoverable Transit Pass, Vehicle
+ * Rent and other operational charges at the timings that configuration
+ * specifies — never Sales Revenue or GST unless explicitly configured
+ * OnDispatch (those default to the Sales Invoice Voucher, see
+ * buildPreparedSale below). Returns the amount left uncredited in Dispatch
+ * Clearing Liability (usually Revenue+GST, deferred) for the SIV to settle
+ * later, and whether a voucher was actually posted (so completeLoadDispatch
+ * never attempts this twice). */
+async function postDispatchAccountingVoucher(
+  scope: ActiveScope, user: Actor,
+  doc: { id: number; businessId: number | null; branchId: number | null; dispatchDate: string; dispatchNo: string; vehicleRent: Prisma.Decimal; transitPassAmount: Prisma.Decimal },
+): Promise<{ posted: boolean; dispatchClearingAmount: number; dispatchReceivableAmount: number }> {
+  const cfg: AccountingConfigData = await getAccountingConfig(user);
+  if (!cfg.flags.createSeparateDispatchVoucher) return { posted: false, dispatchClearingAmount: 0, dispatchReceivableAmount: 0 };
+
+  return prisma.$transaction(async (tx) => {
+    const items = await tx.loadDispatchItem.findMany({ where: { loadDispatchId: doc.id }, select: { productId: true, taxPct: true, taxableValue: true, taxAmount: true, dispatchedQty: true, rate: true, cost: true } });
+    const { taxableValue, taxTotal } = await resolveItemTaxTotals(scope.tenantId, items);
+    const cost = r2(items.reduce((s, it) => s + num(it.cost), 0));
+    const tc = await tx.transportCost.findUnique({ where: { loadDispatchId: doc.id } });
+
+    const lines: JLineInput[] = [];
+
+    // Inventory / COGS — always posts (physical stock already moved), timing
+    // only decides which debit account: COGS directly, or Goods in Transit
+    // pending reclassification to COGS at Sales Invoice time.
+    if (cost > 0) {
+      const debitCode = cfg.fields.inventoryCogsTiming === "OnInvoice" ? ACC.INVENTORY_IN_TRANSIT : ACC.COGS;
+      lines.push({ code: debitCode, debit: cost, narration: "Inventory issued at Dispatch" });
+      lines.push({ code: ACC.INVENTORY, credit: cost, narration: "Inventory reduced at Dispatch" });
+    }
+
+    // Company-expense charges (Vehicle Rent / Transit Pass / other operational
+    // charges NOT recoverable from the customer) are the business's own cost —
+    // booked immediately, independent of Customer Receivable timing.
+    const vehicleRentAmt = num(doc.vehicleRent);
+    const transitPassAmt = num(doc.transitPassAmount);
+    const vehicleRentRecoverable = cfg.fields.vehicleRentAccounting !== "CompanyExpense";
+    const transitPassRecoverable = cfg.fields.transitPassAccounting !== "CompanyExpense";
+    if (vehicleRentAmt > 0 && !vehicleRentRecoverable) {
+      lines.push({ code: ACC.VEHICLE_RENT_EXPENSE, debit: vehicleRentAmt, narration: "Vehicle Rent — company expense" });
+      lines.push({ code: ACC.CASH, credit: vehicleRentAmt, narration: "Vehicle Rent paid" });
+    }
+    if (transitPassAmt > 0 && !transitPassRecoverable) {
+      lines.push({ code: ACC.OPERATING_EXPENSE_DISPATCH, debit: transitPassAmt, narration: "Transit Pass — company expense" });
+      lines.push({ code: ACC.CASH, credit: transitPassAmt, narration: "Transit Pass paid" });
+    }
+    const otherChargeMap: { amount: number; mode: string; label: string }[] = tc ? [
+      { amount: num(tc.freightCharge), mode: cfg.fields.otherChargeFreight, label: "Freight Charge" },
+      { amount: num(tc.loadingCharge), mode: cfg.fields.otherChargeLoading, label: "Loading Charge" },
+      { amount: num(tc.unloadingCharge), mode: cfg.fields.otherChargeUnloading, label: "Unloading Charge" },
+      { amount: num(tc.fuelCharge), mode: cfg.fields.otherChargeFuel, label: "Fuel Charge" },
+      { amount: num(tc.tollCharge), mode: cfg.fields.otherChargeToll, label: "Toll Charge" },
+      { amount: num(tc.driverAllowance), mode: cfg.fields.otherChargeDriverAllowance, label: "Driver Allowance" },
+      { amount: num(tc.helperAllowance), mode: cfg.fields.otherChargeHelperAllowance, label: "Helper Allowance" },
+      { amount: num(tc.otherCharges), mode: cfg.fields.otherChargeMisc, label: "Other Charges" },
+    ] : [];
+    const otherRecoverableTotal = r2(otherChargeMap.filter((o) => o.amount > 0 && o.mode !== "CompanyExpense").reduce((s, o) => s + o.amount, 0));
+    const otherExpenseTotal = r2(otherChargeMap.filter((o) => o.amount > 0 && o.mode === "CompanyExpense").reduce((s, o) => s + o.amount, 0));
+    if (otherExpenseTotal > 0) {
+      lines.push({ code: ACC.OPERATING_EXPENSE_DISPATCH, debit: otherExpenseTotal, narration: "Dispatch operational charges — company expense" });
+      lines.push({ code: ACC.CASH, credit: otherExpenseTotal, narration: "Dispatch operational charges paid" });
+    }
+
+    // Customer Receivable + recoverable charges — only when Receivable is
+    // itself recognized at Dispatch. Recognizing a recoverable Transit
+    // Pass/Vehicle Rent/other-charge without a Receivable to net it against
+    // would create income with nothing backing it, so those defer to the
+    // Sales Invoice Voucher (see buildPreparedSale's otherIncome) whenever
+    // Customer Receivable itself is On Sales Invoice.
+    let dispatchClearingAmount = 0;
+    let dispatchReceivableAmount = 0;
+    if (cfg.fields.customerReceivableTiming === "OnDispatch") {
+      const recoverableTotal = r2((transitPassRecoverable ? transitPassAmt : 0) + (vehicleRentRecoverable ? vehicleRentAmt : 0) + otherRecoverableTotal);
+      const receivableTotal = r2(taxableValue + taxTotal + recoverableTotal);
+      dispatchReceivableAmount = receivableTotal;
+      if (receivableTotal > 0) {
+        lines.push({ code: ACC.RECEIVABLE, debit: receivableTotal, narration: `Receivable recognized at Dispatch — ${doc.dispatchNo}` });
+        lines.push({ code: ACC.DISPATCH_CLEARING_LIABILITY, credit: receivableTotal, narration: "Dispatch clearing liability" });
+      }
+      if (transitPassRecoverable && transitPassAmt > 0) lines.push({ code: ACC.DISPATCH_CLEARING_LIABILITY, debit: transitPassAmt, narration: "Transit Pass recovered from customer" }, { code: ACC.TRANSIT_PASS_RECOVERY, credit: transitPassAmt, narration: "Transit Pass Recovery" });
+      if (vehicleRentRecoverable && vehicleRentAmt > 0) lines.push({ code: ACC.DISPATCH_CLEARING_LIABILITY, debit: vehicleRentAmt, narration: "Vehicle Rent recovered from customer" }, { code: ACC.VEHICLE_RENT_RECOVERY, credit: vehicleRentAmt, narration: "Vehicle Rent Recovery" });
+      if (otherRecoverableTotal > 0) lines.push({ code: ACC.DISPATCH_CLEARING_LIABILITY, debit: otherRecoverableTotal, narration: "Dispatch operational charges recovered from customer" }, { code: ACC.OPERATING_CHARGES_RECOVERY, credit: otherRecoverableTotal, narration: "Operating Charges Recovery" });
+      if (cfg.fields.gstRecognitionTiming === "OnDispatch" && taxTotal > 0) lines.push({ code: ACC.DISPATCH_CLEARING_LIABILITY, debit: taxTotal, narration: "GST recognized at Dispatch" }, { code: ACC.OUTPUT_GST, credit: taxTotal, narration: "Output GST" });
+      if (cfg.fields.salesRevenueTiming === "OnDispatch" && taxableValue > 0) lines.push({ code: ACC.DISPATCH_CLEARING_LIABILITY, debit: taxableValue, narration: "Sales Revenue recognized at Dispatch" }, { code: ACC.SALES, credit: taxableValue, narration: "Sales Revenue" });
+      dispatchClearingAmount = r2(receivableTotal
+        - (transitPassRecoverable ? transitPassAmt : 0) - (vehicleRentRecoverable ? vehicleRentAmt : 0) - otherRecoverableTotal
+        - (cfg.fields.gstRecognitionTiming === "OnDispatch" ? taxTotal : 0) - (cfg.fields.salesRevenueTiming === "OnDispatch" ? taxableValue : 0));
+    }
+
+    if (!lines.length) return { posted: true, dispatchClearingAmount: 0, dispatchReceivableAmount: 0 };
+    await postJournal(tx, {
+      tenantId: scope.tenantId, businessId: doc.businessId ?? scope.businessId ?? undefined, branchId: doc.branchId ?? scope.branchId ?? undefined,
+      voucherType: "DISPATCH", prefix: "DAV", date: doc.dispatchDate,
+      narration: `Dispatch Accounting Voucher — ${doc.dispatchNo}`,
+      sourceType: "LOAD_DISPATCH", sourceId: doc.id, refNo: doc.dispatchNo, createdBy: user.id,
+      lines,
+    });
+    return { posted: true, dispatchClearingAmount: Math.max(0, dispatchClearingAmount), dispatchReceivableAmount: Math.max(0, dispatchReceivableAmount) };
   }, { maxWait: 10_000, timeout: 30_000 });
 }
 
@@ -456,7 +624,8 @@ export async function generateDeliveryChallanForLoadDispatch(scope: ActiveScope,
 
     let saleId: number | null = null;
     if (cfg.fields.salesInvoicePostingMethod === "Automatic") {
-      const prepared = await buildPreparedSale(scope.tenantId, doc);
+      const acctCfg = await getAccountingConfig(user);
+      const prepared = await buildPreparedSale(scope.tenantId, doc, acctCfg, cfg);
       const sale = await createSaleTx(tx, prepared, { user: { id: user.id, tenantId: scope.tenantId }, seg: { businessId: scope.businessId ?? undefined, branchId: scope.branchId ?? undefined }, stamp: opts.stamp, channel: "B2B", series: "b2b", skipInventoryMovement: true });
       invoiceNo = sale.invoiceNo; saleId = sale.id;
     }
@@ -480,8 +649,10 @@ export async function postSalesInvoiceForLoadDispatch(scope: ActiveScope, user: 
   let invoiceNo = "";
   // maxWait/timeout: same P2028 risk as generateDeliveryChallanForLoadDispatch —
   // createSaleTx does several sequential round trips against a remote RDS instance.
+  const acctCfg = await getAccountingConfig(user);
+  const cfg = await getDispatchConfig(user);
   await prisma.$transaction(async (tx) => {
-    const prepared = await buildPreparedSale(scope.tenantId, doc);
+    const prepared = await buildPreparedSale(scope.tenantId, doc, acctCfg, cfg);
     const sale = await createSaleTx(tx, prepared, { user: { id: user.id, tenantId: scope.tenantId }, seg: { businessId: scope.businessId ?? undefined, branchId: scope.branchId ?? undefined }, stamp: opts.stamp, channel: "B2B", series: "b2b", skipInventoryMovement: true });
     invoiceNo = sale.invoiceNo;
     await tx.loadDispatch.update({ where: { id: doc.id }, data: { saleId: sale.id, status: "Sales Invoice Posted" } });
@@ -519,8 +690,12 @@ interface PreparedSaleSourceDoc {
   // driverBattaMode was "Adjustment" — see DirectLoadDispatchForm.tsx), never
   // the invoice amount itself.
   vehicleRent: Prisma.Decimal; transitPassAmount: Prisma.Decimal;
+  // Dispatch & Sales Accounting engine — set by postDispatchAccountingVoucher
+  // at Complete Load & Dispatch time (0 when createSeparateDispatchVoucher is
+  // off, or Customer Receivable defers to the invoice — nothing to settle).
+  dispatchClearingAmount: Prisma.Decimal; dispatchVoucherPosted: boolean;
 }
-async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc): Promise<PreparedSale> {
+async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc, cfg: AccountingConfigData, dispatchCfg: TransportConfigData): Promise<PreparedSale> {
   const items = doc.items;
   const needsGst = items.filter((it) => it.taxPct == null);
   const productIds = Array.from(new Set(needsGst.map((i) => i.productId)));
@@ -551,9 +726,42 @@ async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc): 
     };
   });
   // Rent + Transit Pass fold straight into the total — see the interface
-  // comment above for why Driver Batta never does.
-  const recoveries = r2(num(doc.vehicleRent) + num(doc.transitPassAmount));
-  const total = r2(taxableValue + taxTotal + recoveries);
+  // comment above for why Driver Batta never does. Each also needs its own GL
+  // credit line (Operating Income) or postSalesJournal's Dr/Cr won't balance,
+  // since neither is part of taxableValue/taxTotal.
+  const vehicleRentAmt = num(doc.vehicleRent);
+  const transitPassAmt = num(doc.transitPassAmount);
+  const recoveries = r2(vehicleRentAmt + transitPassAmt);
+  const preRoundTotal = r2(taxableValue + taxTotal + recoveries);
+  // Total Invoice Amount rounding (Dispatch Configuration > Sales Invoice) —
+  // never trust the client's own rounded figure, recompute authoritatively
+  // here exactly like Driver Batta/Transit Pass above.
+  const { total, roundOff: invoiceRoundOff } = roundInvoiceTotal(dispatchCfg, preRoundTotal);
+  // Transit Pass/Vehicle Rent recovery post here UNLESS the Dispatch
+  // Accounting Voucher already recognized them (Customer Receivable On
+  // Dispatch + the charge configured Recoverable) — never both, or the
+  // income doubles (see postDispatchAccountingVoucher's own comment).
+  const dispatchClearingAmt = num(doc.dispatchClearingAmount);
+  const recognizedAtDispatch = dispatchClearingAmt > 0 || doc.dispatchVoucherPosted === true;
+  const transitPassAlreadyPosted = recognizedAtDispatch && cfg.fields.transitPassAccounting !== "CompanyExpense";
+  const vehicleRentAlreadyPosted = recognizedAtDispatch && cfg.fields.vehicleRentAccounting !== "CompanyExpense";
+  const otherIncome: { code: string; amount: number; narration: string }[] = [];
+  if (transitPassAmt > 0 && !transitPassAlreadyPosted) otherIncome.push({ code: ACC.TRANSIT_PASS_RECOVERY, amount: transitPassAmt, narration: "Transit Pass recovered from customer" });
+  if (vehicleRentAmt > 0 && !vehicleRentAlreadyPosted) otherIncome.push({ code: ACC.VEHICLE_RENT_RECOVERY, amount: vehicleRentAmt, narration: "Vehicle Rent recovered from customer" });
+  // Dispatch Clearing Liability settlement — mirrors how GRN Clearing is
+  // settled at Purchase Invoice time (src/lib/purchase/createPurchaseInvoice.ts):
+  // a direct debit line in this SAME voucher, not a separate reversal entry.
+  // The invoice-total round-off is only ever discovered here (the Dispatch
+  // Accounting Voucher posted before any rounding was computed), so it rides
+  // along on this same settlement amount — otherwise Sales+GST+Round Off
+  // credits would have no matching debit and the journal wouldn't balance.
+  const clearingSettlement = dispatchClearingAmt > 0 ? { code: ACC.DISPATCH_CLEARING_LIABILITY, amount: r2(dispatchClearingAmt + invoiceRoundOff) } : undefined;
+  // Driver Batta now posts its own JV at Complete Load & Dispatch time (see
+  // postDriverBattaVoucher, called from completeLoadDispatch) — never here.
+  // Receivable/COGS were already recognized at Dispatch (postDispatchAccountingVoucher)
+  // whenever that voucher actually ran — this voucher must not re-create them.
+  const receivableAlreadyBooked = recognizedAtDispatch;
+  const cogsAlreadyBooked: "none" | "direct" | "goodsInTransit" = !doc.dispatchVoucherPosted ? "none" : (cfg.fields.inventoryCogsTiming === "OnInvoice" ? "goodsInTransit" : "direct");
 
   // Payment collection — Full/Partial/Credit, same terminology as the existing
   // B2B Sales Invoice screen (src/components/sales/B2bInvoiceForm.tsx). "Full"
@@ -586,7 +794,7 @@ async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc): 
     lines, lineCodes: lines.map(() => []), scannedCodes: [], fefoSet: new Set(),
     payments,
     subtotal: r2(subtotal), itemDiscount: r2(itemDiscount), billDiscount: 0, taxableValue: r2(taxableValue),
-    taxTotal: r2(taxTotal), cgst: r2(taxTotal / 2), sgst: r2(taxTotal / 2), roundOff: 0, total, itemCount: Math.round(itemCount),
+    taxTotal: r2(taxTotal), cgst: r2(taxTotal / 2), sgst: r2(taxTotal / 2), roundOff: invoiceRoundOff, total, itemCount: Math.round(itemCount),
     amountPaid, changeDue: 0, paymentStatus, paymentMode: method,
     bankId: doc.bankId ?? null, bankName: doc.bankName ?? null, bankAccount: doc.bankAccount ?? null,
     loyaltyProgramId: null, loyaltyRedeemPoints: 0, loyaltyRedeemValue: 0,
@@ -595,6 +803,7 @@ async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc): 
     membershipDiscount: 0, membershipLevelId: null, membershipDiscountCode: "",
     giftVoucherId: null, giftVoucherNo: null, giftVoucherAmount: 0,
     engineDiscount: 0, engineApplied: [],
+    otherIncome, clearingSettlement, receivableAlreadyBooked, cogsAlreadyBooked,
   };
 }
 

@@ -15,6 +15,10 @@ export const DEFAULT_DISPATCH_CONFIG: TransportConfigData = {
     dcPrefix: "DC",
     weightTolerancePct: "2",
     salesInvoicePostingMethod: "Manual", // Automatic | Manual
+    // Total Invoice Amount rounding (Direct Customer Dispatch's Payment
+    // Details section + the posted Sales Invoice + its printed PDF) — the
+    // pre-round figure still shows as its own "Total" line above it.
+    roundOffNearest: "10", // 1 | 5 | 10 | 50 | 100
     transportCostMethod: "Manual", // Fixed | Per KM | Per KG | Per Ton | Per Trip | Manual
     // Vehicle Gate Entry preloads these two on the add screen (blank = no
     // preload, user picks as before) so most users never have to touch them.
@@ -62,6 +66,11 @@ export const DEFAULT_DISPATCH_CONFIG: TransportConfigData = {
     // right after the prefix — GATE-0826-00001 (MM+YY) — instead of just
     // GATE-00001, so the running sequence is visually scoped per month.
     gateEntryNoIncludeMonthYear: true,
+    // When on, the Total Invoice Amount (Direct Customer Dispatch / Load &
+    // Dispatch / posted Sales Invoice / printed PDF) rounds to the nearest
+    // roundOffNearest value; the difference posts to the Round Off ledger
+    // account exactly like POS billing's own rounding already does.
+    roundOffInvoiceTotal: false,
     // General
     enableDispatchPlanning: true,
     enableDispatchExecution: true,
@@ -142,6 +151,20 @@ export function computeDriverBatta(cfg: Pick<TransportConfigData, "fields" | "fl
 export function computeTransitPass(cfg: Pick<TransportConfigData, "fields" | "flags">, tonQty: number): number {
   const rate = Number(cfg.fields.transitPassPerTon) || 0;
   return Math.max(0, tonQty) * rate;
+}
+
+/** Rounds the Total Invoice Amount to the configured nearest value (Direct
+ * Customer Dispatch's Payment Details, the Load & Dispatch view page, the
+ * posted Sale itself, and its printed PDF all call this so they never
+ * disagree) — shared by client (live display) and server (authoritative
+ * recompute at posting time). Returns the pre-round figure unchanged, plus
+ * the signed difference, when the flag is off. */
+export function roundInvoiceTotal(cfg: Pick<TransportConfigData, "fields" | "flags">, rawTotal: number): { total: number; roundOff: number } {
+  const r2 = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
+  if (!cfg.flags.roundOffInvoiceTotal) return { total: r2(rawTotal), roundOff: 0 };
+  const step = Number(cfg.fields.roundOffNearest) || 10;
+  const rounded = Math.round(rawTotal / step) * step;
+  return { total: r2(rounded), roundOff: r2(rounded - rawTotal) };
 }
 
 /** Builds a Gate Entry No from the configured prefix (+ month/year, if

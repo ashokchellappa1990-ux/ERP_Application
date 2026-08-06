@@ -31,6 +31,12 @@ export interface ReceivableRow {
   balanceAmount: number;
   status: string;
   overdue: boolean;
+  // "dispatch" rows are un-invoiced Load & Dispatch receivables recognized by
+  // the Dispatch Accounting Voucher (Customer Receivable = On Dispatch) —
+  // there's no Sale yet to collect against, so the UI points to posting the
+  // invoice instead of the usual Collect flow. Omitted/"sale" = today's rows.
+  source?: "sale" | "dispatch";
+  loadDispatchId?: number;
 }
 /** Aging buckets by days past due (notDue = not yet due / no due date). */
 export interface AgingBuckets { notDue: number; d1_30: number; d31_60: number; d61_90: number; d90: number }

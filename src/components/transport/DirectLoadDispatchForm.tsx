@@ -17,6 +17,7 @@ import { fieldOn, fieldMust } from "@/lib/settings/docFieldsConfig";
 import { buildTaxInvoiceHtml, type TaxInvoiceData } from "@/lib/print/taxInvoiceHtml";
 import { DEFAULT_RECEIPT } from "@/lib/settings/receiptTemplate";
 import { roundTonQty } from "@/lib/settings/transportConfigDefaults";
+import { AccountingPostingDetails } from "@/components/transport/AccountingPostingDetails";
 
 const SCREEN = "load_dispatch";
 const req = (key: string) => (fieldMust(SCREEN, key) ? " *" : "");
@@ -181,6 +182,8 @@ export function DirectLoadDispatchForm() {
   const [transitPassPerTon, setTransitPassPerTon] = useState(140);
   const [transitPassQtyMode, setTransitPassQtyMode] = useState<"Manual" | "AutoNetWeight">("Manual");
   const [transitPassQtyManual, setTransitPassQtyManual] = useState("");
+  const [roundOffInvoiceTotal, setRoundOffInvoiceTotal] = useState(false);
+  const [roundOffNearest, setRoundOffNearest] = useState(10);
   // Adjustment: Driver Batta is netted out of what's collected from the
   // customer (driver keeps it directly). Payment: the full invoice amount is
   // collected and the business pays the driver separately — captured below.
@@ -236,6 +239,8 @@ export function DirectLoadDispatchForm() {
       if (j.config?.fields?.transitPassPerTon != null) setTransitPassPerTon(Number(j.config.fields.transitPassPerTon) || 0);
       const tpm = j.config?.fields?.transitPassQtyMode;
       if (tpm === "Manual" || tpm === "AutoNetWeight") setTransitPassQtyMode(tpm);
+      setRoundOffInvoiceTotal(!!j.config?.flags?.roundOffInvoiceTotal);
+      if (j.config?.fields?.roundOffNearest != null) setRoundOffNearest(Number(j.config.fields.roundOffNearest) || 10);
     }).catch(() => {});
   }, []);
 
@@ -407,7 +412,9 @@ export function DirectLoadDispatchForm() {
   const driverBattaAmount = r2(roundedTonQty * driverBattaPerTon);
   const transitPassQty = transitPassQtyMode === "AutoNetWeight" ? tonQty : n(transitPassQtyManual);
   const transitPassAmount = r2(transitPassQty * transitPassPerTon);
-  const totalInvoiceAmount = r2(totals.taxable + totals.tax + n(vehicleRent) + transitPassAmount);
+  const preRoundInvoiceAmount = r2(totals.taxable + totals.tax + n(vehicleRent) + transitPassAmount);
+  const invoiceRoundOff = roundOffInvoiceTotal ? r2(Math.round(preRoundInvoiceAmount / roundOffNearest) * roundOffNearest - preRoundInvoiceAmount) : 0;
+  const totalInvoiceAmount = r2(preRoundInvoiceAmount + invoiceRoundOff);
   const totalAmountToCollect = r2(driverBattaMode === "adjustment" ? totalInvoiceAmount - driverBattaAmount : totalInvoiceAmount);
 
   // Split isn't its own collection category — it's a tender mode selectable
@@ -450,6 +457,7 @@ export function DirectLoadDispatchForm() {
       vehicleRent: n(vehicleRent),
       transitPassQty: transitPassQty,
       driverBattaMode: (driverBattaMode === "adjustment" ? "Adjustment" : "Payment") as "Adjustment" | "Payment",
+      driverBattaPaymentMode: driverBattaMode === "payment" ? battaPaymentMode : null,
       payment: {
         paymentMode: (payCat === "full" ? "Full" : payCat === "partial" ? "Partial" : "Credit") as "Full" | "Partial" | "Credit",
         paymentAmount: paidNow,
@@ -844,6 +852,8 @@ export function DirectLoadDispatchForm() {
               <p className="text-2xs text-subtle">Transit Pass Qty auto-fills from Net Weight: {tonQty.toFixed(3)} Ton × ₹{transitPassPerTon}/Ton.</p>
             )}
             <div className="my-1 h-px bg-border" />
+            <Row k="Total" v={preRoundInvoiceAmount.toFixed(2)} big />
+            {roundOffInvoiceTotal && invoiceRoundOff !== 0 && <Row k="Round Off" v={`${invoiceRoundOff > 0 ? "+" : ""}${invoiceRoundOff.toFixed(2)}`} />}
             <div className="flex items-center justify-between text-lg font-bold text-foreground"><span>Total Invoice Amount</span><span>{totalInvoiceAmount.toFixed(2)}</span></div>
           </div>
 
@@ -925,6 +935,11 @@ export function DirectLoadDispatchForm() {
           </div>
         </SectionCard>
       </div>
+
+      <AccountingPostingDetails
+        taxableValue={totals.taxable} taxTotal={totals.tax} vehicleRent={n(vehicleRent)} transitPassAmount={transitPassAmount}
+        driverBattaAmount={driverBattaAmount} driverBattaMode={driverBattaMode === "payment" ? "Payment" : "Adjustment"}
+      />
 
       {fieldOn(SCREEN, "remarks") && (
       <SectionCard icon={PackagePlus} title="Remarks">

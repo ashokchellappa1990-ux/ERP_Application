@@ -111,6 +111,7 @@ const loadDispatchFields: DocFieldDef[] = [
   { key: "transportDiscount", label: "Discount", mandatoryable: false, group: "Transport Cost" },
   { key: "transportGst", label: "GST Amount", mandatoryable: false, group: "Transport Cost" },
   { key: "paymentCollection", label: "Payment Collection Section", mandatoryable: false, group: "Other" },
+  { key: "accountingPostingDetails", label: "Accounting Posting Details Section", mandatoryable: false, group: "Other" },
   { key: "remarks", label: "Remarks", mandatoryable: false, group: "Other" },
 ];
 

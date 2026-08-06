@@ -8,7 +8,7 @@ import { ACC, ensureAccounts, purchaseTypeAccount } from "./accounts";
  */
 const r2 = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
 
-interface JLineInput { code: string; debit?: number; credit?: number; narration?: string }
+export interface JLineInput { code: string; debit?: number; credit?: number; narration?: string }
 interface PostJournalInput {
   tenantId: number;
   businessId?: number | null; // segregation: the source transaction's business …
@@ -111,6 +111,19 @@ export interface SalesJournalInput {
   engineDiscounts?: { code: string; amount: number }[]; // rule-based discounts resolved by the Discount Management engine (each posts a contra-revenue debit to its configured ledger)
   giftVoucher?: number; // gift voucher tendered as payment (stored value → Dr Gift Voucher Liability)
   advanceAdjusted?: number; advanceAccountCode?: string; // customer advance applied → Dr Advance Liability (reduces AR)
+  otherIncome?: { code: string; amount: number; narration: string }[]; // non-taxable recoveries folded into `total` (e.g. Transit Pass/Vehicle Rent recovery) — each needs its own credit line to balance
+  clearingSettlement?: { code: string; amount: number }; // settles a clearing-liability account credited by an earlier voucher (e.g. Dispatch Accounting Voucher) — debited here, same pattern as GRN Clearing at Purchase Invoice time
+  // Dispatch & Sales Accounting engine — when Customer Receivable was already
+  // recognized at Dispatch (Dispatch Accounting Voucher), this voucher must
+  // NOT create a fresh Receivable debit for it again; any amount collected
+  // now instead settles (credits) the Receivable already on the books.
+  receivableAlreadyBooked?: boolean;
+  // When Inventory/COGS was already recognized at Dispatch: "direct" means
+  // Dr COGS/Cr Inventory already posted there (skip entirely here);
+  // "goodsInTransit" means Dr Goods-in-Transit/Cr Inventory posted there, so
+  // this voucher now reclassifies it (Dr COGS / Cr Goods-in-Transit) instead
+  // of touching Inventory again. Omit/"none" for the original one-shot flow.
+  cogsAlreadyBooked?: "none" | "direct" | "goodsInTransit";
 }
 /** Sales voucher: Dr Cash/Bank/Receivable + TDS Receivable + COGS, Cr Sales +
  * Output GST + Inventory + TCS Payable (+ Round Off). `total` already includes TCS.
@@ -119,10 +132,14 @@ export async function postSalesJournal(tx: Prisma.TransactionClient, s: SalesJou
   const tds = r2(s.tds ?? 0);
   const tcs = r2(s.tcs ?? 0);
   const payable = r2(s.total - tds); // what the customer actually pays (TDS withheld)
+  const receivableAlreadyBooked = !!s.receivableAlreadyBooked;
   // Customer advance applied → Dr the advance liability account (reduces receivable).
   const advanceUsed = r2(Math.min(s.advanceAdjusted ?? 0, payable));
-  const ar = r2(Math.max(0, payable - s.amountPaid - advanceUsed));
-  const settled = r2(payable - ar); // amount actually settled now (cash/bank/voucher/advance)
+  const ar = receivableAlreadyBooked ? 0 : r2(Math.max(0, payable - s.amountPaid - advanceUsed));
+  // Not already booked: settled = whatever isn't newly owed (payable - ar).
+  // Already booked: nothing "new" to owe — settled is simply what's actually
+  // collected now, reducing the receivable that's already on the books.
+  const settled = receivableAlreadyBooked ? r2(Math.min(s.amountPaid, payable)) : r2(payable - ar);
   // Gift voucher tender = stored value → Dr Gift Voucher Liability (not cash/bank).
   const giftVoucher = r2(Math.min(s.giftVoucher ?? 0, Math.max(0, settled - advanceUsed)));
   const nonVoucher = r2(settled - advanceUsed - giftVoucher);
@@ -133,12 +150,15 @@ export async function postSalesJournal(tx: Prisma.TransactionClient, s: SalesJou
   const couponDiscount = r2(s.couponDiscount ?? 0);
   const promoDiscount = r2(s.promoDiscount ?? 0);
   const membershipDiscount = r2(s.membershipDiscount ?? 0);
+  const cogsMode = s.cogsAlreadyBooked ?? "none";
   const lines: JLineInput[] = [
     { code: ACC.CASH, debit: cashComponent, narration: "Cash received" },
     { code: ACC.BANK, debit: bankComponent, narration: "Card / UPI / Bank received" },
     { code: ACC.GIFT_VOUCHER_LIABILITY, debit: giftVoucher, narration: "Gift voucher redeemed (payment)" },
     { code: s.advanceAccountCode || ACC.CUSTOMER_ADVANCE, debit: advanceUsed, narration: "Customer advance adjusted" },
-    { code: ACC.RECEIVABLE, debit: ar, narration: `Receivable from ${s.customerName || "customer"}` },
+    receivableAlreadyBooked
+      ? { code: ACC.RECEIVABLE, credit: settled, narration: `Receivable settled — ${s.customerName || "customer"}` }
+      : { code: ACC.RECEIVABLE, debit: ar, narration: `Receivable from ${s.customerName || "customer"}` },
     { code: ACC.TDS_RECEIVABLE, debit: tds, narration: "TDS deducted by customer (receivable)" },
     { code: ACC.SALES_DISCOUNT, debit: billDiscount, narration: "Bill discount allowed" },
     { code: ACC.LOYALTY_EXPENSE, debit: loyaltyRedeem, narration: "Loyalty points redeemed (bill discount)" },
@@ -146,12 +166,21 @@ export async function postSalesJournal(tx: Prisma.TransactionClient, s: SalesJou
     { code: ACC.MARKETING_EXPENSE, debit: promoDiscount, narration: "Promo code discount (campaign funded)" },
     { code: s.membershipDiscountCode || ACC.SALES_DISCOUNT, debit: membershipDiscount, narration: "Membership benefit discount" },
     ...(s.engineDiscounts ?? []).map((e) => ({ code: e.code || ACC.SALES_DISCOUNT, debit: r2(e.amount), narration: "Rule-based discount (Discount Master)" })),
-    { code: ACC.COGS, debit: r2(s.cost), narration: "Cost of goods sold" },
     { code: ACC.SALES, credit: r2(s.taxableValue), narration: "Sales revenue" },
     { code: ACC.OUTPUT_GST, credit: r2(s.taxTotal), narration: "Output GST (CGST + SGST)" },
     { code: ACC.TCS_PAYABLE, credit: tcs, narration: "TCS collected (payable to govt)" },
-    { code: ACC.INVENTORY, credit: r2(s.cost), narration: "Inventory issued (COGS)" },
+    ...(s.otherIncome ?? []).map((o) => ({ code: o.code, credit: r2(o.amount), narration: o.narration })),
   ];
+  if (cogsMode === "none") {
+    lines.push({ code: ACC.COGS, debit: r2(s.cost), narration: "Cost of goods sold" });
+    lines.push({ code: ACC.INVENTORY, credit: r2(s.cost), narration: "Inventory issued (COGS)" });
+  } else if (cogsMode === "goodsInTransit") {
+    lines.push({ code: ACC.COGS, debit: r2(s.cost), narration: "Cost of goods sold (reclassified from Goods in Transit)" });
+    lines.push({ code: ACC.INVENTORY_IN_TRANSIT, credit: r2(s.cost), narration: "Goods in Transit cleared" });
+  } // "direct": already fully posted (Dr COGS / Cr Inventory) by the Dispatch Accounting Voucher — nothing more to do here.
+  if (s.clearingSettlement && s.clearingSettlement.amount > 0) {
+    lines.push({ code: s.clearingSettlement.code, debit: r2(s.clearingSettlement.amount), narration: "Dispatch clearing settled (invoice posted)" });
+  }
   if (s.roundOff > 0.004) lines.push({ code: ACC.ROUND_OFF, credit: r2(s.roundOff), narration: "Round off gain" });
   else if (s.roundOff < -0.004) lines.push({ code: ACC.ROUND_OFF, debit: r2(-s.roundOff), narration: "Round off loss" });
   return postJournal(tx, {

@@ -60,6 +60,18 @@ export interface PreparedSale {
   // Central Discount Engine — automatic rule-based discounts from Discount Management.
   // `taxableReduction` = the pre-tax (ex-GST) discount posted as "Discount Allowed".
   engineDiscount: number; engineApplied: { id: number; code: string; name: string; discountAmount: number; taxableReduction: number; account: string }[];
+  // Non-taxable recoverable charges folded into `total` beyond taxableValue+taxTotal
+  // (e.g. Load & Dispatch's Transit Pass / Vehicle Rent recovery) — each needs its
+  // own GL credit line or the sales journal won't balance against `total`.
+  otherIncome?: { code: string; amount: number; narration: string }[];
+  // Dispatch & Sales Accounting engine (Load & Dispatch only) — settles the
+  // Dispatch Clearing Liability credited by the Dispatch Accounting Voucher,
+  // a direct debit line in this same journal (same pattern GRN Clearing uses
+  // at Purchase Invoice time). Driver Batta posts its own JV at Complete Load
+  // & Dispatch time instead (see postDriverBattaVoucher) — never here.
+  clearingSettlement?: { code: string; amount: number };
+  receivableAlreadyBooked?: boolean;
+  cogsAlreadyBooked?: "none" | "direct" | "goodsInTransit";
 }
 
 /** Validate + compute a sale from a create request (no DB writes). Returns either a
@@ -353,7 +365,8 @@ export async function createSaleTx(
     taxableValue: r2(p.taxableValue + engineTaxableReduction), taxTotal: p.taxTotal, roundOff: p.roundOff, total: p.total, amountPaid: p.amountPaid, cost: r2(totalCost),
     cashAmount, bankAmount, billDiscount: p.billDiscount, loyaltyRedeem: p.loyaltyRedeemValue, couponDiscount: p.couponDiscount, promoDiscount: p.promoDiscount, membershipDiscount: p.membershipDiscount, membershipDiscountCode: p.membershipDiscountCode,
     engineDiscounts: p.engineApplied.filter((e) => e.taxableReduction > 0).map((e) => ({ code: e.account, amount: e.taxableReduction })),
-    giftVoucher: p.giftVoucherAmount, createdBy: user.id,
+    giftVoucher: p.giftVoucherAmount, createdBy: user.id, otherIncome: p.otherIncome, clearingSettlement: p.clearingSettlement,
+    receivableAlreadyBooked: p.receivableAlreadyBooked, cogsAlreadyBooked: p.cogsAlreadyBooked,
   });
   if (bankAmount > 0 && p.bankId) await recordBankMovement(tx, { tenantId: user.tenantId, businessId: seg.businessId ?? null, branchId: seg.branchId ?? null, userId: user.id, userName: null }, { bankId: p.bankId, bankName: p.bankName, bankAccount: p.bankAccount, date: p.saleDate, direction: "in", amount: bankAmount, mode: p.paymentMode, reference: invoiceNo, sourceType: "Sale", sourceId: sale.id, sourceNo: invoiceNo, partyName: p.customerName, journalId: null, narration: `Sales ${invoiceNo}` });
 

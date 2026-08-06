@@ -57,6 +57,15 @@ export const SYSTEM_ACCOUNTS: SeedAccount[] = [
   { code: "1150", name: "Advance to Suppliers", type: "Asset", group: "Current Asset", normalBalance: "Debit" },
   { code: "1160", name: "Advance to Employees", type: "Asset", group: "Current Asset", normalBalance: "Debit" },
   { code: "1170", name: "Security Deposits Paid", type: "Asset", group: "Current Asset", normalBalance: "Debit" },
+  // --- Dispatch operational-charge recoveries (Load & Dispatch) ---
+  { code: "3280", name: "Transit Pass Recovery", type: "Income", group: "Operating Income", normalBalance: "Credit" },
+  { code: "3290", name: "Vehicle Rent Recovery", type: "Income", group: "Operating Income", normalBalance: "Credit" },
+  // --- Dispatch & Sales Accounting engine (configurable dual-stage posting) ---
+  { code: "2170", name: "Dispatch Clearing Liability", type: "Liability", group: "Current Liability", normalBalance: "Credit" },
+  { code: "4410", name: "Driver Batta Expense", type: "Expense", group: "Indirect Expense", normalBalance: "Debit" },
+  { code: "4420", name: "Vehicle Rent Expense", type: "Expense", group: "Indirect Expense", normalBalance: "Debit" },
+  { code: "3295", name: "Operating Charges Recovery", type: "Income", group: "Operating Income", normalBalance: "Credit" },
+  { code: "4430", name: "Operating Expense — Dispatch", type: "Expense", group: "Indirect Expense", normalBalance: "Debit" },
 ];
 
 // Convenient code constants used by the posting routines.
@@ -64,6 +73,9 @@ export const ACC = {
   CASH: "1000", BANK: "1010", RECEIVABLE: "1100", INVENTORY: "1200", INVENTORY_IN_TRANSIT: "1210", INPUT_GST: "1300", TDS_RECEIVABLE: "1310", TCS_RECEIVABLE: "1320", TDS_PAYABLE: "2120",
   PAYABLE: "2000", GRN_CLEARING: "2050", OUTPUT_GST: "2100", TCS_PAYABLE: "2110", STORE_CREDIT: "2105", LOYALTY_LIABILITY: "2130", GIFT_VOUCHER_LIABILITY: "2140", OPENING_EQUITY: "3100", SALES: "3000", SALES_RETURN: "3050", SALES_DISCOUNT: "3060", COGS: "4000", INDIRECT_EXPENSE: "4200", SERVICE_EXPENSE: "4300", LOYALTY_EXPENSE: "4400", FIXED_ASSET: "1500", ROUND_OFF: "5000", MISC_INCOME: "3200", MARKETING_EXPENSE: "4210", MEMBERSHIP_INCOME: "3210", STATUTORY_PENALTY: "4250",
   CUSTOMER_ADVANCE: "2150", DEPOSIT_RECEIVED: "2160", SUPPLIER_ADVANCE: "1150", EMPLOYEE_ADVANCE: "1160", DEPOSIT_PAID: "1170",
+  TRANSIT_PASS_RECOVERY: "3280", VEHICLE_RENT_RECOVERY: "3290",
+  DISPATCH_CLEARING_LIABILITY: "2170", DRIVER_BATTA_EXPENSE: "4410", VEHICLE_RENT_EXPENSE: "4420",
+  OPERATING_CHARGES_RECOVERY: "3295", OPERATING_EXPENSE_DISPATCH: "4430",
 } as const;
 
 /** The Dr account for a direct purchase bill, by purchase type. */

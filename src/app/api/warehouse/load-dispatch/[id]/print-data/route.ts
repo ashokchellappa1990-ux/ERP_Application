@@ -111,6 +111,10 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
           pricePerUnit: num(l.rate), taxablePricePerUnit: num(l.qty) ? num(l.taxableValue) / num(l.qty) : num(l.rate),
           gstPct: l.taxPct != null ? num(l.taxPct) : null, gstAmount: num(l.taxAmount), amount: num(l.value),
         })),
+        otherCharges: [
+          { label: "Vehicle Rent", amount: num(doc.vehicleRent) },
+          { label: "Transit Pass", amount: num(doc.transitPassAmount) },
+        ],
         subTotal: num(sale.total) - num(sale.roundOff), roundOff: num(sale.roundOff), total: num(sale.total),
         paymentMode: sale.paymentStatus === "Unpaid" ? "Credit" : (sale.paymentMode || "Cash"),
         hsnRows: Array.from(hsnTotals.entries()).map(([hsn, v]) => ({

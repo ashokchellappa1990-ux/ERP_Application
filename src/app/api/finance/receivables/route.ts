@@ -47,6 +47,32 @@ export async function GET(req: Request) {
     };
   });
 
+  // Un-invoiced dispatch-level receivables — Accounting Configuration's
+  // Customer Receivable Creation can recognize a Customer Receivable at
+  // Complete Load & Dispatch time (Dispatch Accounting Voucher), before any
+  // Sales Invoice exists. Those dispatches have no Sale row at all, so they'd
+  // otherwise be invisible here despite the GL already carrying the balance.
+  if (status === "All" || status === "Credit") {
+    const dispatchWhere: Prisma.LoadDispatchWhereInput = {
+      ...scopeWhere(await getActiveScope(user), { branch: true }),
+      docType: "Customer", saleId: null, dispatchReceivableAmount: { gt: 0 }, deletedAt: null,
+    };
+    if (q) dispatchWhere.OR = [{ dispatchNo: { contains: q } }, { partyName: { contains: q } }];
+    const dispatches = await prisma.loadDispatch.findMany({
+      where: dispatchWhere, orderBy: { id: "desc" }, take: 300,
+      select: { id: true, dispatchNo: true, dispatchDate: true, partyName: true, dispatchReceivableAmount: true },
+    });
+    for (const d of dispatches) {
+      const amount = r2(num(d.dispatchReceivableAmount));
+      rows.push({
+        id: d.id, channel: "Dispatch", refNo: d.dispatchNo, customer: d.partyName ?? "—", gstin: "",
+        docDate: d.dispatchDate, dueDate: "", paymentTerms: "",
+        totalAmount: amount, paidAmount: 0, balanceAmount: amount, status: "Credit", overdue: false,
+        source: "dispatch", loadDispatchId: d.id,
+      });
+    }
+  }
+
   // Outstanding-only rows drive the customer grouping + aging.
   const openR = rows.filter((r) => r.status !== "Paid" && r.balanceAmount > 0.01);
   const { groups, aging } = groupByParty(openR.map((r) => ({ party: r.customer, gstin: r.gstin, billed: r.totalAmount, paid: r.paidAmount, balance: r.balanceAmount, dueDate: r.dueDate || null, overdue: r.overdue })), today);

@@ -126,6 +126,9 @@ export const directCustomerDispatchInput = z.object({
   vehicleRent: z.coerce.number().min(0).default(0),
   transitPassQty: z.coerce.number().min(0).default(0),
   driverBattaMode: z.enum(["Adjustment", "Payment"]).default("Adjustment"),
+  // Only meaningful when driverBattaMode is "Payment" (the business pays the
+  // driver separately) — which account the Driver Batta Expense JV credits.
+  driverBattaPaymentMode: z.string().trim().max(30).optional().nullable(),
   remarks: z.string().trim().max(2000).optional().nullable(),
   items: z.array(loadDispatchItemInput).min(1, "Add at least one item"),
 });
@@ -238,7 +241,8 @@ export interface LoadDispatchDetail {
   bankId: number | null; bankName: string | null; bankAccount: string | null;
   paymentSplits: { mode: string; amount: number; reference?: string | null }[] | null;
   vehicleRent: number; transitPassQty: number | null; transitPassAmount: number;
-  driverBattaAmount: number; driverBattaMode: "Adjustment" | "Payment" | null;
+  driverBattaAmount: number; driverBattaMode: "Adjustment" | "Payment" | null; driverBattaPaymentMode: string | null;
+  dispatchVoucherPosted: boolean; dispatchClearingAmount: number;
   // Once the Sales Invoice has posted — the invoice's own Cash/Card/UPI/Split/Credit
   // sale type, and its outstanding balance (total − amountPaid), read straight
   // off the Sale row rather than guessed from LoadDispatch's own payment intent.

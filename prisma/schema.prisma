@@ -1483,6 +1483,7 @@ model Tenant {
   salesSettings     SalesSetting[]
   purchaseSettings  PurchaseSetting[]
   dispatchConfigurations DispatchConfiguration[]
+  accountingConfigurations AccountingConfiguration[]
   documentFieldConfigs   DocumentFieldConfig[]
   purchaseInvoices  PurchaseInvoice[]
   posSettings       PosSetting[]
@@ -9196,6 +9197,23 @@ model LoadDispatch {
   transitPassQty    Decimal? @db.Decimal(18, 3)
   transitPassAmount Decimal  @default(0) @db.Decimal(18, 2)
   driverBattaAmount Decimal  @default(0) @db.Decimal(18, 2)
+  // Batta Payment Mode captured on the create form when driverBattaMode is
+  // "Payment" (the business pays the driver separately) — Cash | Bank
+  // Transfer | UPI | Cheque | Card. Drives which account the Driver Batta
+  // Expense JV credits (see postDispatchAccountingVoucher/buildPreparedSale).
+  driverBattaPaymentMode String? @db.VarChar(30)
+  // Dispatch & Sales Accounting engine (Accounting Configuration) — set once
+  // by completeLoadDispatch's Dispatch Accounting Voucher, consumed by the
+  // Sales Invoice Voucher later so it settles the clearing liability for the
+  // exact amount and never re-posts Customer Receivable/recoveries already
+  // recognized at Dispatch.
+  dispatchVoucherPosted  Boolean @default(false)
+  dispatchClearingAmount Decimal @default(0) @db.Decimal(18, 2)
+  // Full Customer Receivable amount debited by the Dispatch Accounting
+  // Voucher (Material + GST + recoverable charges) — read by Customer
+  // Receivables (src/app/api/finance/receivables/route.ts) to surface an
+  // un-invoiced dispatch as a pending receivable row (saleId still null).
+  dispatchReceivableAmount Decimal @default(0) @db.Decimal(18, 2)
 
   createdBy     Int?
   createdByName String? @db.VarChar(160)
@@ -9276,6 +9294,28 @@ model DispatchConfiguration {
 
   @@unique([tenantId, businessId, branchId])
   @@map("dispatch_configurations")
+}
+
+/// Dispatch & Sales Accounting engine configuration — when Customer
+/// Receivable/Sales Revenue/GST/Inventory-COGS get recognized (On Dispatch vs
+/// On Sales Invoice), the Dispatch Accounting Voucher on/off switch, Driver
+/// Batta/Transit Pass/Vehicle Rent/other-charges accounting treatment, and the
+/// GL Mapping (semantic key -> ledger account code). Same scoped-JSON-blob
+/// pattern as DispatchConfiguration. See src/lib/settings/accountingConfig.ts.
+model AccountingConfiguration {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  businessId Int?
+  branchId   Int?
+
+  config Json // { fields: {...timing/mode toggles...}, glMapping: Record<string,string> }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, businessId, branchId])
+  @@map("accounting_configurations")
 }
 
 /// Document Field Settings — screen-wise field enable/mandatory toggles (Sales
