@@ -25,8 +25,12 @@ export interface GrnRow {
   totalQty: number;
   totalValue: number;
   createdAt: string;
+  supplierInvoiceNo: string;
+  paymentStatus: string;
+  invoiceRecorded: boolean;
+  vehicleNo: string;
 }
-export interface GrnListStats { total: number; draft: number; posted: number; totalValue: number; totalQty: number }
+export interface GrnListStats { total: number; draft: number; posted: number; totalValue: number; totalQty: number; scope: "today" | "filtered" }
 export interface GrnListResponse { ok: true; rows: GrnRow[]; stats: GrnListStats }
 
 /* --------------------------------------------------------------- detail */
@@ -50,9 +54,10 @@ export interface GrnDetailLine {
   expiryDate: string;
   remarks: string;
   qrMode: "shared" | "unique";
-  qrStatus: "Pending" | "Generated";
+  qrStatus: "Pending" | "Generated" | "Not Required";
   qrGeneratedCount: number;
   printedQty: number;
+  qrRequired: boolean;
 }
 
 export interface GrnDetail {
@@ -92,6 +97,15 @@ export interface GrnDetail {
   freightPaidBy: string;
   numPackages: number | string;
   transportRemarks: string;
+  tareWeight: number | string;
+  grossWeight: number | string;
+  netWeight: number | string;
+  weightUom: string;
+  emptyWeight: number | string;
+  emptyWeightAt: string;
+  emptyWeightRemarks: string;
+  invoiceRecorded: boolean;
+  purchaseInvoiceId: number | null;
   totalQty: number;
   totalValue: number;
   lineCount: number;

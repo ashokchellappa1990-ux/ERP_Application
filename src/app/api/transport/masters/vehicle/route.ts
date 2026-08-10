@@ -13,11 +13,11 @@ function toRow(r: {
   id: number; vehicleNo: string; vehicleType: string | null; capacity: Prisma.Decimal;
   capacityUnit: string | null; transportCompanyId: number | null; ownerType: string;
   status: string; remarks: string | null;
-}) {
+}, nameById: Map<number, string>) {
   return {
     id: r.id, vehicleNo: r.vehicleNo, vehicleType: r.vehicleType, capacity: Number(r.capacity),
     capacityUnit: r.capacityUnit, transportCompanyId: r.transportCompanyId, ownerType: r.ownerType,
-    status: r.status, remarks: r.remarks,
+    status: r.status, remarks: r.remarks, transportCompanyName: r.transportCompanyId != null ? nameById.get(r.transportCompanyId) ?? null : null,
   };
 }
 
@@ -38,7 +38,10 @@ export async function GET(req: Request) {
   if (status && status !== "All") where.status = status;
 
   const rows = await prisma.vehicleMaster.findMany({ where, orderBy: { id: "desc" }, take: 500 });
-  return NextResponse.json({ ok: true, rows: rows.map(toRow) });
+  const companyIds = Array.from(new Set(rows.map((r) => r.transportCompanyId).filter((id): id is number => id != null)));
+  const companies = companyIds.length ? await prisma.transportCompany.findMany({ where: { id: { in: companyIds } }, select: { id: true, name: true } }) : [];
+  const nameById = new Map(companies.map((c) => [c.id, c.name]));
+  return NextResponse.json({ ok: true, rows: rows.map((r) => toRow(r, nameById)) });
 }
 
 // POST /api/transport/masters/vehicle — create a vehicle.
@@ -69,7 +72,8 @@ export async function POST(req: Request) {
       summary: `Created vehicle ${created.vehicleNo}`, meta: { vehicleNo: created.vehicleNo },
       businessId: seg.businessId ?? null, branchId: seg.branchId ?? null, ip: requestMeta(req).ip,
     });
-    return NextResponse.json({ ok: true, id: created.id, row: toRow(created), message: "Vehicle created." }, { status: 201 });
+    const companyName = created.transportCompanyId != null ? (await prisma.transportCompany.findUnique({ where: { id: created.transportCompanyId }, select: { name: true } }))?.name ?? null : null;
+    return NextResponse.json({ ok: true, id: created.id, row: toRow(created, companyName != null ? new Map([[created.transportCompanyId!, companyName]]) : new Map()), message: "Vehicle created." }, { status: 201 });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
       return NextResponse.json({ ok: false, message: "A vehicle with this number already exists.", errors: { vehicleNo: "Already in use." } }, { status: 409 });

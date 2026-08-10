@@ -19,10 +19,12 @@ export const DEFAULT_PURCHASE_INVOICE_CONFIG: PurchaseConfigData = {
     defaultCurrency: "INR",
     defaultPaymentTerms: "Net 30",
     defaultCreditDays: "30",
+    truckWeightUom: "Kg",
   },
   flags: {
     // General
     enablePurchaseInvoice: true,
+    enableTruckWeightGrn: false,
     autoCreatePiDuringGrn: false,
     allowPiAfterGrn: true,
     // Mandatory fields

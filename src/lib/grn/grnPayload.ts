@@ -31,6 +31,7 @@ export interface GrnHeader {
   transporterName: string | null; transportMode: string | null; vehicleNo: string | null;
   lrNo: string | null; ewayBillNo: string | null; freightPaidBy: string | null;
   numPackages: number | null; transportRemarks: string | null;
+  tareWeight: number | null; grossWeight: number | null; netWeight: number | null; weightUom: string | null;
   totalQty: number; totalValue: number; lineCount: number;
 }
 
@@ -115,6 +116,7 @@ export function buildGrnPayload(body: unknown): BuiltGrn | { error: string } {
     lrNo: s(b.lrNo), ewayBillNo: s(b.ewayBillNo), freightPaidBy: s(b.freightPaidBy),
     numPackages: b.numPackages != null && b.numPackages !== "" ? Math.max(0, Math.round(Number(b.numPackages))) : null,
     transportRemarks: s(b.transportRemarks),
+    tareWeight: dec(b.tareWeight), grossWeight: dec(b.grossWeight), netWeight: dec(b.netWeight), weightUom: s(b.weightUom),
     totalQty: r2(totalQty), totalValue: grandTotal, lineCount: lines.length,
   };
 

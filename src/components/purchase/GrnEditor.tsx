@@ -11,13 +11,14 @@ import { useGeneralConfig } from "@/components/settings/GeneralConfigProvider";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 
-interface Candidate { productId: number; productName: string; sku: string; uom: string; category: string; mrp: number; gst: number; invBatch: boolean; invMfg: boolean; invExpiry: boolean; invSerial: boolean }
+interface Candidate { productId: number; productName: string; sku: string; uom: string; category: string; mrp: number; gst: number; invBatch: boolean; invMfg: boolean; invExpiry: boolean; invSerial: boolean; qrRequired: boolean }
 interface Line extends Candidate {
   key: string; qty: string; rate: string; sellingPrice: string; profitPct: string; discPct: string; taxPct: string; mrpStr: string;
   batchNo: string; mfgDate: string; expiryDate: string; remarks: string; qrMode: "shared" | "unique"; expanded: boolean;
   serials: string[]; // manufacturer serials for serial-managed products
 }
 interface SupplierRow { id: number; name: string; gstin: string; contactPerson: string; phone: string }
+interface VehicleHit { id: number; vehicleNo: string; transportCompanyId: number | null; transportCompanyName: string | null }
 interface PoHit { id: number; poNo: string; poDate: string; supplier: string; itemCount: number; netAmount: number }
 interface PoLoad { id: number; poNo: string; supplier: string; supplierGstin: string; supplierContact: string; warehouse: string; lines: { productId: number | null; description: string; sku: string; hsn: string; uom: string; qty: number; rate: number; taxPct: number; discPct: number }[] }
 const WAREHOUSES = ["Main Store", "Warehouse A", "Cold Storage", "Back Office"];
@@ -25,15 +26,24 @@ let keySeq = 1;
 const parseGst = (v: unknown) => { const n = parseFloat(String(v ?? "").replace("%", "")); return Number.isFinite(n) ? n : 0; };
 
 type TrackFlags = { invBatch?: boolean; invMfg?: boolean; invExpiry?: boolean; invSerial?: boolean };
-function flatten(rows: Array<{ id: number; name: string; code: string; category: string; uom: string; mrp: number; gst: string; variantCount: number; variants: ({ id: number; name: string; code: string; sku: string; mrp: number } & TrackFlags)[] } & TrackFlags>): Candidate[] {
+function flatten(rows: Array<{ id: number; name: string; code: string; category: string; uom: string; mrp: number; gst: string; variantCount: number; qrRequired?: boolean; variants: ({ id: number; name: string; code: string; sku: string; mrp: number; qrRequired?: boolean } & TrackFlags)[] } & TrackFlags>): Candidate[] {
   const out: Candidate[] = [];
   for (const p of rows) {
     const gst = parseGst(p.gst);
     // Variants inherit the parent's tracking flags unless they carry their own.
-    if (p.variantCount > 0) for (const v of p.variants) out.push({ productId: v.id, productName: v.name, sku: v.sku || v.code, uom: p.uom, category: p.category, mrp: v.mrp, gst, invBatch: !!(v.invBatch ?? p.invBatch), invMfg: !!(v.invMfg ?? p.invMfg), invExpiry: !!(v.invExpiry ?? p.invExpiry), invSerial: !!(v.invSerial ?? p.invSerial) });
-    else out.push({ productId: p.id, productName: p.name, sku: p.code, uom: p.uom, category: p.category, mrp: p.mrp, gst, invBatch: !!p.invBatch, invMfg: !!p.invMfg, invExpiry: !!p.invExpiry, invSerial: !!p.invSerial });
+    if (p.variantCount > 0) for (const v of p.variants) out.push({ productId: v.id, productName: v.name, sku: v.sku || v.code, uom: p.uom, category: p.category, mrp: v.mrp, gst, invBatch: !!(v.invBatch ?? p.invBatch), invMfg: !!(v.invMfg ?? p.invMfg), invExpiry: !!(v.invExpiry ?? p.invExpiry), invSerial: !!(v.invSerial ?? p.invSerial), qrRequired: !!(v.qrRequired ?? p.qrRequired) });
+    else out.push({ productId: p.id, productName: p.name, sku: p.code, uom: p.uom, category: p.category, mrp: p.mrp, gst, invBatch: !!p.invBatch, invMfg: !!p.invMfg, invExpiry: !!p.invExpiry, invSerial: !!p.invSerial, qrRequired: !!p.qrRequired });
   }
   return out;
+}
+/** Truck-weight → line Qty. Same unit → as-is; Kg↔Ton converts; anything else is unconverted. */
+function convertWeightToQty(netWeight: number, weightUom: string, productUom: string): number {
+  const w = weightUom.trim().toLowerCase();
+  const p = productUom.trim().toLowerCase();
+  if (w === p) return netWeight;
+  if (w === "kg" && p === "ton") return netWeight / 1000;
+  if (w === "ton" && p === "kg") return netWeight * 1000;
+  return netWeight;
 }
 const n = (v: unknown) => Number(v) || 0;
 const lineNet = (l: Line) => { const q = n(l.qty), r = n(l.rate), d = n(l.discPct); return q * r * (1 - d / 100); };
@@ -117,8 +127,42 @@ export function GrnEditor() {
   const [extra, setExtra] = useState<Extra>(EMPTY_EXTRA);
   const setE = <K extends keyof Extra>(k: K, v: Extra[K]) => setExtra((p) => ({ ...p, [k]: v }));
 
+  // Purchase Configuration — gates the invoice/PO fields and truck-weight capture below.
+  const [enablePurchaseInvoice, setEnablePurchaseInvoice] = useState(true);
+  const [enableTruckWeightGrn, setEnableTruckWeightGrn] = useState(false);
+  const [truckWeightUom, setTruckWeightUom] = useState("Kg");
+  useEffect(() => {
+    (async () => {
+      try {
+        const j = await fetch("/api/settings/purchase", { cache: "no-store" }).then((r) => r.json());
+        if (j.ok && j.config) {
+          setEnablePurchaseInvoice(j.config.flags?.enablePurchaseInvoice !== false);
+          setEnableTruckWeightGrn(!!j.config.flags?.enableTruckWeightGrn);
+          setTruckWeightUom(j.config.fields?.truckWeightUom || "Kg");
+        }
+      } catch { /* keep defaults */ }
+    })();
+  }, []);
+  // Vehicle Weighment — Tare/Gross captured inline; Net = Gross - Tare. Only ever
+  // auto-fills Qty when the GRN has exactly one line (mirrors Direct Customer Dispatch).
+  const [tareWeight, setTareWeight] = useState("");
+  const [grossWeight, setGrossWeight] = useState("");
+  const netWeight = n(grossWeight) > 0 || n(tareWeight) > 0 ? +(n(grossWeight) - n(tareWeight)).toFixed(3) : null;
+  useEffect(() => {
+    if (!enableTruckWeightGrn || netWeight == null || netWeight <= 0) return;
+    setLines((prev) => {
+      if (prev.length !== 1 || !prev[0].productId) return prev;
+      const qty = String(+convertWeightToQty(netWeight, truckWeightUom, prev[0].uom).toFixed(3));
+      return prev[0].qty === qty ? prev : [{ ...prev[0], qty }];
+    });
+    // Re-fires when a line is added/removed (lines.length) or the single line's
+    // product changes (productId) — not just when the weight/config itself changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [netWeight, enableTruckWeightGrn, truckWeightUom, lines.length, lines[0]?.productId]);
+
   // Supplier master (dropdown + inline add-new)
   const [suppliers, setSuppliers] = useState<SupplierRow[]>([]);
+  const [supplierId, setSupplierId] = useState<number | "">("");
   const [addingSupplier, setAddingSupplier] = useState(false);
   const [newSup, setNewSup] = useState({ name: "", gstin: "", contactPerson: "", phone: "" });
   const loadSuppliers = async () => {
@@ -126,6 +170,14 @@ export function GrnEditor() {
     if (j.ok) setSuppliers(j.suppliers);
   };
   useEffect(() => { loadSuppliers(); }, []);
+  // Resolve supplierId once the supplier list arrives, for GRNs/POs loaded before it did.
+  useEffect(() => {
+    if (supplier && supplierId === "") {
+      const sup = suppliers.find((s) => s.name === supplier);
+      if (sup) setSupplierId(sup.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suppliers, supplier]);
   useEffect(() => {
     (async () => {
       try { const p = await fetch("/api/settings/pos", { cache: "no-store" }).then((r) => r.json()); if (p.ok && p.config?.taxMethod) setTaxIncl(p.config.taxMethod !== "exclusive"); } catch { /* default inclusive */ }
@@ -134,6 +186,7 @@ export function GrnEditor() {
   function pickSupplier(name: string) {
     setSupplier(name);
     const sup = suppliers.find((s) => s.name === name);
+    setSupplierId(sup?.id ?? "");
     if (sup) { setSupplierGstin(sup.gstin); setSupplierContact(sup.phone || sup.contactPerson); }
   }
   async function saveSupplier() {
@@ -142,7 +195,7 @@ export function GrnEditor() {
     const j = await fetch("/api/masters/suppliers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newSup) }).then((r) => r.json()).catch(() => ({}));
     if (j.ok) {
       await loadSuppliers();
-      setSupplier(name); setSupplierGstin(newSup.gstin); setSupplierContact(newSup.phone);
+      setSupplier(name); setSupplierId(j.id ?? ""); setSupplierGstin(newSup.gstin); setSupplierContact(newSup.phone);
       setNewSup({ name: "", gstin: "", contactPerson: "", phone: "" });
       setAddingSupplier(false);
     }
@@ -160,13 +213,13 @@ export function GrnEditor() {
       if (!j.ok || !j.data) { toaster.error("Could not load that purchase order."); return; }
       const d: PoLoad = j.data;
       setPoNo(d.poNo); setPoMatches(null); setPoQuery(d.poNo);
-      if (d.supplier) setSupplier(d.supplier);
+      if (d.supplier) { setSupplier(d.supplier); setSupplierId(suppliers.find((s) => s.name === d.supplier)?.id ?? ""); }
       if (d.supplierGstin) setSupplierGstin(d.supplierGstin);
       if (d.supplierContact) setSupplierContact(d.supplierContact);
       if (d.warehouse && WAREHOUSES.includes(d.warehouse)) setWarehouse(d.warehouse);
       setLines(d.lines.map((l) => ({
         key: `k${keySeq++}`, productId: l.productId ?? 0, productName: l.description, sku: l.sku || "", uom: l.uom || "", category: "", mrp: 0, gst: l.taxPct || 0,
-        invBatch: false, invMfg: false, invExpiry: false, invSerial: false,
+        invBatch: false, invMfg: false, invExpiry: false, invSerial: false, qrRequired: true,
         qty: String(l.qty || ""), rate: l.rate ? String(l.rate) : "", sellingPrice: "", profitPct: "",
         discPct: l.discPct ? String(l.discPct) : "", taxPct: l.taxPct ? String(l.taxPct) : "", mrpStr: "",
         batchNo: "", mfgDate: "", expiryDate: "", remarks: "", qrMode: "shared", expanded: false, serials: [],
@@ -175,6 +228,25 @@ export function GrnEditor() {
       if (ids.length) loadTrackFlags(ids);
       toaster.success(`Loaded ${d.lines.length} line(s) from ${d.poNo}.`);
     } catch { toaster.error("Could not reach the server."); }
+  }
+
+  // ---- Vehicle No type-ahead (Transport & Logistics) — picking a vehicle from the
+  // master auto-fills the Transporter Name from its linked transport company. ----
+  const [vehicleHits, setVehicleHits] = useState<VehicleHit[] | null>(null);
+  const vehicleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  async function searchVehicles(q: string) {
+    try { const j = await fetch(`/api/transport/masters/vehicle?q=${encodeURIComponent(q.trim())}&status=Active`, { cache: "no-store" }).then((r) => r.json()); if (j.ok) setVehicleHits((j.rows ?? []).slice(0, 20)); } catch { /* ignore */ }
+  }
+  function onVehicleQuery(v: string) {
+    setE("vehicleNo", v);
+    if (vehicleTimer.current) clearTimeout(vehicleTimer.current);
+    if (!v.trim()) { setVehicleHits(null); return; }
+    vehicleTimer.current = setTimeout(() => searchVehicles(v), 250);
+  }
+  function pickVehicle(hit: VehicleHit) {
+    setE("vehicleNo", hit.vehicleNo);
+    if (hit.transportCompanyName) setE("transporterName", hit.transportCompanyName);
+    setVehicleHits(null);
   }
 
   const [query, setQuery] = useState("");
@@ -193,7 +265,7 @@ export function GrnEditor() {
       const j = await fetch(`/api/purchase/grn/${id}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
       if (!j.ok) return;
       const d = j.data;
-      setGrnId(d.id); setGrnNo(d.grnNo); setGrnDate(d.grnDate); setSupplier(d.supplier); setSupplierGstin(d.supplierGstin);
+      setGrnId(d.id); setGrnNo(d.grnNo); setGrnDate(d.grnDate); setSupplier(d.supplier); setSupplierId(suppliers.find((s) => s.name === d.supplier)?.id ?? ""); setSupplierGstin(d.supplierGstin);
       setSupplierContact(d.supplierContact); setSupplierInvoiceNo(d.supplierInvoiceNo); setSupplierInvoiceDate(d.supplierInvoiceDate);
       setPoNo(d.poNo); setWarehouse(d.warehouse || WAREHOUSES[0]); setNotes(d.notes);
       const sv = (v: unknown) => (v === null || v === undefined || v === "" ? "" : String(v));
@@ -205,10 +277,14 @@ export function GrnEditor() {
         paymentTerms: d.paymentTerms || "", creditDays: sv(d.creditDays), dueDate: d.dueDate || "",
         transporterName: d.transporterName || "", transportMode: d.transportMode || "", vehicleNo: d.vehicleNo || "", lrNo: d.lrNo || "", ewayBillNo: d.ewayBillNo || "", freightPaidBy: d.freightPaidBy || "", numPackages: sv(d.numPackages), transportRemarks: d.transportRemarks || "",
       });
+      // Re-open a truck-weight GRN with its captured weighment values (net weight stays derived).
+      if (d.weightUom) {
+        setTareWeight(sv(d.tareWeight)); setGrossWeight(sv(d.grossWeight)); setTruckWeightUom(String(d.weightUom));
+      }
       setLines(d.lines.map((l: Record<string, unknown>) => ({
         key: `k${keySeq++}`, productId: l.productId as number, productName: l.productName as string, sku: (l.sku as string) || "",
         uom: (l.uom as string) || "", category: (l.category as string) || "", mrp: Number(l.mrp) || 0, gst: Number(l.taxPct) || 0,
-        invBatch: !!l.invBatch, invMfg: !!l.invMfg, invExpiry: !!l.invExpiry, invSerial: !!l.invSerial,
+        invBatch: !!l.invBatch, invMfg: !!l.invMfg, invExpiry: !!l.invExpiry, invSerial: !!l.invSerial, qrRequired: l.qrRequired !== false,
         qty: String(l.qty ?? ""), rate: l.rate === "" ? "" : String(l.rate), sellingPrice: l.sellingPrice === "" ? "" : String(l.sellingPrice),
         profitPct: l.sellingPrice && l.rate ? String(profitFromSelling(Number(l.rate), Number(l.sellingPrice), Number(l.taxPct) || 0, taxIncl)) : "",
         discPct: l.discPct === "" ? "" : String(l.discPct), taxPct: l.taxPct === "" ? "" : String(l.taxPct), mrpStr: l.mrp === "" ? "" : String(l.mrp),
@@ -257,9 +333,17 @@ export function GrnEditor() {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  function addLine(c: Candidate) {
-    // Tax % auto-loaded from the product master; selling price defaults to MRP.
-    const cost = c.mrp ? Math.round(c.mrp * 0.7) : 0;
+  async function addLine(c: Candidate) {
+    // Purchase price prefers the Supplier Product Price master (per-supplier rate);
+    // falls back to the 70%-of-MRP heuristic when no supplier is picked or no match exists.
+    let cost = c.mrp ? Math.round(c.mrp * 0.7) : 0;
+    if (supplierId !== "") {
+      try {
+        const j = await fetch(`/api/masters/purchase/supplier-product-price?supplierId=${supplierId}&productId=${c.productId}`, { cache: "no-store" }).then((r) => r.json());
+        const match = j.ok ? (j.rows ?? []).find((r: { status: string }) => r.status === "Active") ?? j.rows?.[0] : null;
+        if (match) cost = Number(match.purchasePrice) || cost;
+      } catch { /* fall back to the MRP heuristic */ }
+    }
     const profit = cost > 0 && c.mrp ? String(profitFromSelling(cost, c.mrp, c.gst, taxIncl)) : "";
     // Auto-expand the batch section when the product is batch/mfg/expiry tracked so
     // the required fields are visible immediately.
@@ -292,6 +376,11 @@ export function GrnEditor() {
   };
 
   const valid = useMemo(() => lines.filter((l) => Number(l.qty) > 0), [lines]);
+  // QR Code / Batch columns only show up when at least one line actually needs them
+  // (product master's QR Code Required / batch-mfg-expiry-serial tracking).
+  const showQrCol = lines.some((l) => l.qrRequired);
+  const showBatchCol = lines.some((l) => { const r = reqFor(l); return r.batch || r.mfg || r.expiry || r.serial; });
+  const lineColSpan = 10 + (showQrCol ? 1 : 0) + (showBatchCol ? 1 : 0);
   const totalQty = valid.reduce((s, l) => s + Number(l.qty), 0);
   const lineTax = (l: Line) => (gstApplicable && gstMode === "line" ? (lineNet(l) * n(l.taxPct)) / 100 : 0);
   const lineDisplay = (l: Line) => +(lineNet(l) + lineTax(l)).toFixed(2);
@@ -341,6 +430,8 @@ export function GrnEditor() {
       grnDate, supplier, supplierGstin, supplierContact, supplierInvoiceNo, supplierInvoiceDate, poNo, warehouse, notes, status,
       gstMode: gstApplicable ? gstMode : "line", ...extra,
       gstPct: gstApplicable && gstMode === "invoice" ? extra.gstPct : "",
+      tareWeight: enableTruckWeightGrn ? tareWeight : "", grossWeight: enableTruckWeightGrn ? grossWeight : "",
+      netWeight: enableTruckWeightGrn && netWeight != null ? String(netWeight) : "", weightUom: enableTruckWeightGrn ? truckWeightUom : "",
       lines: lines.map((l) => ({ productId: l.productId, productName: l.productName, sku: l.sku, uom: l.uom, category: l.category, qty: l.qty, rate: l.rate, sellingPrice: l.sellingPrice, discPct: l.discPct, taxPct: gstApplicable && gstMode === "line" ? l.taxPct : "", mrp: l.mrpStr, batchNo: l.batchNo, mfgDate: l.mfgDate, expiryDate: l.expiryDate, remarks: l.remarks, qrMode: reqFor(l).serial ? "unique" : l.qrMode, serials: reqFor(l).serial ? l.serials.map((s) => s.trim()).filter(Boolean) : undefined })),
     };
     try {
@@ -423,32 +514,58 @@ export function GrnEditor() {
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="GRN No."><input readOnly value={grnNo || "Auto on save"} className={cn(inp, "bg-surface-2 font-mono text-primary")} /></Field>
             <Field label="GRN Date *"><input type="date" value={grnDate} onChange={(e) => setGrnDate(e.target.value)} className={inp} /></Field>
-            <Field label="Supplier Invoice No."><input value={supplierInvoiceNo} onChange={(e) => setSupplierInvoiceNo(e.target.value)} placeholder="INV-1234" className={inp} /></Field>
-            <Field label="Invoice Date"><input type="date" value={supplierInvoiceDate} onChange={(e) => setSupplierInvoiceDate(e.target.value)} className={inp} /></Field>
-            <Field label="PO No."><input value={poNo} onChange={(e) => setPoNo(e.target.value)} placeholder="PO-0007" className={inp} /></Field>
+            {enablePurchaseInvoice && (
+              <>
+                <Field label="Supplier Invoice No."><input value={supplierInvoiceNo} onChange={(e) => setSupplierInvoiceNo(e.target.value)} placeholder="INV-1234" className={inp} /></Field>
+                <Field label="Invoice Date"><input type="date" value={supplierInvoiceDate} onChange={(e) => setSupplierInvoiceDate(e.target.value)} className={inp} /></Field>
+                <Field label="PO No."><input value={poNo} onChange={(e) => setPoNo(e.target.value)} placeholder="PO-0007" className={inp} /></Field>
+              </>
+            )}
             <Field label="Notes"><input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional" className={inp} /></Field>
           </div>
         </SectionCard>
       </div>
 
-      {/* Product picker — visually distinct add bar */}
-      <div ref={pickerRef} className="relative rounded-2xl border border-primary/30 bg-primary-subtle/25 p-3 shadow-sm">
-        <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-primary"><Plus className="h-3.5 w-3.5" /> Add Products to Receipt</label>
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-primary/60" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} onFocus={() => candidates.length && setOpenPicker(true)} placeholder="Search product by name, code or SKU to add a line…" className="h-11 w-full rounded-lg border border-primary/40 bg-card pl-11 pr-3 text-sm shadow-sm placeholder:text-subtle focus:border-primary focus:outline-none focus:shadow-focus" />
-        </div>
-        {openPicker && candidates.length > 0 && (
-          <div className="absolute left-3 right-3 z-30 mt-1.5 max-h-72 overflow-y-auto rounded-xl border border-border bg-card p-1.5 shadow-xl">
-            {candidates.map((c) => (
-              <button key={c.productId} onClick={() => addLine(c)} className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-primary-subtle/50">
-                <span className="min-w-0"><span className="block truncate text-sm font-medium text-foreground">{c.productName}</span><span className="font-mono text-2xs text-subtle">{c.sku || "—"} · {c.category || "—"}</span></span>
-                <span className="flex items-center gap-2 text-2xs text-muted"><span>MRP {inr(c.mrp || 0)}</span><Plus className="h-4 w-4 text-primary" /></span>
-              </button>
-            ))}
+      {enableTruckWeightGrn && (
+        <SectionCard icon={Truck} title="Vehicle Weighment">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label={`Tare Weight (${truckWeightUom})`}><input type="number" min={0} value={tareWeight} onChange={(e) => setTareWeight(e.target.value)} placeholder="0" className={inp} /></Field>
+            <Field label={`Gross Weight (${truckWeightUom})`}><input type="number" min={0} value={grossWeight} onChange={(e) => setGrossWeight(e.target.value)} placeholder="0" className={inp} /></Field>
+            <Field label={`Net Weight (${truckWeightUom})`}><input readOnly value={netWeight != null ? String(netWeight) : ""} placeholder="0" className={cn(inp, "bg-surface-2 font-semibold text-primary")} /></Field>
           </div>
-        )}
-      </div>
+          {lines.length === 1 && (
+            <p className="mt-2 flex flex-wrap items-center justify-between gap-2 text-2xs text-muted">
+              <span>Net Weight auto-fills the line&apos;s Qty below (converted to its own UOM).</span>
+              {netWeight != null && lines[0].uom && <span className="font-semibold text-primary">{netWeight} {truckWeightUom} = {+convertWeightToQty(netWeight, truckWeightUom, lines[0].uom).toFixed(3)} {lines[0].uom}</span>}
+            </p>
+          )}
+          {lines.length > 1 && <p className="mt-2 text-2xs text-warning">Qty auto-fill from weight only applies with a single product line — enter Qty manually for each line.</p>}
+        </SectionCard>
+      )}
+
+      {/* Product picker — visually distinct add bar. Truck-weight GRN is one product
+          per receipt: once a line is added, the search hides until it's removed. */}
+      {(!enableTruckWeightGrn || lines.length === 0) ? (
+        <div ref={pickerRef} className="relative rounded-2xl border border-primary/30 bg-primary-subtle/25 p-3 shadow-sm">
+          <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-primary"><Plus className="h-3.5 w-3.5" /> Add Products to Receipt</label>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-primary/60" />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} onFocus={() => candidates.length && setOpenPicker(true)} placeholder="Search product by name, code or SKU to add a line…" className="h-11 w-full rounded-lg border border-primary/40 bg-card pl-11 pr-3 text-sm shadow-sm placeholder:text-subtle focus:border-primary focus:outline-none focus:shadow-focus" />
+          </div>
+          {openPicker && candidates.length > 0 && (
+            <div className="absolute left-3 right-3 z-30 mt-1.5 max-h-72 overflow-y-auto rounded-xl border border-border bg-card p-1.5 shadow-xl">
+              {candidates.map((c) => (
+                <button key={c.productId} onClick={() => addLine(c)} className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-primary-subtle/50">
+                  <span className="min-w-0"><span className="block truncate text-sm font-medium text-foreground">{c.productName}</span><span className="font-mono text-2xs text-subtle">{c.sku || "—"} · {c.category || "—"}</span></span>
+                  <span className="flex items-center gap-2 text-2xs text-muted"><span>MRP {inr(c.mrp || 0)}</span><Plus className="h-4 w-4 text-primary" /></span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <p className="rounded-xl border border-border bg-surface-2 px-4 py-2.5 text-2xs text-muted">Truck Weight Based GRN receives one product per document — remove the line below to pick a different product.</p>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -469,18 +586,8 @@ export function GrnEditor() {
                 <button key={v} type="button" onClick={() => setGstApplicable(v === "yes")} className={cn("px-3 py-1 font-semibold transition", (gstApplicable ? "yes" : "no") === v ? "bg-primary text-white" : "bg-surface text-muted hover:bg-surface-2")}>{lbl}</button>
               ))}
             </div>
-            {gstApplicable && (
-              <>
-                <span className="ml-1 font-medium text-muted">applies:</span>
-                <div className="inline-flex overflow-hidden rounded-md border border-border">
-                  {([["line", "Per line item"], ["invoice", "Whole invoice"]] as const).map(([m, lbl]) => (
-                    <button key={m} type="button" onClick={() => setGstMode(m)} className={cn("px-2.5 py-1 font-semibold transition", gstMode === m ? "bg-primary text-white" : "bg-surface text-muted hover:bg-surface-2")}>{lbl}</button>
-                  ))}
-                </div>
-                {gstMode === "invoice" && (
-                  <span className="ml-1 inline-flex items-center gap-1">GST %<input type="number" min={0} value={extra.gstPct} onChange={(e) => setE("gstPct", e.target.value)} placeholder="0" className="h-7 w-16 rounded border border-border-strong bg-surface px-2 text-right text-xs focus:border-primary focus:outline-none" /></span>
-                )}
-              </>
+            {gstApplicable && gstMode === "invoice" && (
+              <span className="ml-1 inline-flex items-center gap-1">GST %<input type="number" min={0} value={extra.gstPct} onChange={(e) => setE("gstPct", e.target.value)} placeholder="0" className="h-7 w-16 rounded border border-border-strong bg-surface px-2 text-right text-xs focus:border-primary focus:outline-none" /></span>
             )}
           </div>
         </div>
@@ -499,46 +606,54 @@ export function GrnEditor() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-surface-2 text-left text-2xs font-semibold uppercase tracking-wider text-subtle">
-                <th className="px-3 py-3">Product</th><th className="px-3 py-3 text-right">Qty</th>
-                <th className="px-3 py-3 text-right">Purchase Price</th><th className="px-3 py-3 text-right">Selling Price</th>
-                <th className="px-3 py-3 text-right">Profit %</th>
-                <th className="px-3 py-3 text-right">Disc %</th><th className="px-3 py-3 text-right">Tax %</th><th className="px-3 py-3 text-right">Value</th>
-                <th className="px-3 py-3 text-center">QR Code</th><th className="px-3 py-3 text-center">Batch</th><th className="px-3 py-3" />
+                <th className="min-w-[220px] px-3 py-3">Product</th><th className="whitespace-nowrap px-3 py-3">UOM</th><th className="whitespace-nowrap px-3 py-3 text-right">Qty</th>
+                <th className="whitespace-nowrap px-3 py-3 text-right">Purchase Price</th><th className="whitespace-nowrap px-3 py-3 text-right">Selling Price</th>
+                <th className="whitespace-nowrap px-3 py-3 text-right">Profit %</th>
+                <th className="whitespace-nowrap px-3 py-3 text-right">Disc %</th><th className="whitespace-nowrap px-3 py-3 text-right">Tax %</th><th className="whitespace-nowrap px-3 py-3 text-right">Value</th>
+                {showQrCol && <th className="px-3 py-3 text-center">QR Code</th>}{showBatchCol && <th className="px-3 py-3 text-center">Batch</th>}<th className="px-3 py-3" />
               </tr>
             </thead>
             <tbody>
               {lines.map((l) => (
                 <FragmentRow key={l.key}>
                   <tr className={cn("border-b border-border transition", Number(l.qty) > 0 ? "bg-primary-subtle/15" : "")}>
-                    <td className="px-3 py-2.5"><div className="font-medium text-foreground">{l.productName}</div><div className="font-mono text-2xs text-subtle">{l.sku || "—"}</div></td>
-                    <td className="px-3 py-2.5 text-right"><input type="number" min={0} value={l.qty} onChange={(e) => update(l.key, { qty: e.target.value })} className={cellR(Number(l.qty) > 0)} /></td>
-                    <td className="px-3 py-2.5 text-right"><input type="number" min={0} value={l.rate} onChange={(e) => setRate(l, e.target.value)} placeholder="0" className={cellR(false)} title="Purchase cost per unit" /></td>
+                    <td className="min-w-[220px] px-3 py-2.5"><div className="font-medium text-foreground">{l.productName}</div><div className="font-mono text-2xs text-subtle">{l.sku || "—"}</div></td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-2xs text-muted">{l.uom || "—"}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-right"><input type="number" min={0} value={l.qty} onChange={(e) => update(l.key, { qty: e.target.value })} className={cellR(Number(l.qty) > 0)} /></td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-right"><input type="number" min={0} value={l.rate} onChange={(e) => setRate(l, e.target.value)} placeholder="0" className={cellR(false)} title="Purchase cost per unit" /></td>
                     <td className="px-3 py-2.5 text-right">
                       <input type="number" min={0} value={l.sellingPrice} onChange={(e) => setSelling(l, e.target.value)} placeholder="0" className={cellR(false)} />
                       {n(l.sellingPrice) > 0 && <div className="mt-0.5 text-[10px] text-subtle">MRP {inr(mrpFromSelling(n(l.sellingPrice), taxRate(l), taxIncl))}{taxIncl ? " (incl)" : " (+GST)"}</div>}
                     </td>
-                    <td className="px-3 py-2.5 text-right">
+                    <td className="whitespace-nowrap px-3 py-2.5 text-right">
                       <div className="inline-flex items-center justify-end gap-0.5"><input type="number" value={l.profitPct} onChange={(e) => setProfit(l, e.target.value)} placeholder="0" className={cellR(n(l.profitPct) > 0, "w-16")} title="Margin on the pre-GST selling price over purchase cost" /><span className="text-2xs text-subtle">%</span></div>
                     </td>
-                    <td className="px-3 py-2.5 text-right"><input type="number" min={0} value={l.discPct} onChange={(e) => update(l.key, { discPct: e.target.value })} placeholder="0" className={cellR(false, "w-16")} /></td>
-                    <td className="px-3 py-2.5 text-right">{!gstApplicable ? <span className="text-2xs text-subtle">no GST</span> : gstMode === "invoice" ? <span className="text-2xs text-subtle">whole bill</span> : <input type="number" min={0} value={l.taxPct} onChange={(e) => setTaxPct(l, e.target.value)} placeholder="0" className={cellR(false, "w-16")} title="Loaded from product master GST" />}</td>
-                    <td className="px-3 py-2.5 text-right font-semibold text-foreground">{inr(lineDisplay(l))}</td>
-                    <td className="px-3 py-2.5 text-center">
-                      {reqFor(l).serial ? (
-                        <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary-subtle px-2 py-1 text-2xs font-semibold text-primary" title="Serial-managed product — one unique code per piece">Serial</span>
-                      ) : (
-                        <div className="inline-flex w-[124px] overflow-hidden rounded-md border border-border align-middle">
-                          {(["shared", "unique"] as const).map((m) => <button key={m} onClick={() => update(l.key, { qrMode: m })} className={cn("flex-1 px-2 py-1 text-center text-2xs font-semibold transition", l.qrMode === m ? "bg-primary text-white" : "bg-surface text-muted hover:bg-surface-2")}>{m === "shared" ? "Same" : "Unique"}</button>)}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-3 py-2.5 text-center">{(() => { const m = missingFor(l); const anyMiss = m.batch || m.mfg || m.expiry; return (
-                      <button onClick={() => update(l.key, { expanded: !l.expanded })} className={cn("inline-flex items-center gap-1 rounded-md border px-2 py-1 text-2xs font-semibold transition", attempted && anyMiss ? "border-danger bg-danger-subtle text-danger" : anyMiss ? "border-warning/50 bg-warning-subtle text-warning" : l.batchNo || l.expanded ? "border-primary/40 bg-primary-subtle text-primary" : "border-border bg-surface text-muted hover:border-primary/40")} title={anyMiss ? "Batch / Mfg / Expiry required for this tracked product" : undefined}><Layers className="h-3 w-3" />{anyMiss && <Req />}<ChevronDown className={cn("h-3 w-3 transition", l.expanded && "rotate-180")} /></button>
-                    ); })()}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-right"><input type="number" min={0} value={l.discPct} onChange={(e) => update(l.key, { discPct: e.target.value })} placeholder="0" className={cellR(false, "w-16")} /></td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-right">{!gstApplicable ? <span className="text-2xs text-subtle">no GST</span> : gstMode === "invoice" ? <span className="text-2xs text-subtle">whole bill</span> : <input type="number" min={0} value={l.taxPct} onChange={(e) => setTaxPct(l, e.target.value)} placeholder="0" className={cellR(false, "w-16")} title="Loaded from product master GST" />}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-right font-semibold text-foreground">{inr(lineDisplay(l))}</td>
+                    {showQrCol && (
+                      <td className="px-3 py-2.5 text-center">
+                        {!l.qrRequired ? null : reqFor(l).serial ? (
+                          <span className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary-subtle px-2 py-1 text-2xs font-semibold text-primary" title="Serial-managed product — one unique code per piece">Serial</span>
+                        ) : (
+                          <div className="inline-flex w-[124px] overflow-hidden rounded-md border border-border align-middle">
+                            {(["shared", "unique"] as const).map((m) => <button key={m} onClick={() => update(l.key, { qrMode: m })} className={cn("flex-1 px-2 py-1 text-center text-2xs font-semibold transition", l.qrMode === m ? "bg-primary text-white" : "bg-surface text-muted hover:bg-surface-2")}>{m === "shared" ? "Same" : "Unique"}</button>)}
+                          </div>
+                        )}
+                      </td>
+                    )}
+                    {showBatchCol && (
+                      <td className="px-3 py-2.5 text-center">{(() => {
+                        const req = reqFor(l);
+                        if (!req.batch && !req.mfg && !req.expiry && !req.serial) return null;
+                        const m = missingFor(l); const anyMiss = m.batch || m.mfg || m.expiry; return (
+                        <button onClick={() => update(l.key, { expanded: !l.expanded })} className={cn("inline-flex items-center gap-1 rounded-md border px-2 py-1 text-2xs font-semibold transition", attempted && anyMiss ? "border-danger bg-danger-subtle text-danger" : anyMiss ? "border-warning/50 bg-warning-subtle text-warning" : l.batchNo || l.expanded ? "border-primary/40 bg-primary-subtle text-primary" : "border-border bg-surface text-muted hover:border-primary/40")} title={anyMiss ? "Batch / Mfg / Expiry required for this tracked product" : undefined}><Layers className="h-3 w-3" />{anyMiss && <Req />}<ChevronDown className={cn("h-3 w-3 transition", l.expanded && "rotate-180")} /></button>
+                      ); })()}</td>
+                    )}
                     <td className="px-3 py-2.5 text-right"><button onClick={() => remove(l.key)} className="grid h-7 w-7 place-items-center rounded-md text-muted hover:bg-danger-subtle hover:text-danger"><Trash2 className="h-3.5 w-3.5" /></button></td>
                   </tr>
                   {l.expanded && (
-                    <tr className="border-b border-border bg-surface-2/40"><td colSpan={11} className="px-3 py-3">
+                    <tr className="border-b border-border bg-surface-2/40"><td colSpan={lineColSpan} className="px-3 py-3">
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         {(() => { const req = reqFor(l); const miss = missingFor(l); return (<>
                         <Field label={<>Batch No{req.batch && <Req />}</>}><input value={l.batchNo} onChange={(e) => update(l.key, { batchNo: e.target.value })} placeholder="BATCH-001" className={cn(inpSm, attempted && miss.batch && "border-danger focus:border-danger")} /></Field>
@@ -572,7 +687,7 @@ export function GrnEditor() {
                   )}
                 </FragmentRow>
               ))}
-              {lines.length === 0 && <tr><td colSpan={11} className="px-4 py-12 text-center text-sm text-muted">Search a product above to add your first line.</td></tr>}
+              {lines.length === 0 && <tr><td colSpan={lineColSpan} className="px-4 py-12 text-center text-sm text-muted">Search a product above to add your first line.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -608,12 +723,17 @@ export function GrnEditor() {
         {/* Transport */}
         <SectionCard icon={Truck} title="Transport & Logistics">
           <div className="grid gap-2.5 sm:grid-cols-2">
+            <div className="relative">
+              <Field label="Vehicle No"><input value={extra.vehicleNo} onChange={(e) => onVehicleQuery(e.target.value)} onFocus={() => vehicleHits?.length && setVehicleHits(vehicleHits)} placeholder="Search KA01AB1234…" className={inpSm} /></Field>
+              {vehicleHits !== null && (vehicleHits.length ? (
+                <div className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border bg-card shadow-lg">
+                  {vehicleHits.map((h) => <button key={h.id} type="button" onClick={() => pickVehicle(h)} className="flex w-full items-center justify-between gap-2 border-b border-border px-3 py-2 text-left text-sm transition last:border-0 hover:bg-primary-subtle/40"><span className="font-mono font-semibold text-foreground">{h.vehicleNo}</span><span className="text-2xs text-subtle">{h.transportCompanyName || "—"}</span></button>)}
+                </div>
+              ) : <div className="absolute z-30 mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-2xs text-muted shadow-lg">No vehicles matched.</div>)}
+            </div>
             <Field label="Transporter"><input value={extra.transporterName} onChange={(e) => setE("transporterName", e.target.value)} placeholder="Transporter / courier" className={inpSm} /></Field>
-            <Field label="Mode"><select value={extra.transportMode} onChange={(e) => setE("transportMode", e.target.value)} className={inpSm}><option value="">Select…</option>{["Road", "Rail", "Air", "Courier", "Hand Delivery"].map((m) => <option key={m}>{m}</option>)}</select></Field>
-            <Field label="Vehicle No"><input value={extra.vehicleNo} onChange={(e) => setE("vehicleNo", e.target.value)} placeholder="KA01AB1234" className={inpSm} /></Field>
             <Field label="LR / Docket No"><input value={extra.lrNo} onChange={(e) => setE("lrNo", e.target.value)} placeholder="LR-0091" className={inpSm} /></Field>
             <Field label="E-Way Bill No"><input value={extra.ewayBillNo} onChange={(e) => setE("ewayBillNo", e.target.value)} placeholder="EWB number" className={inpSm} /></Field>
-            <Field label="Packages"><input type="number" value={extra.numPackages} onChange={(e) => setE("numPackages", e.target.value)} placeholder="0" className={inpSm} /></Field>
             <Field label="Freight Amount"><input type="number" value={extra.freightAmount} onChange={(e) => setE("freightAmount", e.target.value)} placeholder="0" className={inpSm} /></Field>
             <Field label="Freight Paid By"><select value={extra.freightPaidBy} onChange={(e) => setE("freightPaidBy", e.target.value)} className={inpSm}><option value="">Select…</option>{["Supplier", "Us", "To Pay"].map((m) => <option key={m}>{m}</option>)}</select></Field>
             <div className="sm:col-span-2"><Field label="Transport Remarks"><input value={extra.transportRemarks} onChange={(e) => setE("transportRemarks", e.target.value)} placeholder="Optional" className={inpSm} /></Field></div>

@@ -171,20 +171,24 @@ const roundLine = (ro: number) => (ro >= 0 ? { code: ACC.ROUND_OFF, debit: ro, n
 
 async function applyInvoicePosting(tx: Prisma.TransactionClient, tenantId: number, seg: { businessId?: number; branchId?: number }, p: PostingFields, cfg: PurchaseInvoiceConfig, userId: number, advance?: AdvanceApply): Promise<{ payableId: number | null; journalRef: string | null }> {
   const advanceTotal = r2(advance?.total ?? 0);
-  // Legacy GRN = the GRN already created a Payable (old model: GST + payable booked
-  // at GRN). New GRNs post to GRN Clearing and carry no payable.
+  // Legacy GRN = GST + Payable were already fully posted at GRN time (the old
+  // "hasInvoice" model) — skip re-posting those. A `pendingInvoice` GRN payable is
+  // just an early subledger placeholder (created at GRN-post time for Payable
+  // Management visibility, before the formal invoice) — GL still needs the normal
+  // GRN-Clearing branch below to clear GRN Clearing and book GST now.
   let legacyGrn = false; let grnPaid = 0;
   if (p.invoiceType === "GRN") {
     const existing = await tx.payable.findMany({ where: { tenantId, sourceType: "GRN", sourceId: { in: p.grnIds } } });
-    legacyGrn = existing.length > 0;
+    legacyGrn = existing.some((x) => !x.pendingInvoice);
     grnPaid = r2(existing.reduce((s, x) => s + num(x.paidAmount), 0));
-    if (legacyGrn) await tx.payable.deleteMany({ where: { tenantId, sourceType: "GRN", sourceId: { in: p.grnIds } } });
+    if (existing.length > 0) await tx.payable.deleteMany({ where: { tenantId, sourceType: "GRN", sourceId: { in: p.grnIds } } });
   }
 
   let payableId: number | null = null;
   if (cfg.autoCreateOutstanding) {
-    // A supplier advance applied to this bill counts as pre-paid → reduces the payable.
-    const paidAmount = r2((legacyGrn ? grnPaid : 0) + advanceTotal);
+    // Any payment already recorded against the GRN's own (legacy or pendingInvoice)
+    // payable, plus a supplier advance applied to this bill, both count as pre-paid.
+    const paidAmount = r2(grnPaid + advanceTotal);
     const balance = r2(p.netPayable - paidAmount);
     if (balance > 0.005) {
       const pay = await tx.payable.create({ data: { tenantId, businessId: seg.businessId, branchId: seg.branchId, sourceType: "PURCHASE_INVOICE", sourceId: p.invoiceId, refNo: p.invoiceNo, supplier: p.supplier, docDate: p.dueDate, dueDate: p.dueDate, paymentTerms: p.paymentTerms, totalAmount: p.netPayable, paidAmount, balanceAmount: balance, status: paidAmount > 0 ? "Partial" : "Open" } });

@@ -28,27 +28,44 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") ?? "").trim();
   const status = url.searchParams.get("status") ?? "All";
+  const product = (url.searchParams.get("product") ?? "").trim();
+  const fromDate = (url.searchParams.get("fromDate") ?? "").trim();
+  const toDate = (url.searchParams.get("toDate") ?? "").trim();
+  const invoiceStatus = url.searchParams.get("invoiceStatus") ?? "All";
 
   const sw = scopeWhere(await getActiveScope(user), { branch: true });
   const tw = await terminalListWhere(user, url.searchParams.get("terminalId"));
   const where: Prisma.GoodsReceiptNoteWhereInput = { ...sw, ...tw };
   if (q) where.OR = [{ grnNo: { contains: q } }, { supplier: { contains: q } }, { poNo: { contains: q } }, { supplierInvoiceNo: { contains: q } }];
   if (status !== "All") where.status = status;
+  if (product) where.lines = { some: { productName: { contains: product } } };
+  if (fromDate || toDate) where.grnDate = { ...(fromDate ? { gte: fromDate } : {}), ...(toDate ? { lte: toDate } : {}) };
+  if (invoiceStatus === "Posted") where.invoiceRecorded = true;
+  else if (invoiceStatus === "NotPosted") where.invoiceRecorded = false;
+
+  // KPI cards default to TODAY's activity when no filter is applied; once any
+  // filter (search, product, date range, status, invoice status, terminal) is
+  // active, the cards switch to reflect that same filtered result set.
+  const hasFilter = !!(q || product || fromDate || toDate || status !== "All" || invoiceStatus !== "All" || url.searchParams.get("terminalId"));
+  const today = new Date().toISOString().slice(0, 10);
+  const statsWhere: Prisma.GoodsReceiptNoteWhereInput = hasFilter ? where : { ...sw, grnDate: today };
 
   const [rows, total, draft, posted, agg] = await Promise.all([
-    prisma.goodsReceiptNote.findMany({ where, orderBy: { createdAt: "desc" }, take: 100 }),
-    prisma.goodsReceiptNote.count({ where: sw }),
-    prisma.goodsReceiptNote.count({ where: { ...sw, status: "Draft" } }),
-    prisma.goodsReceiptNote.count({ where: { ...sw, status: "Posted" } }),
-    prisma.goodsReceiptNote.aggregate({ where: sw, _sum: { totalValue: true, totalQty: true } }),
+    prisma.goodsReceiptNote.findMany({ where, orderBy: { createdAt: "desc" }, take: 500 }),
+    prisma.goodsReceiptNote.count({ where: statsWhere }),
+    prisma.goodsReceiptNote.count({ where: { ...statsWhere, status: "Draft" } }),
+    prisma.goodsReceiptNote.count({ where: { ...statsWhere, status: "Posted" } }),
+    prisma.goodsReceiptNote.aggregate({ where: statsWhere, _sum: { totalValue: true, totalQty: true } }),
   ]);
 
   const shaped: GrnRow[] = rows.map((d) => ({
     id: d.id, grnNo: d.grnNo, status: d.status as GrnStatus, grnDate: d.grnDate, supplier: d.supplier ?? "",
     poNo: d.poNo ?? "", warehouse: d.warehouse ?? "", lineCount: d.lineCount,
     totalQty: num(d.totalQty), totalValue: num(d.totalValue), createdAt: d.createdAt.toISOString(),
+    supplierInvoiceNo: d.supplierInvoiceNo ?? "", paymentStatus: d.paymentStatus, invoiceRecorded: d.invoiceRecorded,
+    vehicleNo: d.vehicleNo ?? "",
   }));
-  const stats: GrnListStats = { total, draft, posted, totalValue: num(agg._sum.totalValue), totalQty: num(agg._sum.totalQty) };
+  const stats: GrnListStats = { total, draft, posted, totalValue: num(agg._sum.totalValue), totalQty: num(agg._sum.totalQty), scope: hasFilter ? "filtered" : "today" };
   return NextResponse.json({ ok: true, rows: shaped, stats });
 }
 
@@ -67,10 +84,11 @@ export async function POST(req: Request) {
   if ("error" in built) return NextResponse.json({ ok: false, message: built.error }, { status: 422 });
   const { header, lines, post, productIds, grandTotal, amountPaid } = built;
 
-  const prods = await prisma.product.findMany({ where: { id: { in: productIds }, tenantId: user.tenantId }, select: { id: true, invBatch: true, invMfg: true, invExpiry: true, invSerial: true } });
+  const prods = await prisma.product.findMany({ where: { id: { in: productIds }, tenantId: user.tenantId }, select: { id: true, invBatch: true, invMfg: true, invExpiry: true, invSerial: true, qrRequired: true } });
   if (prods.length !== productIds.length) return NextResponse.json({ ok: false, message: "One or more products are not in your catalog." }, { status: 422 });
   const flagMap = new Map(prods.map((p) => [p.id, { invBatch: p.invBatch, invMfg: p.invMfg, invExpiry: p.invExpiry, invSerial: p.invSerial }]));
   const serialPids = new Set(prods.filter((p) => p.invSerial).map((p) => p.id));
+  const qrRequiredMap = new Map(prods.map((p) => [p.id, p.qrRequired]));
   // Batch-tracked products must carry batch / mfg / expiry on every GRN line.
   const trackErr = validateBatchTracking(lines, flagMap);
   if (trackErr) return NextResponse.json({ ok: false, message: trackErr }, { status: 422 });
@@ -111,9 +129,10 @@ export async function POST(req: Request) {
         for (let li = 0; li < orderedLines.length; li++) {
           const line = orderedLines[li];
           const isSerial = serialPids.has(line.productId);
+          const qrRequired = qrRequiredMap.get(line.productId) !== false;
           const r = await generateLineQr(tx, {
             tenantId: user.tenantId, ...seg, format: setting, sourceType: "GRN", sourceId: line.id,
-            productId: line.productId, sku: line.sku, docNo: grnNo, qty: Number(line.qty), mode: isSerial ? "unique" : (line.qrMode === "unique" ? "unique" : "shared"),
+            productId: line.productId, sku: line.sku, docNo: grnNo, qty: Number(line.qty), mode: !qrRequired ? "none" : isSerial ? "unique" : (line.qrMode === "unique" ? "unique" : "shared"),
             txnType: "PURCHASE", refType: "GRN", refNo: grnNo, txnDate: header.grnDate,
             rate: line.rate != null ? Number(line.rate) : null, sellingRate: line.sellingPrice != null ? Number(line.sellingPrice) : null,
             warehouse: header.warehouse, batchNo: line.batchNo, mfgDate: line.mfgDate,
@@ -121,14 +140,17 @@ export async function POST(req: Request) {
             serials: isSerial ? (built.lineSerials[li] ?? []) : null,
           }, seq);
           seq = r.endSeq;
-          await tx.goodsReceiptLine.update({ where: { id: line.id }, data: { qrStatus: "Generated", qrGeneratedCount: r.count, printedQty: 0 } });
+          await tx.goodsReceiptLine.update({ where: { id: line.id }, data: { qrStatus: qrRequired ? "Generated" : "Not Required", qrGeneratedCount: r.count, printedQty: 0 } });
         }
         await tx.qrCodeSetting.update({ where: { id: setting.id }, data: { nextSequence: seq } });
       }
       // When the supplier invoice was entered at GRN, book the full purchase
-      // (Dr Inventory + Input GST / Cr Payable) + create the supplier payable. When
-      // it wasn't, the goods sit in GRN Clearing (Dr Inventory / Cr GRN Clearing)
-      // until the bill is recorded via Purchase Invoice — no payable yet.
+      // (Dr Inventory + Input GST / Cr Payable). When it wasn't, the goods sit in
+      // GRN Clearing (Dr Inventory / Cr GRN Clearing) until the bill is recorded via
+      // Purchase Invoice — GST/GRN Clearing recognition waits either way. The supplier
+      // payable itself, however, is always synced so it's visible under Payable
+      // Management immediately — `pendingInvoice` flags the pre-invoice case so
+      // Purchase Invoice posting knows GST still needs to be booked (not skipped).
       if (post) {
         const hasInvoice = !!(header.supplierInvoiceNo as string | null);
         await postPurchaseJournal(tx, {
@@ -137,19 +159,17 @@ export async function POST(req: Request) {
           otherCharges: Number(header.otherCharges) || 0, roundOff: Number(header.roundOff) || 0,
           grandTotal, amountPaid, paymentMode: header.paymentMode as string | null, createdBy: user.id, hasInvoice,
         });
-        if (hasInvoice) {
-          await syncGrnPayable(tx, user.tenantId, { id: grn.id, grnNo, supplier: header.supplier as string | null, grnDate: header.grnDate as string, paymentTerms: header.paymentTerms as string | null, dueDate: header.dueDate as string | null }, grandTotal, amountPaid, post, seg);
-        }
+        await syncGrnPayable(tx, user.tenantId, { id: grn.id, grnNo, supplier: header.supplier as string | null, grnDate: header.grnDate as string, paymentTerms: header.paymentTerms as string | null, dueDate: header.dueDate as string | null }, grandTotal, amountPaid, post, seg, !hasInvoice);
       }
 
       return grn.id;
-    });
+    }, { maxWait: 10_000, timeout: 30_000 }); // sequential ledger/lot/QR writes against a remote RDS instance can exceed Prisma's 5s default (P2028)
 
     // Scenario 1 auto-create — when supplier-invoice details were entered at GRN,
     // create the Purchase Invoice (clears GRN Clearing + books GST + payable). Runs
     // AFTER the GRN is committed, in its own transaction, fully best-effort so it can
     // never block or revert the GRN.
-    if (post && piCfg?.enablePurchaseInvoice && header.supplierInvoiceNo) {
+    if (post && piCfg?.enablePurchaseInvoice && piCfg?.autoCreatePiDuringGrn && header.supplierInvoiceNo) {
       try {
         await prisma.$transaction(async (tx) => {
           const fresh = (await tx.goodsReceiptNote.findUnique({ where: { id: grnId }, include: { lines: { orderBy: { id: "asc" } } } })) as GrnWithLines | null;
@@ -160,7 +180,7 @@ export async function POST(req: Request) {
             user, seg, stamp, cfg: piCfg!, status: "Posted", grns: [fresh], built: piBuilt,
             input: { invoiceType: "GRN", grnIds: [grnId], lines: [], gstMode: "exclusive", supplierInvoiceNo: header.supplierInvoiceNo as string, supplierInvoiceDate: header.supplierInvoiceDate as string | undefined, dueDate: header.dueDate as string | undefined, paymentTerms: header.paymentTerms as string | undefined, attachments: [] },
           });
-        });
+        }, { maxWait: 10_000, timeout: 30_000 });
       } catch (e) { console.error("[grn] auto-create purchase invoice failed (non-fatal)", e); }
     }
     await writeAudit(prisma, user, {

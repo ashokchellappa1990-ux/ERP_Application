@@ -55,12 +55,12 @@ export async function GET(req: Request) {
     id: p.id, code: p.code ?? "", name: p.name, category: p.category ?? "", brand: p.brand ?? "",
     uom: p.baseUom ?? "", mrp: num(p.mrp), stock: num(p.openingQty), reorder: num(p.reorderLevel),
     status: p.status as MasterStatus, gst: p.gstRate ?? "",
-    invBatch: !!p.invBatch, invMfg: !!p.invMfg, invExpiry: !!p.invExpiry, invSerial: !!p.invSerial,
+    invBatch: !!p.invBatch, invMfg: !!p.invMfg, invExpiry: !!p.invExpiry, invSerial: !!p.invSerial, qrRequired: !!p.qrRequired,
     variantCount: p.children.length,
     variants: p.children.map((c) => ({
       id: c.id, name: c.name, code: c.code ?? "", sku: c.sku ?? "", barcode: c.barcode ?? "",
       mrp: num(c.mrp), stock: num(c.openingQty), status: c.status as MasterStatus,
-      invBatch: !!c.invBatch, invMfg: !!c.invMfg, invExpiry: !!c.invExpiry, invSerial: !!c.invSerial,
+      invBatch: !!c.invBatch, invMfg: !!c.invMfg, invExpiry: !!c.invExpiry, invSerial: !!c.invSerial, qrRequired: !!c.qrRequired,
     })),
   }));
   const stats: ProductListStats = { total: grandTotal, active, inactive, blocked, lowStock: Number(lowStock), nearExpiry: 0, newAdded: recent };

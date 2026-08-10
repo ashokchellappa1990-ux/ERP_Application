@@ -18,7 +18,8 @@ export interface GenLineOpts {
   sku: string | null;
   docNo: string;
   qty: number;
-  mode: "shared" | "unique";
+  // "none" — product's qrRequired is false: post inventory straight through, no QR codes.
+  mode: "shared" | "unique" | "none";
   // inventory / lot context
   txnType: string; // OPENING | PURCHASE
   refType: string; // OPENING | GRN
@@ -38,7 +39,7 @@ export interface GenLineOpts {
 
 export async function generateLineQr(tx: Prisma.TransactionClient, o: GenLineOpts, startSeq: number) {
   const qty = Math.round(o.qty);
-  const count = o.mode === "unique" ? qty : 1;
+  const count = o.mode === "unique" ? qty : o.mode === "shared" ? 1 : 0;
 
   await tx.qrCodeMapping.deleteMany({ where: { sourceType: o.sourceType, sourceId: o.sourceId } });
   const made: string[] = [];
@@ -64,7 +65,8 @@ export async function generateLineQr(tx: Prisma.TransactionClient, o: GenLineOpt
   if (o.mode === "unique") {
     for (const code of made) await postMovement(tx, { ...base, qrCode: code, qty: 1 });
   } else {
-    await postMovement(tx, { ...base, qrCode: made[0], qty });
+    // "shared" posts one movement carrying the single code; "none" posts the full qty with no code.
+    await postMovement(tx, { ...base, qrCode: made[0] ?? null, qty });
   }
   await addLot(tx, {
     tenantId: o.tenantId, businessId: o.businessId ?? null, branchId: o.branchId ?? null, productId: o.productId, warehouse: o.warehouse, batchNo: o.batchNo, grnId: o.grnId ?? null,

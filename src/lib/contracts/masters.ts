@@ -214,6 +214,7 @@ export interface ProductVariantRow {
   invMfg: boolean;
   invExpiry: boolean;
   invSerial: boolean;
+  qrRequired: boolean;
 }
 export interface ProductRow {
   id: number;
@@ -231,6 +232,7 @@ export interface ProductRow {
   invMfg: boolean;
   invExpiry: boolean;
   invSerial: boolean;
+  qrRequired: boolean;
   variantCount: number;
   variants: ProductVariantRow[];
 }

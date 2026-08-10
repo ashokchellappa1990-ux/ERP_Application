@@ -30,7 +30,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       await reverseJournalForSource(tx, user.tenantId, "GRN", id, grn.grnDate, user.id);
       await tx.goodsReceiptLine.updateMany({ where: { grnId: id }, data: { qrStatus: "Pending", qrGeneratedCount: 0, printedQty: 0 } });
       await tx.goodsReceiptNote.update({ where: { id }, data: { status: "Cancelled" } });
-    });
+    }, { maxWait: 10_000, timeout: 30_000 });
     await writeAudit(prisma, user, {
       action: "grn.cancel", entity: "GoodsReceiptNote", entityId: id,
       summary: `Cancelled GRN ${grn.grnNo} — stock & payable reversed`,

@@ -2566,6 +2566,17 @@ model GoodsReceiptNote {
   numPackages      Int?
   transportRemarks String?  @db.VarChar(300)
 
+  // Vehicle weighment (Purchase Config → enableTruckWeightGrn)
+  tareWeight  Decimal? @db.Decimal(18, 3)
+  grossWeight Decimal? @db.Decimal(18, 3)
+  netWeight   Decimal? @db.Decimal(18, 3)
+  weightUom   String?  @db.VarChar(10)
+  // Empty (post-unload) weight — captured after posting via "Update Empty Weight"
+  emptyWeight        Decimal?  @db.Decimal(18, 3)
+  emptyWeightAt      DateTime?
+  emptyWeightBy      Int?
+  emptyWeightRemarks String?   @db.VarChar(300)
+
   totalQty   Decimal @default(0) @db.Decimal(18, 3)
   totalValue Decimal @default(0) @db.Decimal(18, 2)
   lineCount  Int     @default(0)
@@ -2619,6 +2630,10 @@ model Payable {
   paidAmount    Decimal  @default(0) @db.Decimal(18, 2)
   balanceAmount Decimal  @db.Decimal(18, 2)
   status        String   @default("Open") @db.VarChar(12) // Open | Partial | Paid
+  // Created at GRN-post time before the formal Purchase Invoice exists (GST/GRN
+  // Clearing not yet recognized in the GL) — distinct from a "legacy" GRN payable
+  // where GST + Payable were already fully posted at GRN time. See applyInvoicePosting.
+  pendingInvoice Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -9336,4 +9351,55 @@ model DocumentFieldConfig {
 
   @@unique([tenantId, businessId, branchId])
   @@map("document_field_configs")
+}
+
+/// Supplier Product PP Config — tracks the Purchase Price a specific Supplier
+/// charges for a specific Product, since the same product code can cost
+/// different amounts depending on which supplier it's procured from. One
+/// current row per (tenant, supplier, product); every price change writes a
+/// SupplierProductPriceHistory row (same insert-only-log convention as
+/// vehicle_movement_history) so past prices stay visible. Standalone master —
+/// not yet wired into GRN's own rate entry.
+model SupplierProductPrice {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+
+  supplierId Int
+  productId  Int
+
+  purchasePrice Decimal @db.Decimal(18, 3)
+  effectiveFrom String  @db.VarChar(20) // the date this current price took effect
+  status        String  @default("Active") @db.VarChar(16)
+  remarks       String? @db.Text
+
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([tenantId, supplierId, productId])
+  @@index([tenantId, status])
+  @@map("supplier_product_price")
+}
+
+model SupplierProductPriceHistory {
+  id                     Int @id @default(autoincrement())
+  tenantId               Int
+  supplierProductPriceId Int
+  supplierId             Int
+  productId              Int
+
+  oldPrice      Decimal? @db.Decimal(18, 3) // null on the very first price ever recorded
+  newPrice      Decimal  @db.Decimal(18, 3)
+  effectiveFrom String   @db.VarChar(20)
+
+  changedBy     Int?
+  changedByName String?  @db.VarChar(160)
+  createdAt     DateTime @default(now())
+
+  @@index([tenantId, supplierProductPriceId])
+  @@map("supplier_product_price_history")
 }

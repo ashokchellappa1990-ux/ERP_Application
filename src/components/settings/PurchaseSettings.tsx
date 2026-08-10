@@ -2,10 +2,11 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Truck, Save, Loader2, FileText, ShieldCheck, GitCompare, ClipboardCheck, Hash } from "lucide-react";
+import { Truck, Save, Loader2, FileText, ShieldCheck, GitCompare, ClipboardCheck, Hash, Scale } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Switch } from "@/components/ui/Switch";
 import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import { AppLoader } from "@/components/ui/AppLoader";
 import { useToast } from "@/components/ui/Toast";
 import { SettingsScopeBanner } from "@/components/scope/SettingsScopeBanner";
@@ -112,6 +113,18 @@ export function PurchaseSettings() {
           <Input label="Allow Invoice Amount Variance (%)" type="number" value={field("invoiceVariancePct")} onChange={(e) => setField("invoiceVariancePct", e.target.value)} placeholder="5" />
           <Input label="Allow Quantity Variance (%)" type="number" value={field("qtyVariancePct")} onChange={(e) => setField("qtyVariancePct", e.target.value)} placeholder="5" />
         </Grid>
+      </Section>
+
+      <Section icon={Scale} title="Truck Weight Based Product GRN">
+        <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-surface p-3.5">
+          <span><span className="block text-sm font-medium text-foreground">Enable Truck Weight Based GRN</span><span className="text-2xs text-muted">Capture Tare/Gross/Net vehicle weight on the GRN screen and auto-fill quantity from it.</span></span>
+          <Switch checked={flag("enableTruckWeightGrn")} onChange={(v) => setFlag("enableTruckWeightGrn", v)} aria-label="Enable truck weight based GRN" />
+        </label>
+        {flag("enableTruckWeightGrn") && (
+          <Grid>
+            <Select label="Weight UOM" options={[{ value: "Kg", label: "Kg" }, { value: "Ton", label: "Ton" }]} value={field("truckWeightUom") || "Kg"} onChange={(e) => setField("truckWeightUom", e.target.value)} />
+          </Grid>
+        )}
       </Section>
     </div>
   );
