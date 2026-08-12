@@ -37,7 +37,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const entry = await prisma.vehicleGateEntry.findFirst({ where: { ...sw, id: Number(params.id), deletedAt: null } });
   if (!entry) return NextResponse.json({ ok: false, message: "Gate entry not found." }, { status: 404 });
 
-  const [vehicle, driver, company, plan, preWeighment, loading, postWeighment, gateExit, items] = await Promise.all([
+  const [vehicle, driver, company, plan, preWeighment, loading, postWeighment, gateExit, items, supplier] = await Promise.all([
     prisma.vehicleMaster.findFirst({ where: { id: entry.vehicleId }, select: { id: true, vehicleNo: true, vehicleType: true } }),
     entry.driverId ? prisma.driverMaster.findFirst({ where: { id: entry.driverId }, select: { id: true, name: true, phone: true } }) : null,
     entry.transportCompanyId ? prisma.transportCompany.findFirst({ where: { id: entry.transportCompanyId }, select: { id: true, name: true } }) : null,
@@ -47,6 +47,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     prisma.postLoadingWeighment.findFirst({ where: { gateEntryId: entry.id, tenantId: user.tenantId } }),
     prisma.gateExit.findFirst({ where: { gateEntryId: entry.id, tenantId: user.tenantId } }),
     prisma.vehicleGateEntryItem.findMany({ where: { gateEntryId: entry.id }, orderBy: { id: "asc" } }),
+    entry.supplierId ? prisma.supplier.findFirst({ where: { id: entry.supplierId }, select: { gstin: true } }) : null,
   ]);
 
   return NextResponse.json({
@@ -68,7 +69,11 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       createdAt: entry.createdAt.toISOString(), updatedAt: entry.updatedAt.toISOString(),
       // Raw Material GRN-prefill fields — surfaced for GrnEditor's Create GRN flow.
       entryType: entry.entryType, supplierId: entry.supplierId, supplierName: entry.supplierName,
+      supplierGstin: supplier?.gstin ?? null,
       grossWeight: entry.grossWeight != null ? Number(entry.grossWeight) : null,
+      tareWeight: entry.tareWeight != null ? Number(entry.tareWeight) : null,
+      netWeight: entry.netWeight != null ? Number(entry.netWeight) : null,
+      weightSlipRefNo: entry.weightSlipRefNo, inventoryMovement: entry.inventoryMovement,
       preWeighment: preWeighment ? { id: preWeighment.id, weighmentNo: preWeighment.weighmentNo, tareWeight: Number(preWeighment.tareWeight) } : null,
       loadingConfirmation: loading ? { id: loading.id, loadingNo: loading.loadingNo, loadingStart: loading.loadingStart?.toISOString() ?? null, loadingEnd: loading.loadingEnd?.toISOString() ?? null } : null,
       postWeighment: postWeighment ? { id: postWeighment.id, grossWeight: Number(postWeighment.grossWeight), netWeight: Number(postWeighment.netWeight), toleranceExceeded: postWeighment.toleranceExceeded, approvalStatus: postWeighment.approvalStatus } : null,

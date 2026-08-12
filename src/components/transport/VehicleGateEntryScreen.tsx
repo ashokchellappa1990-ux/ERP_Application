@@ -36,6 +36,7 @@ interface Row {
   grnNetWeight: number | null; grnTotalValue: number | null; invoiceRecorded: boolean | null;
   // Once a Purchase Invoice is posted against the GRN, these come from the PI itself.
   piInvoiceNo: string | null; piInvoiceDate: string | null; piPoNo: string | null; piDocRefNo: string | null;
+  weightSlipRefNo: string | null;
 }
 interface HoverDetail {
   productName: string | null; preLoadWeight: number | null; postLoadWeight: number | null; netWeight: number | null;
@@ -403,11 +404,11 @@ export function VehicleGateEntryScreen() {
                 <th className="bg-surface-2 px-4 py-3">Gate Entry No</th>
                 <th className="bg-surface-2 px-4 py-3">Vehicle No</th>
                 <th className="bg-surface-2 px-4 py-3">In-Time</th>
+                <th className="bg-surface-2 px-4 py-3">Weight Slip Ref No</th>
                 <th className="bg-surface-2 px-4 py-3">Supplier Name</th>
                 <th className="bg-surface-2 px-4 py-3 text-right">Net Wt / Qty</th>
                 <th className="bg-surface-2 px-4 py-3 text-right">Total Value</th>
                 <th className="bg-surface-2 px-4 py-3">Invoice Number</th>
-                <th className="bg-surface-2 px-4 py-3">Doc Ref Number</th>
                 <th className="bg-surface-2 px-4 py-3 text-center">Status</th>
                 <th className="bg-surface-2 px-4 py-3 text-center">GRN Status</th>
                 <th className="bg-surface-2 px-4 py-3 text-center">PI Status</th>
@@ -427,11 +428,11 @@ export function VehicleGateEntryScreen() {
                   <td className="px-4 py-3"><span className="font-mono text-xs font-semibold text-foreground">{r.gateEntryNo}</span></td>
                   <td className="px-4 py-3 font-medium text-foreground">{r.vehicleNo}</td>
                   <td className="px-4 py-3 text-sm font-semibold text-foreground">{r.arrivalTime ? new Date(r.arrivalTime).toLocaleString() : "—"}</td>
+                  <td className="px-4 py-3 text-sm text-muted">{r.weightSlipRefNo ?? "—"}</td>
                   <td className="px-4 py-3 text-sm font-semibold text-foreground">{r.supplierName ?? "—"}</td>
                   <td className="px-4 py-3 text-right text-sm font-semibold tabular-nums text-foreground">{r.grnNetWeight != null ? fmt.qty(r.grnNetWeight) : "—"}</td>
                   <td className="px-4 py-3 text-right text-sm font-semibold tabular-nums text-foreground">{r.grnTotalValue != null ? fmt.money(r.grnTotalValue) : "—"}</td>
                   <td className="px-4 py-3 text-sm text-muted">{r.piInvoiceNo ?? "—"}</td>
-                  <td className="px-4 py-3 text-sm text-muted">{r.piDocRefNo ?? "—"}</td>
                   <td className="px-4 py-3 text-center"><Badge tone={STATUS_TONE[r.status]}>{STATUS_DISPLAY_LABEL[r.status] ?? r.status}</Badge></td>
                   <td className="px-4 py-3 text-center">{r.grnStatus ? <Badge tone={r.grnStatus === "Posted" ? "success" : r.grnStatus === "Cancelled" ? "danger" : "warning"}>{r.grnStatus}</Badge> : <span className="text-2xs text-subtle">—</span>}</td>
                   <td className="px-4 py-3 text-center">{r.invoiceRecorded == null ? <span className="text-2xs text-subtle">—</span> : <Badge tone={r.invoiceRecorded ? "success" : "warning"}>{r.invoiceRecorded ? "Posted" : "Not Posted"}</Badge>}</td>
@@ -439,12 +440,13 @@ export function VehicleGateEntryScreen() {
                     <div className="flex flex-wrap items-center justify-end gap-1.5">
                       {/* Raw Material arrives already loaded — it's Inside Factory from the
                           moment it's recorded, no separate wait/unloading steps to work
-                          through. Gross Weight (if deferred) and Create/View GRN are both
-                          available as soon as it's inside. */}
+                          through. Product + weighment are captured together via Update
+                          Weight; Create/View GRN only becomes available once that's done. */}
                       {r.status === "Inside Factory" && (
                         <>
-                          {r.grossWeight == null && <Button size="sm" variant="outline" className="whitespace-nowrap" onClick={() => router.push(`/transport/gate-entry/${r.id}/gross-weight`)}><Scale className="h-3.5 w-3.5" /> Update Gross Weight</Button>}
-                          {r.grnId ? (
+                          {r.grossWeight == null ? (
+                            <Button size="sm" variant="primary" className="whitespace-nowrap" onClick={() => router.push(`/transport/gate-entry/${r.id}/weighment`)}><Scale className="h-3.5 w-3.5" /> Update Weight</Button>
+                          ) : r.grnId ? (
                             <Button size="sm" variant="secondary" className="whitespace-nowrap" onClick={() => router.push(`/purchase/grn/${r.grnId}`)}><Eye className="h-3.5 w-3.5" /> {r.grnStatus === "Posted" ? "View Details" : "View GRN"}</Button>
                           ) : (
                             <Button size="sm" variant="secondary" className="whitespace-nowrap" onClick={() => startGrn(r)}><FileText className="h-3.5 w-3.5" /> Create GRN</Button>

@@ -109,10 +109,9 @@ export default function GrnViewPage() {
   if (!grn) return <div className="py-16 text-center text-sm text-muted">GRN not found. <Link href="/purchase/grn" className="font-semibold text-primary hover:underline">Back to list</Link></div>;
 
   // Purchase Invoice can only be posted after the GRN itself is Posted, and — for
-  // Truck Weight Based receipts — after the Empty Weight has been captured. Gate-entry
-  // sourced GRNs skip that gate: Tare Weight is already captured at GRN creation time,
-  // so there's no separate post-unload empty-weight step for them.
-  const canPostInvoice = grn.status === "Posted" && !grn.invoiceRecorded && (!grn.weightUom || !!grn.gateEntryId || hasVal(grn.emptyWeight));
+  // Truck Weight Based receipts (including gate-entry sourced ones) — after the
+  // Empty Weight has been captured.
+  const canPostInvoice = grn.status === "Posted" && !grn.invoiceRecorded && (!grn.weightUom || hasVal(grn.emptyWeight));
 
   return (
     <div className="space-y-5">
@@ -152,7 +151,7 @@ export default function GrnViewPage() {
           {grn.paymentTerms && <KV k="Terms" v={grn.paymentTerms} />}{grn.dueDate && <KV k="Due Date" v={grn.dueDate} />}
         </SectionCard>
         <SectionCard icon={Truck} title="Transport & Logistics">
-          <KV k="Transporter" v={grn.transporterName} /><KV k="Mode" v={grn.transportMode} /><KV k="Vehicle" v={grn.vehicleNo} />
+          <KV k="Transporter" v={grn.transporterName} /><KV k="Transport Type" v={grn.transportType} /><KV k="Mode" v={grn.transportMode} /><KV k="Vehicle" v={grn.vehicleNo} />
           <KV k="LR / Docket" v={grn.lrNo} /><KV k="E-Way Bill" v={grn.ewayBillNo} /><KV k="Packages" v={grn.numPackages ? String(grn.numPackages) : ""} />
           <KV k="Freight" v={grn.freightAmount ? money(grn.freightAmount) : ""} /><KV k="Freight By" v={grn.freightPaidBy} />
         </SectionCard>
@@ -164,8 +163,10 @@ export default function GrnViewPage() {
             <thead>
               <tr className="border-b border-border bg-surface-2 text-left text-2xs font-semibold uppercase tracking-wider text-subtle">
                 <th className="min-w-[200px] px-4 py-3">Product</th><th className="whitespace-nowrap px-4 py-3">UOM</th><th className="whitespace-nowrap px-4 py-3 text-right">Qty</th>
-                <th className="whitespace-nowrap px-4 py-3 text-right">Purchase Price</th><th className="whitespace-nowrap px-4 py-3 text-right">Selling Price</th>
-                <th className="whitespace-nowrap px-4 py-3 text-right">Profit %</th><th className="whitespace-nowrap px-4 py-3 text-right">Disc %</th>
+                <th className="whitespace-nowrap px-4 py-3 text-right">Purchase Price</th>
+                {!grn.weightUom && <th className="whitespace-nowrap px-4 py-3 text-right">Selling Price</th>}
+                {!grn.weightUom && <th className="whitespace-nowrap px-4 py-3 text-right">Profit %</th>}
+                {!grn.weightUom && <th className="whitespace-nowrap px-4 py-3 text-right">Disc %</th>}
                 <th className="whitespace-nowrap px-4 py-3 text-right">Tax %</th><th className="whitespace-nowrap px-4 py-3 text-right">Value</th>
               </tr>
             </thead>
@@ -176,9 +177,9 @@ export default function GrnViewPage() {
                   <td className="whitespace-nowrap px-4 py-3 text-2xs text-muted">{l.uom || "—"}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-right font-semibold text-foreground">{fmt.qty(l.qty)}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-right text-muted">{l.rate !== "" ? money(Number(l.rate)) : "—"}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-muted">{l.sellingPrice !== "" ? money(Number(l.sellingPrice)) : "—"}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-muted">{profitPctFor(l, taxIncl)}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-muted">{l.discPct !== "" ? `${l.discPct}%` : "—"}</td>
+                  {!grn.weightUom && <td className="whitespace-nowrap px-4 py-3 text-right text-muted">{l.sellingPrice !== "" ? money(Number(l.sellingPrice)) : "—"}</td>}
+                  {!grn.weightUom && <td className="whitespace-nowrap px-4 py-3 text-right text-muted">{profitPctFor(l, taxIncl)}</td>}
+                  {!grn.weightUom && <td className="whitespace-nowrap px-4 py-3 text-right text-muted">{l.discPct !== "" ? `${l.discPct}%` : "—"}</td>}
                   <td className="whitespace-nowrap px-4 py-3 text-right text-muted">{l.taxPct !== "" ? `${l.taxPct}%` : "—"}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-right font-semibold text-foreground">{money(l.value)}</td>
                 </tr>
@@ -196,23 +197,19 @@ export default function GrnViewPage() {
             <KV k={`Gross Weight (${grn.weightUom})`} v={fmtWt(grn.grossWeight)} />
             <KV k={`Net Weight (${grn.weightUom})`} v={fmtWt(grn.netWeight)} strong />
             {hasVal(grn.billNetWeight) && <KV k={`Net Weight as per Bill (${grn.weightUom})`} v={fmtWt(grn.billNetWeight)} tone="info" />}
-            {/* Gate-entry sourced GRNs already captured Tare Weight at GRN creation —
-                no separate post-unload Empty Weight step for them. */}
-            {!grn.gateEntryId && (
+            {grn.weightSlipRefNo && <KV k="Weight Slip Ref Number" v={grn.weightSlipRefNo} />}
+            {grn.inventoryMovement && <KV k="Inventory Movement" v={grn.inventoryMovement} tone="info" />}
+            <div className="my-1 h-px bg-border" />
+            {hasVal(grn.emptyWeight) ? (
               <>
-                <div className="my-1 h-px bg-border" />
-                {hasVal(grn.emptyWeight) ? (
-                  <>
-                    <KV k={`Empty Weight (${grn.weightUom})`} v={fmtWt(grn.emptyWeight)} tone="success" />
-                    {grn.emptyWeightAt && <KV k="Captured On" v={new Date(grn.emptyWeightAt).toLocaleString()} />}
-                    {grn.emptyWeightRemarks && <KV k="Remarks" v={grn.emptyWeightRemarks} />}
-                  </>
-                ) : grn.status === "Posted" ? (
-                  <div className="flex justify-end"><Button variant="secondary" size="sm" onClick={() => setEmptyWeightOpen(true)}><Scale className="h-3.5 w-3.5" /> Update Empty Weight</Button></div>
-                ) : (
-                  <p className="text-2xs text-subtle">Available once this GRN is Posted.</p>
-                )}
+                <KV k={`Empty Weight (${grn.weightUom})`} v={fmtWt(grn.emptyWeight)} tone="success" />
+                {grn.emptyWeightAt && <KV k="Captured On" v={new Date(grn.emptyWeightAt).toLocaleString()} />}
+                {grn.emptyWeightRemarks && <KV k="Remarks" v={grn.emptyWeightRemarks} />}
               </>
+            ) : grn.status === "Posted" ? (
+              <div className="flex justify-end"><Button variant="secondary" size="sm" onClick={() => setEmptyWeightOpen(true)}><Scale className="h-3.5 w-3.5" /> Update Empty Weight</Button></div>
+            ) : (
+              <p className="text-2xs text-subtle">Available once this GRN is Posted.</p>
             )}
           </SectionCard>
         )}
@@ -277,12 +274,11 @@ function GrnProgressFlow({ grn }: { grn: Grn }) {
   // gate-to-GRN journey; other GRNs keep the generic document-only steps.
   const steps = grn.gateEntryId
     ? [
-        { label: "Vehicle Entered", done: true },
-        { label: "Gross Weight Updated", done: hasVal(grn.gateEntry?.grossWeight ?? "") },
-        { label: "Stock Unloaded", done: grn.lineCount > 0 },
-        { label: "Tare Weight Updated", done: hasVal(grn.tareWeight) },
-        { label: "GRN Submitted", done: posted },
-        { label: "Purchase Invoice Posted", done: grn.invoiceRecorded },
+        { label: "Vehicle Entry", done: true },
+        { label: "Weight Update", done: hasVal(grn.gateEntry?.grossWeight ?? "") },
+        { label: "GRN Posted", done: posted },
+        { label: "Empty Vehicle Weight Update", done: hasVal(grn.emptyWeight) },
+        { label: "Purchase Invoice Update", done: grn.invoiceRecorded },
       ]
     : [
         { label: "GRN Submitted", done: posted },

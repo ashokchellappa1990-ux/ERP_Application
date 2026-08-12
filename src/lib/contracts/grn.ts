@@ -91,12 +91,15 @@ export interface GrnDetail {
   dueDate: string;
   transporterName: string;
   transportMode: string;
+  transportType: string;
   vehicleNo: string;
   lrNo: string;
   ewayBillNo: string;
   freightPaidBy: string;
   numPackages: number | string;
   transportRemarks: string;
+  weightSlipRefNo: string;
+  inventoryMovement: string;
   tareWeight: number | string;
   grossWeight: number | string;
   netWeight: number | string;

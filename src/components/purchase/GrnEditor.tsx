@@ -70,9 +70,9 @@ interface Extra {
   gstPct: string; freightAmount: string; otherCharges: string; roundOff: string; totalInvoiceValue: string;
   paymentStatus: "Paid" | "Unpaid" | "Partial"; amountPaid: string; paymentMode: string; paymentRef: string; paymentDate: string;
   paymentTerms: string; creditDays: string; dueDate: string;
-  transporterName: string; transportMode: string; vehicleNo: string; lrNo: string; ewayBillNo: string; freightPaidBy: string; numPackages: string; transportRemarks: string;
+  transporterName: string; transportMode: string; transportType: string; vehicleNo: string; lrNo: string; ewayBillNo: string; freightPaidBy: string; numPackages: string; transportRemarks: string;
 }
-const EMPTY_EXTRA: Extra = { gstPct: "", freightAmount: "", otherCharges: "", roundOff: "", totalInvoiceValue: "", paymentStatus: "Unpaid", amountPaid: "", paymentMode: "", paymentRef: "", paymentDate: "", paymentTerms: "", creditDays: "", dueDate: "", transporterName: "", transportMode: "", vehicleNo: "", lrNo: "", ewayBillNo: "", freightPaidBy: "", numPackages: "", transportRemarks: "" };
+const EMPTY_EXTRA: Extra = { gstPct: "", freightAmount: "", otherCharges: "", roundOff: "", totalInvoiceValue: "", paymentStatus: "Unpaid", amountPaid: "", paymentMode: "", paymentRef: "", paymentDate: "", paymentTerms: "", creditDays: "", dueDate: "", transporterName: "", transportMode: "", transportType: "", vehicleNo: "", lrNo: "", ewayBillNo: "", freightPaidBy: "", numPackages: "", transportRemarks: "" };
 
 export function GrnEditor() {
   const router = useRouter();
@@ -89,6 +89,8 @@ export function GrnEditor() {
   const [supplierInvoiceNo, setSupplierInvoiceNo] = useState("");
   const [supplierInvoiceDate, setSupplierInvoiceDate] = useState("");
   const [poNo, setPoNo] = useState("");
+  const [weightSlipRefNo, setWeightSlipRefNo] = useState("");
+  const [inventoryMovement, setInventoryMovement] = useState("");
   const [poSource, setPoSource] = useState<"none" | "po">("none");
   const [poQuery, setPoQuery] = useState("");
   const [poMatches, setPoMatches] = useState<PoHit[] | null>(null);
@@ -153,19 +155,21 @@ export function GrnEditor() {
   const [grossWeight, setGrossWeight] = useState("");
   const netWeight = n(grossWeight) > 0 || n(tareWeight) > 0 ? +(n(grossWeight) - n(tareWeight)).toFixed(3) : null;
   // Supplier-stated net weight from their bill — stored separately from the
-  // calculated netWeight above (never overwrites it), but drives Qty when applied.
+  // calculated netWeight above (never overwrites it), but drives Qty automatically
+  // when present (falls back to the calculated netWeight when it's blank).
   const [billNetWeight, setBillNetWeight] = useState("");
   const effectiveNetWeight = n(billNetWeight) > 0 ? n(billNetWeight) : netWeight;
-  // Applying is an explicit action (button), not automatic-on-type — typing digits
-  // one at a time would otherwise recompute Qty/value on every keystroke.
-  function applyWeightToQty() {
-    if (effectiveNetWeight == null || effectiveNetWeight <= 0) return;
+  useEffect(() => {
+    if (!enableTruckWeightGrn || effectiveNetWeight == null || effectiveNetWeight <= 0) return;
     setLines((prev) => {
       if (prev.length !== 1 || !prev[0].productId) return prev;
       const qty = String(+convertWeightToQty(effectiveNetWeight, truckWeightUom, prev[0].uom).toFixed(3));
       return prev[0].qty === qty ? prev : [{ ...prev[0], qty }];
     });
-  }
+    // Re-fires when a line is added/removed (lines.length) or the single line's
+    // product changes (productId) — not just when the weight/config itself changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveNetWeight, enableTruckWeightGrn, truckWeightUom, lines.length, lines[0]?.productId]);
 
   // Supplier master (dropdown + inline add-new)
   const [suppliers, setSuppliers] = useState<SupplierRow[]>([]);
@@ -304,7 +308,14 @@ export function GrnEditor() {
         if (d.supplierId) setGatePrefillSupplierId(d.supplierId);
         else if (d.supplierName) setSupplier(d.supplierName);
         if (d.transportCompanyName) setE("transporterName", d.transportCompanyName);
+        if (d.weightSlipRefNo) setWeightSlipRefNo(d.weightSlipRefNo);
+        if (d.inventoryMovement) setInventoryMovement(d.inventoryMovement);
         if (d.grossWeight != null) setGrossWeight(String(d.grossWeight));
+        if (d.tareWeight != null) setTareWeight(String(d.tareWeight));
+        // The gate-entry weighment's manually-entered Net Weight maps onto the
+        // GRN's "Net Weight as per Bill" — a manually-stated figure separate
+        // from the GRN's own calculated Net Weight (Gross − Tare).
+        if (d.netWeight != null) setBillNetWeight(String(d.netWeight));
         const item = (d.items ?? [])[0];
         if (item?.productId) {
           const cj = await fetch(`/api/products?q=${encodeURIComponent(item.sku || item.productName)}&pageSize=20`, { cache: "no-store" }).then((r) => r.json());
@@ -330,6 +341,7 @@ export function GrnEditor() {
       setGrnId(d.id); setGrnNo(d.grnNo); setGrnDate(d.grnDate); setSupplier(d.supplier); setSupplierId(suppliers.find((s) => s.name === d.supplier)?.id ?? ""); setSupplierGstin(d.supplierGstin);
       setSupplierContact(d.supplierContact); setSupplierInvoiceNo(d.supplierInvoiceNo); setSupplierInvoiceDate(d.supplierInvoiceDate);
       setPoNo(d.poNo); setWarehouse(d.warehouse || WAREHOUSES[0]); setNotes(d.notes);
+      setWeightSlipRefNo(d.weightSlipRefNo || ""); setInventoryMovement(d.inventoryMovement || "");
       if (d.gateEntryId) setSourceGateEntryId(d.gateEntryId);
       const sv = (v: unknown) => (v === null || v === undefined || v === "" ? "" : String(v));
       setGstMode(d.gstMode === "invoice" ? "invoice" : "line");
@@ -338,7 +350,7 @@ export function GrnEditor() {
         gstPct: sv(d.gstPct), freightAmount: sv(d.freightAmount), otherCharges: sv(d.otherCharges), roundOff: sv(d.roundOff), totalInvoiceValue: sv(d.totalInvoiceValue),
         paymentStatus: (d.paymentStatus as Extra["paymentStatus"]) || "Unpaid", amountPaid: sv(d.amountPaid), paymentMode: d.paymentMode || "", paymentRef: d.paymentRef || "", paymentDate: d.paymentDate || "",
         paymentTerms: d.paymentTerms || "", creditDays: sv(d.creditDays), dueDate: d.dueDate || "",
-        transporterName: d.transporterName || "", transportMode: d.transportMode || "", vehicleNo: d.vehicleNo || "", lrNo: d.lrNo || "", ewayBillNo: d.ewayBillNo || "", freightPaidBy: d.freightPaidBy || "", numPackages: sv(d.numPackages), transportRemarks: d.transportRemarks || "",
+        transporterName: d.transporterName || "", transportMode: d.transportMode || "", transportType: d.transportType || "", vehicleNo: d.vehicleNo || "", lrNo: d.lrNo || "", ewayBillNo: d.ewayBillNo || "", freightPaidBy: d.freightPaidBy || "", numPackages: sv(d.numPackages), transportRemarks: d.transportRemarks || "",
       });
       // Re-open a truck-weight GRN with its captured weighment values (net weight stays derived).
       if (d.weightUom) {
@@ -449,7 +461,10 @@ export function GrnEditor() {
   // (product master's QR Code Required / batch-mfg-expiry-serial tracking).
   const showQrCol = lines.some((l) => l.qrRequired);
   const showBatchCol = lines.some((l) => { const r = reqFor(l); return r.batch || r.mfg || r.expiry || r.serial; });
-  const lineColSpan = 10 + (showQrCol ? 1 : 0) + (showBatchCol ? 1 : 0);
+  // Truck Weight Based GRNs receive bulk material valued by weight — Selling
+  // Price/Profit %/Disc % aren't meaningful at receipt time for that flow.
+  const hideSellingCols = enableTruckWeightGrn;
+  const lineColSpan = (hideSellingCols ? 7 : 10) + (showQrCol ? 1 : 0) + (showBatchCol ? 1 : 0);
   const totalQty = valid.reduce((s, l) => s + Number(l.qty), 0);
   const lineTax = (l: Line) => (gstApplicable && gstMode === "line" ? (lineNet(l) * n(l.taxPct)) / 100 : 0);
   const lineDisplay = (l: Line) => +(lineNet(l) + lineTax(l)).toFixed(2);
@@ -496,7 +511,7 @@ export function GrnEditor() {
     }
     setBusy(status === "Draft" ? "draft" : "post");
     const payload = {
-      grnDate, supplier, supplierGstin, supplierContact, supplierInvoiceNo, supplierInvoiceDate, poNo, warehouse, notes, status,
+      grnDate, supplier, supplierGstin, supplierContact, supplierInvoiceNo, supplierInvoiceDate, poNo, weightSlipRefNo, inventoryMovement, warehouse, notes, status,
       gstMode: gstApplicable ? gstMode : "line", ...extra,
       gstPct: gstApplicable && gstMode === "invoice" ? extra.gstPct : "",
       tareWeight: enableTruckWeightGrn ? tareWeight : "", grossWeight: enableTruckWeightGrn ? grossWeight : "",
@@ -539,12 +554,11 @@ export function GrnEditor() {
       {sourceGateEntryId && (
         <GrnFlowStepper
           steps={[
-            { label: "Vehicle Entered", done: true },
-            { label: "Gross Weight Updated", done: n(grossWeight) > 0 },
-            { label: "Stock Unloaded", done: lines.length > 0 },
-            { label: "Tare Weight Updated", done: n(tareWeight) > 0 },
-            { label: "GRN Submitted", done: false },
-            { label: "Purchase Invoice Posted", done: false },
+            { label: "Vehicle Entry", done: true },
+            { label: "Weight Update", done: n(grossWeight) > 0 },
+            { label: "GRN Posted", done: false },
+            { label: "Empty Vehicle Weight Update", done: false },
+            { label: "Purchase Invoice Update", done: false },
           ]}
         />
       )}
@@ -602,7 +616,9 @@ export function GrnEditor() {
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="GRN No."><input readOnly value={grnNo || "Auto on save"} className={cn(inp, "bg-surface-2 font-mono text-primary")} /></Field>
             <Field label="GRN Date *"><input type="date" value={grnDate} onChange={(e) => setGrnDate(e.target.value)} className={inp} /></Field>
-            {enablePurchaseInvoice && (
+            {enableTruckWeightGrn && <Field label="Weight Slip Ref Number"><input value={weightSlipRefNo} onChange={(e) => setWeightSlipRefNo(e.target.value)} placeholder="Optional" className={inp} /></Field>}
+            {enableTruckWeightGrn && inventoryMovement && <Field label="Inventory Movement"><input readOnly value={inventoryMovement} className={cn(inp, "bg-surface-2 text-subtle")} /></Field>}
+            {enablePurchaseInvoice && !sourceGateEntryId && (
               <>
                 <Field label="Supplier Invoice No."><input value={supplierInvoiceNo} onChange={(e) => setSupplierInvoiceNo(e.target.value)} placeholder="INV-1234" className={inp} /></Field>
                 <Field label="Invoice Date"><input type="date" value={supplierInvoiceDate} onChange={(e) => setSupplierInvoiceDate(e.target.value)} className={inp} /></Field>
@@ -623,13 +639,10 @@ export function GrnEditor() {
             <Field label={`Net Weight as per Bill (${truckWeightUom})`}><input type="number" min={0} value={billNetWeight} onChange={(e) => setBillNetWeight(e.target.value)} placeholder="Optional" className={inp} /></Field>
           </div>
           {lines.length === 1 && (
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-2xs text-muted">
-                {n(billNetWeight) > 0 ? "Applying uses Net Weight as per Bill (converted to the product's UOM) — the calculated Net Weight above is kept only for record." : "Applying uses the calculated Net Weight. Enter Net Weight as per Bill to bill against the supplier's stated weight instead."}
-                {effectiveNetWeight != null && lines[0].uom && <> <span className="font-semibold text-primary">{effectiveNetWeight} {truckWeightUom} = {+convertWeightToQty(effectiveNetWeight, truckWeightUom, lines[0].uom).toFixed(3)} {lines[0].uom}</span></>}
-              </p>
-              <Button size="sm" variant="outline" onClick={applyWeightToQty} disabled={effectiveNetWeight == null || effectiveNetWeight <= 0}>Apply to Qty</Button>
-            </div>
+            <p className="mt-2 flex flex-wrap items-center justify-between gap-2 text-2xs text-muted">
+              <span>{n(billNetWeight) > 0 ? "Net Weight as per Bill auto-fills the line's Qty below (converted to its own UOM) — the calculated Net Weight above is kept only for record." : "Net Weight auto-fills the line's Qty below (converted to its own UOM). Enter Net Weight as per Bill to bill against the supplier's stated weight instead."}</span>
+              {effectiveNetWeight != null && lines[0].uom && <span className="font-semibold text-primary">{effectiveNetWeight} {truckWeightUom} = {+convertWeightToQty(effectiveNetWeight, truckWeightUom, lines[0].uom).toFixed(3)} {lines[0].uom}</span>}
+            </p>
           )}
           {lines.length > 1 && <p className="mt-2 text-2xs text-warning">Qty auto-fill from weight only applies with a single product line — remove one line first.</p>}
         </SectionCard>
@@ -699,9 +712,11 @@ export function GrnEditor() {
             <thead>
               <tr className="border-b border-border bg-surface-2 text-left text-2xs font-semibold uppercase tracking-wider text-subtle">
                 <th className="min-w-[220px] px-3 py-3">Product</th><th className="whitespace-nowrap px-3 py-3">UOM</th><th className="whitespace-nowrap px-3 py-3 text-right">Qty</th>
-                <th className="whitespace-nowrap px-3 py-3 text-right">Purchase Price</th><th className="whitespace-nowrap px-3 py-3 text-right">Selling Price</th>
-                <th className="whitespace-nowrap px-3 py-3 text-right">Profit %</th>
-                <th className="whitespace-nowrap px-3 py-3 text-right">Disc %</th><th className="whitespace-nowrap px-3 py-3 text-right">Tax %</th><th className="whitespace-nowrap px-3 py-3 text-right">Value</th>
+                <th className="whitespace-nowrap px-3 py-3 text-right">Purchase Price</th>
+                {!hideSellingCols && <th className="whitespace-nowrap px-3 py-3 text-right">Selling Price</th>}
+                {!hideSellingCols && <th className="whitespace-nowrap px-3 py-3 text-right">Profit %</th>}
+                {!hideSellingCols && <th className="whitespace-nowrap px-3 py-3 text-right">Disc %</th>}
+                <th className="whitespace-nowrap px-3 py-3 text-right">Tax %</th><th className="whitespace-nowrap px-3 py-3 text-right">Value</th>
                 {showQrCol && <th className="px-3 py-3 text-center">QR Code</th>}{showBatchCol && <th className="px-3 py-3 text-center">Batch</th>}<th className="px-3 py-3" />
               </tr>
             </thead>
@@ -713,14 +728,18 @@ export function GrnEditor() {
                     <td className="whitespace-nowrap px-3 py-2.5 text-2xs text-muted">{l.uom || "—"}</td>
                     <td className="whitespace-nowrap px-3 py-2.5 text-right"><input type="number" min={0} value={l.qty} onChange={(e) => update(l.key, { qty: e.target.value })} className={cellR(Number(l.qty) > 0)} /></td>
                     <td className="whitespace-nowrap px-3 py-2.5 text-right"><input type="number" min={0} value={l.rate} onChange={(e) => setRate(l, e.target.value)} placeholder="0" className={cellR(false)} title="Purchase cost per unit" /></td>
-                    <td className="px-3 py-2.5 text-right">
-                      <input type="number" min={0} value={l.sellingPrice} onChange={(e) => setSelling(l, e.target.value)} placeholder="0" className={cellR(false)} />
-                      {n(l.sellingPrice) > 0 && <div className="mt-0.5 text-[10px] text-subtle">MRP {inr(mrpFromSelling(n(l.sellingPrice), taxRate(l), taxIncl))}{taxIncl ? " (incl)" : " (+GST)"}</div>}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-right">
-                      <div className="inline-flex items-center justify-end gap-0.5"><input type="number" value={l.profitPct} onChange={(e) => setProfit(l, e.target.value)} placeholder="0" className={cellR(n(l.profitPct) > 0, "w-16")} title="Margin on the pre-GST selling price over purchase cost" /><span className="text-2xs text-subtle">%</span></div>
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-right"><input type="number" min={0} value={l.discPct} onChange={(e) => update(l.key, { discPct: e.target.value })} placeholder="0" className={cellR(false, "w-16")} /></td>
+                    {!hideSellingCols && (
+                      <td className="px-3 py-2.5 text-right">
+                        <input type="number" min={0} value={l.sellingPrice} onChange={(e) => setSelling(l, e.target.value)} placeholder="0" className={cellR(false)} />
+                        {n(l.sellingPrice) > 0 && <div className="mt-0.5 text-[10px] text-subtle">MRP {inr(mrpFromSelling(n(l.sellingPrice), taxRate(l), taxIncl))}{taxIncl ? " (incl)" : " (+GST)"}</div>}
+                      </td>
+                    )}
+                    {!hideSellingCols && (
+                      <td className="whitespace-nowrap px-3 py-2.5 text-right">
+                        <div className="inline-flex items-center justify-end gap-0.5"><input type="number" value={l.profitPct} onChange={(e) => setProfit(l, e.target.value)} placeholder="0" className={cellR(n(l.profitPct) > 0, "w-16")} title="Margin on the pre-GST selling price over purchase cost" /><span className="text-2xs text-subtle">%</span></div>
+                      </td>
+                    )}
+                    {!hideSellingCols && <td className="whitespace-nowrap px-3 py-2.5 text-right"><input type="number" min={0} value={l.discPct} onChange={(e) => update(l.key, { discPct: e.target.value })} placeholder="0" className={cellR(false, "w-16")} /></td>}
                     <td className="whitespace-nowrap px-3 py-2.5 text-right">{!gstApplicable ? <span className="text-2xs text-subtle">no GST</span> : gstMode === "invoice" ? <span className="text-2xs text-subtle">whole bill</span> : <input type="number" min={0} value={l.taxPct} onChange={(e) => setTaxPct(l, e.target.value)} placeholder="0" className={cellR(false, "w-16")} title="Loaded from product master GST" />}</td>
                     <td className="whitespace-nowrap px-3 py-2.5 text-right font-semibold text-foreground">{inr(lineDisplay(l))}</td>
                     {showQrCol && (
@@ -827,7 +846,18 @@ export function GrnEditor() {
             <Field label="LR / Docket No"><input value={extra.lrNo} onChange={(e) => setE("lrNo", e.target.value)} placeholder="LR-0091" className={inpSm} /></Field>
             <Field label="E-Way Bill No"><input value={extra.ewayBillNo} onChange={(e) => setE("ewayBillNo", e.target.value)} placeholder="EWB number" className={inpSm} /></Field>
             <Field label="Freight Amount"><input type="number" value={extra.freightAmount} onChange={(e) => setE("freightAmount", e.target.value)} placeholder="0" className={inpSm} /></Field>
-            <Field label="Freight Paid By"><select value={extra.freightPaidBy} onChange={(e) => setE("freightPaidBy", e.target.value)} className={inpSm}><option value="">Select…</option>{["Supplier", "Us", "To Pay"].map((m) => <option key={m}>{m}</option>)}</select></Field>
+            <Field label="Freight Paid By"><select value={extra.freightPaidBy} onChange={(e) => setE("freightPaidBy", e.target.value)} className={inpSm}><option value="">Select…</option>{["Supplier", "Us", "To Pay", "Self"].map((m) => <option key={m}>{m}</option>)}</select></Field>
+            <div className="sm:col-span-2">
+              <Field label="Transport Type">
+                <div className="flex h-9 items-center gap-6">
+                  {["Own Vehicle", "Supplier Vehicle"].map((t) => (
+                    <label key={t} className="flex items-center gap-1.5 whitespace-nowrap text-sm text-foreground">
+                      <input type="radio" name="transportType" checked={extra.transportType === t} onChange={() => setE("transportType", t)} className="h-4 w-4 shrink-0 border-border-strong text-primary focus:ring-primary" /> {t}
+                    </label>
+                  ))}
+                </div>
+              </Field>
+            </div>
             <div className="sm:col-span-2"><Field label="Transport Remarks"><input value={extra.transportRemarks} onChange={(e) => setE("transportRemarks", e.target.value)} placeholder="Optional" className={inpSm} /></Field></div>
           </div>
         </SectionCard>

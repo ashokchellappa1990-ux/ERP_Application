@@ -2559,12 +2559,18 @@ model GoodsReceiptNote {
   // Transport / logistics (tracking + expense)
   transporterName  String?  @db.VarChar(150)
   transportMode    String?  @db.VarChar(20) // Road | Rail | Air | Courier | Hand
+  transportType    String?  @db.VarChar(20) // Own Vehicle | Supplier Vehicle
   vehicleNo        String?  @db.VarChar(40)
   lrNo             String?  @db.VarChar(60) // LR / docket no
   ewayBillNo       String?  @db.VarChar(40)
-  freightPaidBy    String?  @db.VarChar(20) // Supplier | Us | ToPay
+  freightPaidBy    String?  @db.VarChar(20) // Supplier | Us | ToPay | Self
   numPackages      Int?
   transportRemarks String?  @db.VarChar(300)
+  // Carried over from the source Vehicle Gate Entry's Weight Slip Ref Number /
+  // Inventory Movement selection when this GRN was created from one (see
+  // gateEntryId below) — display-only here, captured at the gate-entry side.
+  weightSlipRefNo   String? @db.VarChar(60)
+  inventoryMovement String? @db.VarChar(60)
 
   // Vehicle weighment (Purchase Config → enableTruckWeightGrn)
   tareWeight  Decimal? @db.Decimal(18, 3)
@@ -8901,7 +8907,15 @@ model VehicleGateEntry {
   supplierId       Int?
   supplierName     String?  @db.VarChar(200) // server-resolved from supplierId, never client-trusted
   expectedMaterial String?  @db.VarChar(200) // free-text brand/material expected (RawMaterial only)
-  grossWeight      Decimal? @db.Decimal(18, 3) // vehicle gross weight captured at the gate (RawMaterial only)
+  // Weighment (RawMaterial only) — captured via the post-entry "Update Weight"
+  // step, not at gate-entry creation time.
+  grossWeight      Decimal? @db.Decimal(18, 3)
+  tareWeight       Decimal? @db.Decimal(18, 3)
+  netWeight        Decimal? @db.Decimal(18, 3)
+  weightSlipRefNo  String?  @db.VarChar(60)
+  // Where the received material goes — "Move to Raw Material Main Stock" |
+  // "Move to Production Plant Stock" — selected at the Update Weight step.
+  inventoryMovement String? @db.VarChar(60)
   grnId            Int?     // the GRN this Raw Material entry spawned, once created
 
   createdBy Int?

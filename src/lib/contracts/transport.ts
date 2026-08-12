@@ -245,6 +245,7 @@ export const gateEntryInput = z.object({
   supplierId: z.coerce.number().int().positive().optional().nullable(),
   expectedMaterial: z.string().trim().max(200).optional().nullable(),
   grossWeight: z.coerce.number().min(0).optional().nullable(),
+  weightSlipRefNo: z.string().trim().max(60).optional().nullable(),
 });
 /** Gate Entry's own Dispatch Type picker — a friendly-labelled subset of
  * DISPATCH_DOC_TYPES (values stay consistent with Dispatch Execution's docType). */

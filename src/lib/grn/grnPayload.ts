@@ -28,9 +28,9 @@ export interface GrnHeader {
   subtotal: number; taxTotal: number; freightAmount: number; otherCharges: number; roundOff: number; totalInvoiceValue: number;
   paymentStatus: string; amountPaid: number; paymentMode: string | null; paymentRef: string | null; paymentDate: string | null;
   paymentTerms: string | null; creditDays: number | null; dueDate: string | null;
-  transporterName: string | null; transportMode: string | null; vehicleNo: string | null;
+  transporterName: string | null; transportMode: string | null; transportType: string | null; vehicleNo: string | null;
   lrNo: string | null; ewayBillNo: string | null; freightPaidBy: string | null;
-  numPackages: number | null; transportRemarks: string | null;
+  numPackages: number | null; transportRemarks: string | null; weightSlipRefNo: string | null; inventoryMovement: string | null;
   tareWeight: number | null; grossWeight: number | null; netWeight: number | null; billNetWeight: number | null; weightUom: string | null;
   totalQty: number; totalValue: number; lineCount: number;
 }
@@ -112,10 +112,10 @@ export function buildGrnPayload(body: unknown): BuiltGrn | { error: string } {
     subtotal, taxTotal, freightAmount, otherCharges, roundOff, totalInvoiceValue,
     paymentStatus, amountPaid, paymentMode: s(b.paymentMode), paymentRef: s(b.paymentRef), paymentDate: s(b.paymentDate),
     paymentTerms: s(b.paymentTerms), creditDays, dueDate,
-    transporterName: s(b.transporterName), transportMode: s(b.transportMode), vehicleNo: s(b.vehicleNo),
+    transporterName: s(b.transporterName), transportMode: s(b.transportMode), transportType: s(b.transportType), vehicleNo: s(b.vehicleNo),
     lrNo: s(b.lrNo), ewayBillNo: s(b.ewayBillNo), freightPaidBy: s(b.freightPaidBy),
     numPackages: b.numPackages != null && b.numPackages !== "" ? Math.max(0, Math.round(Number(b.numPackages))) : null,
-    transportRemarks: s(b.transportRemarks),
+    transportRemarks: s(b.transportRemarks), weightSlipRefNo: s(b.weightSlipRefNo), inventoryMovement: s(b.inventoryMovement),
     tareWeight: dec(b.tareWeight), grossWeight: dec(b.grossWeight), netWeight: dec(b.netWeight), billNetWeight: dec(b.billNetWeight), weightUom: s(b.weightUom),
     totalQty: r2(totalQty), totalValue: grandTotal, lineCount: lines.length,
   };

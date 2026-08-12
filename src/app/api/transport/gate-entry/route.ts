@@ -259,6 +259,7 @@ export async function GET(req: Request) {
       createdAt: r.createdAt.toISOString(),
       entryType: r.entryType, supplierId: r.supplierId, supplierName: r.supplierName,
       supplierGstin: r.supplierId ? (supplierGstinMap.get(r.supplierId) ?? null) : null,
+      weightSlipRefNo: r.weightSlipRefNo,
       expectedMaterial: r.expectedMaterial, grossWeight: r.grossWeight != null ? Number(r.grossWeight) : null,
       grnId: r.grnId, grnStatus: r.grnId ? (grnMap.get(r.grnId)?.status ?? null) : null,
       tareWeight: r.grnId ? num(grnMap.get(r.grnId)?.tareWeight) : null,
@@ -416,6 +417,7 @@ export async function POST(req: Request) {
           loadingBayId: input.loadingBayId ?? undefined,
           entryType: input.entryType ?? "Dispatch", supplierId: input.supplierId ?? undefined, supplierName: supplierName ?? undefined,
           expectedMaterial: input.expectedMaterial ?? undefined, grossWeight: input.grossWeight ?? undefined,
+          weightSlipRefNo: input.weightSlipRefNo ?? undefined,
           // Raw Material arrives already loaded — it's inside from the moment it's
           // recorded (no separate "Waiting"/Move Inside step); there's no unloading
           // status/process to track either, straight to Inside Factory → Create GRN.
