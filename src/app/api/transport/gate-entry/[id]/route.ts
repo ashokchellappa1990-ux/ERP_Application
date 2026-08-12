@@ -66,6 +66,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       driverLicenseNo: entry.driverLicenseNo, helperName: entry.helperName, helperMobile: entry.helperMobile,
       vehicleTypeEntry: entry.vehicleType, transportMode: entry.transportMode,
       createdAt: entry.createdAt.toISOString(), updatedAt: entry.updatedAt.toISOString(),
+      // Raw Material GRN-prefill fields — surfaced for GrnEditor's Create GRN flow.
+      entryType: entry.entryType, supplierId: entry.supplierId, supplierName: entry.supplierName,
+      grossWeight: entry.grossWeight != null ? Number(entry.grossWeight) : null,
       preWeighment: preWeighment ? { id: preWeighment.id, weighmentNo: preWeighment.weighmentNo, tareWeight: Number(preWeighment.tareWeight) } : null,
       loadingConfirmation: loading ? { id: loading.id, loadingNo: loading.loadingNo, loadingStart: loading.loadingStart?.toISOString() ?? null, loadingEnd: loading.loadingEnd?.toISOString() ?? null } : null,
       postWeighment: postWeighment ? { id: postWeighment.id, grossWeight: Number(postWeighment.grossWeight), netWeight: Number(postWeighment.netWeight), toleranceExceeded: postWeighment.toleranceExceeded, approvalStatus: postWeighment.approvalStatus } : null,

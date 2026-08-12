@@ -59,23 +59,28 @@ export async function POST(req: Request) {
   const already = await prisma.gateExit.findFirst({ where: { gateEntryId: input.gateEntryId }, select: { id: true } });
   if (already) return NextResponse.json({ ok: false, message: "A gate exit already exists for this gate entry." }, { status: 422 });
 
-  // Prerequisite checks driven by Dispatch Configuration flags.
-  const cfg = await getDispatchConfig(user);
-  const missing: string[] = [];
-  if (cfg.flags.requireLoadingConfirmation) {
-    const lc = await prisma.loadingConfirmation.findFirst({ where: { gateEntryId: input.gateEntryId, tenantId: user.tenantId } });
-    if (!lc) missing.push("Loading Confirmation");
-  }
-  if (cfg.flags.requireWeighment) {
-    const [pre, post] = await Promise.all([
-      prisma.preLoadingWeighment.findFirst({ where: { gateEntryId: input.gateEntryId, tenantId: user.tenantId } }),
-      prisma.postLoadingWeighment.findFirst({ where: { gateEntryId: input.gateEntryId } }),
-    ]);
-    if (!pre) missing.push("Pre-Loading Weighment");
-    if (!post) missing.push("Post-Loading Weighment");
-  }
-  if (missing.length) {
-    return NextResponse.json({ ok: false, message: `Cannot exit — missing: ${missing.join(", ")}.` }, { status: 422 });
+  // Prerequisite checks driven by Dispatch Configuration flags — these are
+  // Load & Dispatch artifacts (Loading Confirmation, Pre/Post-Loading
+  // Weighment) that a Raw Material inward entry never produces, so they don't
+  // apply to it.
+  if (entry.entryType !== "RawMaterial") {
+    const cfg = await getDispatchConfig(user);
+    const missing: string[] = [];
+    if (cfg.flags.requireLoadingConfirmation) {
+      const lc = await prisma.loadingConfirmation.findFirst({ where: { gateEntryId: input.gateEntryId, tenantId: user.tenantId } });
+      if (!lc) missing.push("Loading Confirmation");
+    }
+    if (cfg.flags.requireWeighment) {
+      const [pre, post] = await Promise.all([
+        prisma.preLoadingWeighment.findFirst({ where: { gateEntryId: input.gateEntryId, tenantId: user.tenantId } }),
+        prisma.postLoadingWeighment.findFirst({ where: { gateEntryId: input.gateEntryId } }),
+      ]);
+      if (!pre) missing.push("Pre-Loading Weighment");
+      if (!post) missing.push("Post-Loading Weighment");
+    }
+    if (missing.length) {
+      return NextResponse.json({ ok: false, message: `Cannot exit — missing: ${missing.join(", ")}.` }, { status: 422 });
+    }
   }
 
   const { denied: tDenied, ctx } = await requireTerminalForTxn(user, { label: "vehicle dispatch" });

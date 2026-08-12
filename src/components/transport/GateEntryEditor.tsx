@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Truck, ArrowLeft, ShieldCheck, FileText, Save, Loader2, Users, PackageSearch, ClipboardList, Plus, X, CheckCircle2, Scale, Boxes } from "lucide-react";
+import { Truck, ArrowLeft, ShieldCheck, FileText, Save, Loader2, Users, PackageSearch, ClipboardList, Plus, X, CheckCircle2, Scale, Boxes, Package } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { AppLoader } from "@/components/ui/AppLoader";
@@ -24,6 +24,7 @@ interface ItemLine { id: string; productId: number; productName: string; sku: st
 interface SalesOrderHit { id: number; docNo: string; customerName: string }
 interface TransferRequestHit { id: number; requestNo: string; sourceWarehouse: string | null; destinationWarehouse: string | null }
 interface CustomerHit { id: number; name: string; phone: string | null; address: string | null }
+interface SupplierHit { id: number; name: string; gstin?: string | null }
 
 const nowLocal = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
 
@@ -45,6 +46,13 @@ export function GateEntryEditor() {
   const [vehicles, setVehicles] = useState<VehicleOpt[]>([]);
   const [companies, setCompanies] = useState<Opt[]>([]);
   const [loadingBays, setLoadingBays] = useState<Opt[]>([]);
+
+  // Vehicle Entry Type — "Dispatch" (outbound, default — existing flow, unchanged)
+  // vs "RawMaterial" (inbound, arrives loaded against a Supplier, feeds a GRN).
+  // Read from the URL (?entryType=...) once masters load, before pageLoading
+  // clears, so there's no flash of the wrong form.
+  const [entryType, setEntryType] = useState<"Dispatch" | "RawMaterial">("Dispatch");
+  const isRawMaterial = entryType === "RawMaterial";
 
   // Section 1 – Gate Information
   const [gateEntryNo, setGateEntryNo] = useState("");
@@ -123,6 +131,14 @@ export function GateEntryEditor() {
   const [productHits, setProductHits] = useState<ProductHit[] | null>(null);
   const [searchingProduct, setSearchingProduct] = useState(false);
 
+  // Raw Material only — Supplier + expected material/brand + vehicle gross weight.
+  const [supplierId, setSupplierId] = useState<number | "">("");
+  const [supplierQuery, setSupplierQuery] = useState("");
+  const [supplierHits, setSupplierHits] = useState<SupplierHit[] | null>(null);
+  const [supplierGstin, setSupplierGstin] = useState("");
+  const [grossWeightPromptOpen, setGrossWeightPromptOpen] = useState(false);
+  const [grossWeight, setGrossWeight] = useState("");
+
   const loadMasters = () => {
     return Promise.all([
       fetch("/api/transport/masters/vehicle?status=Active", { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
@@ -134,6 +150,8 @@ export function GateEntryEditor() {
   };
 
   useEffect(() => {
+    const et = new URLSearchParams(window.location.search).get("entryType");
+    if (et === "RawMaterial") setEntryType("RawMaterial");
     const nextNumber = fetch("/api/transport/gate-entry/next-number", { cache: "no-store" }).then((r) => r.json()).then((j) => { if (j.ok) setGateEntryNo(j.nextNo); }).catch(() => {});
     // Preload Dispatch Type / Reference Type from Dispatch Configuration so
     // most users never have to pick them; lock flags make the preload
@@ -204,6 +222,22 @@ export function GateEntryEditor() {
     setCustomerId(hit.id); setCustomerName(hit.name); setCustomerQuery(hit.name); setCustomerHits(null);
     setDeliveryAddress(hit.address ?? ""); setDeliveryAddressLocked(false);
   };
+
+  // Supplier — type-ahead search (Raw Material entry type only), same pattern
+  // as the Customer search above.
+  const supplierTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchSuppliers = async (q: string) => {
+    if (!q.trim()) { setSupplierHits(null); return; }
+    const j = await fetch(`/api/masters/suppliers?q=${encodeURIComponent(q.trim())}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+    if (j.ok) setSupplierHits((j.suppliers ?? []).slice(0, 20));
+  };
+  const onSupplierQuery = (v: string) => {
+    setSupplierQuery(v); setSupplierId(""); setSupplierGstin("");
+    if (supplierTimer.current) clearTimeout(supplierTimer.current);
+    if (!v.trim()) { setSupplierHits(null); return; }
+    supplierTimer.current = setTimeout(() => searchSuppliers(v), 250);
+  };
+  const pickSupplier = (h: SupplierHit) => { setSupplierId(h.id); setSupplierQuery(h.name); setSupplierHits(null); setSupplierGstin(h.gstin ?? ""); };
 
   // Vehicle Number — type-ahead search (client-side filter over the already-
   // loaded active vehicle list; there's rarely more than a few hundred, so no
@@ -293,13 +327,27 @@ export function GateEntryEditor() {
       ["driverLicenseNo", !driverLicenseNo.trim(), "Driver License No."],
       ["deliveryAddress", dispatchType === "Customer" && referenceType === "Direct Customer Dispatch" && !deliveryAddress.trim(), "Delivery Address"],
       ["customer", dispatchType === "Customer" && referenceType === "Direct Customer Dispatch" && !customerId, "Customer"],
-      ["product", fieldOn(SCREEN, "itemDetails") && items.length === 0, "At least one item"],
+      ["product", !isRawMaterial && fieldOn(SCREEN, "itemDetails") && items.length === 0, "At least one item"],
     ];
     for (const [key, missing, label, fallback] of checks) {
+      if (isRawMaterial && (key === "transportMode" || key === "vehicleType" || key === "driverMobile" || key === "driverLicenseNo")) continue; // Raw Material keeps these optional
       if (fieldOn(SCREEN, key) && fieldMust(SCREEN, key, fallback) && missing) { toast.error(`${label} is required.`); return; }
     }
+    if (isRawMaterial && !supplierId) { toast.error("Supplier is required."); return; }
+    // Gross Weight is optional for Raw Material — if it's blank, ask whether to
+    // enter it now (inline, right here) or later (record saves "pending").
+    if (isRawMaterial && !grossWeight.trim()) { setGrossWeightPromptOpen(true); return; }
+    await doSave();
+  }
+
+  // `overrideGrossWeight` lets the "Enter Now" prompt pass the just-typed value
+  // straight through without waiting on the next render (state updates aren't
+  // synchronous, so reading `grossWeight` here right after `setGrossWeight` could
+  // still see the old value).
+  async function doSave(overrideGrossWeight?: string) {
     setSaving(true);
     try {
+      const gw = overrideGrossWeight ?? grossWeight;
       const res = await fetch("/api/transport/gate-entry", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -322,6 +370,8 @@ export function GateEntryEditor() {
           // this section captures product name only, and 1 is just a non-zero
           // placeholder the schema requires (no downstream use makes sense of it).
           items: items.map((l) => ({ productId: l.productId, productName: l.productName, sku: l.sku || null, uom: l.uom || null, qty: captureQtyAtGate ? Number(l.qty) || 0 : 1 })),
+          entryType, supplierId: isRawMaterial ? (supplierId || null) : null,
+          grossWeight: isRawMaterial && gw ? Number(gw) : null,
         }),
       });
       const j = await res.json().catch(() => ({}));
@@ -337,8 +387,8 @@ export function GateEntryEditor() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="mb-1 flex items-center gap-2 text-xs text-muted"><Link href="/transport/gate-entry" className="hover:text-foreground">Vehicle Gate Entry</Link><span className="text-subtle">/</span><span className="font-medium text-foreground">New</span></div>
-          <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Truck className="h-5 w-5 text-primary" /> New Vehicle Gate Entry</h1>
-          <p className="mt-0.5 text-sm text-muted">Records the vehicle physically arriving at the premises.</p>
+          <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Truck className="h-5 w-5 text-primary" /> {isRawMaterial ? "New Raw Material Gate Entry" : "New Vehicle Gate Entry"}</h1>
+          <p className="mt-0.5 text-sm text-muted">{isRawMaterial ? "Records a loaded vehicle arriving with raw material for the unit." : "Records the vehicle physically arriving at the premises."}</p>
         </div>
         <Link href="/transport/gate-entry"><Button variant="outline" size="md"><ArrowLeft className="h-4 w-4" /> Back</Button></Link>
       </div>
@@ -352,6 +402,7 @@ export function GateEntryEditor() {
         </div>
       </SectionCard>
 
+      {!isRawMaterial && (
       <SectionCard icon={FileText} title="Dispatch Information &amp; Reference Document" allowOverflow>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Fld label="Dispatch Type (optional)">
@@ -436,6 +487,26 @@ export function GateEntryEditor() {
           </div>
         )}
       </SectionCard>
+      )}
+
+      {isRawMaterial && (
+      <SectionCard icon={Package} title="Supplier &amp; Material Details" allowOverflow>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="relative">
+            <label className="mb-1 block text-2xs font-semibold text-muted">Supplier *</label>
+            <input value={supplierQuery} onChange={(e) => onSupplierQuery(e.target.value)} placeholder="Search supplier master…" className={inp} />
+            {supplierHits !== null && (
+              <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border bg-card shadow-lg">
+                {supplierHits.length ? supplierHits.map((h) => (
+                  <button key={h.id} type="button" onClick={() => pickSupplier(h)} className="block w-full border-b border-border px-3 py-2 text-left text-sm last:border-0 hover:bg-primary-subtle/40">{h.name}</button>
+                )) : <div className="px-3 py-2 text-sm text-muted">No matching suppliers.</div>}
+              </div>
+            )}
+          </div>
+          <Fld label="Supplier GSTIN"><input value={supplierGstin} disabled placeholder="Loads from Supplier master" className={cn(inp, "text-subtle")} /></Fld>
+        </div>
+      </SectionCard>
+      )}
 
       <SectionCard icon={Truck} title="Transport Details" allowOverflow>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -478,6 +549,7 @@ export function GateEntryEditor() {
         </div>
       </SectionCard>
 
+      <div className={cn("grid gap-4", isRawMaterial && "lg:grid-cols-2")}>
       {fieldOn(SCREEN, "itemDetails") && itemCaptureMode !== "None" && (
       <SectionCard icon={Boxes} title={`Item Details${fieldMust(SCREEN, "product") ? " *" : " (optional)"}`} allowOverflow>
         <p className="mb-3 text-2xs text-subtle">
@@ -527,6 +599,13 @@ export function GateEntryEditor() {
         )}
       </SectionCard>
       )}
+      {isRawMaterial && (
+        <SectionCard icon={Scale} title="Weighment Details" allowOverflow>
+          <Fld label="Gross Vehicle Weight (Kg) (optional)"><input type="number" min={0} value={grossWeight} onChange={(e) => setGrossWeight(e.target.value)} placeholder="0" className={inp} /></Fld>
+          <p className="mt-2 text-2xs text-subtle">Not weighed yet? Leave this blank — you&apos;ll be asked to enter it now or later when you submit. The actual product, quantity and Tare/Net weight are recorded on the GRN once the vehicle is unloaded.</p>
+        </SectionCard>
+      )}
+      </div>
 
       <SectionCard icon={Users} title="Driver Details" allowOverflow>
         <p className="mb-3 text-2xs text-subtle">Captured fresh at the gate — the actual driver entering may differ from anyone planned earlier.</p>
@@ -586,24 +665,40 @@ export function GateEntryEditor() {
       {addCompanyOpen && <AddTransportCompanyModal onClose={() => setAddCompanyOpen(false)} onAdded={(row) => { setCompanies((p) => [{ id: row.id, label: row.name }, ...p]); setTransportCompanyId(row.id); setAddCompanyOpen(false); }} />}
       {addVehicleOpen && <AddVehicleModal companies={companies} onClose={() => setAddVehicleOpen(false)} onAdded={(row) => { setVehicles((p) => [{ id: row.id, label: row.vehicleNo, vehicleType: row.vehicleType ?? null, transportCompanyId: row.transportCompanyId ?? null }, ...p]); setVehicleId(row.id); setVehicleQuery(row.vehicleNo); if (row.vehicleType) setVehicleType(row.vehicleType); if (row.transportCompanyId) setTransportCompanyId(row.transportCompanyId); setAddVehicleOpen(false); }} />}
       {addDriverOpen && <AddDriverModal companies={companies} onClose={() => setAddDriverOpen(false)} onAdded={(row) => { setDriverMasterId(row.id); setDriverName(row.name); setDriverQuery(row.name); setDriverMobile(row.phone ?? ""); setDriverLicenseNo(row.licenseNo ?? ""); setAddDriverOpen(false); }} />}
+      {grossWeightPromptOpen && (
+        <GrossWeightPromptModal
+          saving={saving}
+          onClose={() => setGrossWeightPromptOpen(false)}
+          onLater={() => { setGrossWeightPromptOpen(false); doSave(); }}
+          onNow={(w) => { setGrossWeightPromptOpen(false); setGrossWeight(w); doSave(w); }}
+        />
+      )}
       {savedId != null && (
         <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
             <div className="flex flex-col items-center gap-2 px-6 py-6 text-center">
               <span className="grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success"><CheckCircle2 className="h-6 w-6" /></span>
               <h2 className="text-sm font-bold text-foreground">Gate Entry Recorded</h2>
-              <p className="text-sm text-muted">Would you like to continue with the Pre Loading Weighment now, or do it later?</p>
+              <p className="text-sm text-muted">{isRawMaterial ? "Once the vehicle is moved inside, you can create the GRN for this delivery from the gate entry list." : "Would you like to continue with the Pre Loading Weighment now, or do it later?"}</p>
             </div>
             <div className="flex flex-col gap-2 border-t border-border bg-surface-2 px-5 py-4">
-              <Button size="md" disabled={navigating} onClick={() => { setNavigating(true); router.push(`/transport/pre-weighment/new?gateEntryId=${savedId}`); }}>
-                {navigating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Scale className="h-4 w-4" />} Continue to Weighment Now
-              </Button>
-              <Button variant="outline" size="md" disabled={navigating} onClick={() => router.push("/transport/gate-entry")}>Do It Later</Button>
+              {isRawMaterial ? (
+                <Button size="md" disabled={navigating} onClick={() => { setNavigating(true); router.push("/transport/gate-entry?entryType=RawMaterial"); }}>
+                  {navigating ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Back to Gate Entry List
+                </Button>
+              ) : (
+                <>
+                  <Button size="md" disabled={navigating} onClick={() => { setNavigating(true); router.push(`/transport/pre-weighment/new?gateEntryId=${savedId}`); }}>
+                    {navigating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Scale className="h-4 w-4" />} Continue to Weighment Now
+                  </Button>
+                  <Button variant="outline" size="md" disabled={navigating} onClick={() => router.push("/transport/gate-entry")}>Do It Later</Button>
+                </>
+              )}
             </div>
           </div>
         </div>
       )}
-      {navigating && <AppLoader fullScreen label="Opening Pre Loading Weighment" />}
+      {navigating && <AppLoader fullScreen label={isRawMaterial ? "Returning to Gate Entry List" : "Opening Pre Loading Weighment"} />}
     </div>
   );
 }
@@ -612,6 +707,43 @@ export function GateEntryEditor() {
 // Every field the standalone Transport Company/Vehicle/Driver master forms
 // have (src/components/transport/masters/*.tsx) is repeated here so nothing
 // needs a follow-up trip to Masters to fill in later.
+function GrossWeightPromptModal({ saving, onClose, onLater, onNow }: { saving: boolean; onClose: () => void; onLater: () => void; onNow: (weight: string) => void }) {
+  const [step, setStep] = useState<"choose" | "enter">("choose");
+  const [weight, setWeight] = useState("");
+  return (
+    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-border bg-surface-2 px-5 py-3.5">
+          <h2 className="text-sm font-bold text-foreground">Gross Weight</h2>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-surface hover:text-foreground"><X className="h-4 w-4" /></button>
+        </div>
+        {step === "choose" ? (
+          <>
+            <div className="px-5 py-5 text-center">
+              <p className="text-sm text-muted">Gross weight wasn&apos;t entered. Enter it now, or record this gate entry and enter it later?</p>
+            </div>
+            <div className="flex flex-col gap-2 border-t border-border bg-surface-2 px-5 py-4">
+              <Button size="md" onClick={() => setStep("enter")}>Enter Now</Button>
+              <Button variant="outline" size="md" disabled={saving} onClick={onLater}>{saving ? "Saving…" : "Enter Later"}</Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="px-5 py-5">
+              <label className="mb-1 block text-2xs font-semibold text-muted">Gross Vehicle Weight (Kg)</label>
+              <input type="number" min={0} autoFocus value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="0" className="h-10 w-full rounded-md border border-border-strong bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:shadow-focus" />
+            </div>
+            <div className="flex items-center justify-end gap-2 border-t border-border bg-surface-2 px-5 py-3">
+              <Button variant="ghost" size="md" onClick={() => setStep("choose")}>Back</Button>
+              <Button size="md" disabled={saving || !weight.trim()} onClick={() => onNow(weight)}>{saving ? "Saving…" : "Submit"}</Button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AddTransportCompanyModal({ onClose, onAdded }: { onClose: () => void; onAdded: (row: { id: number; name: string }) => void }) {
   const toast = useToast();
   const [code, setCode] = useState("");

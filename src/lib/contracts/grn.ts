@@ -100,6 +100,7 @@ export interface GrnDetail {
   tareWeight: number | string;
   grossWeight: number | string;
   netWeight: number | string;
+  billNetWeight: number | string;
   weightUom: string;
   emptyWeight: number | string;
   emptyWeightAt: string;
@@ -109,6 +110,8 @@ export interface GrnDetail {
   totalQty: number;
   totalValue: number;
   lineCount: number;
+  gateEntryId: number | null;
+  gateEntry: { gateEntryNo: string; grossWeight: number | null; status: string } | null;
   lines: GrnDetailLine[];
 }
 

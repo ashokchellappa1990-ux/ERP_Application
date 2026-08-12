@@ -79,6 +79,9 @@ export async function POST(req: Request) {
 
   let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ ok: false, message: "Invalid request body." }, { status: 400 }); }
+  // Set only when created from a Raw Material Vehicle Gate Entry's "Create GRN"
+  // link — routing metadata, not a GRN field, so it's read here rather than in buildGrnPayload.
+  const gateEntryId = Number((body as { gateEntryId?: unknown })?.gateEntryId) || null;
 
   const built = buildGrnPayload(body);
   if ("error" in built) return NextResponse.json({ ok: false, message: built.error }, { status: 422 });
@@ -115,7 +118,7 @@ export async function POST(req: Request) {
   try {
     const grnId = await prisma.$transaction(async (tx) => {
       const grn = await tx.goodsReceiptNote.create({
-        data: { ...header, tenantId: user.tenantId, ...seg, grnNo: "TMP", createdBy: user.id, ...stamp, lines: { create: lines } },
+        data: { ...header, gateEntryId, tenantId: user.tenantId, ...seg, grnNo: "TMP", createdBy: user.id, ...stamp, lines: { create: lines } },
         include: { lines: true },
       });
       const grnNo = `GRN-${String(grn.id).padStart(5, "0")}`;
@@ -182,6 +185,12 @@ export async function POST(req: Request) {
           });
         }, { maxWait: 10_000, timeout: 30_000 });
       } catch (e) { console.error("[grn] auto-create purchase invoice failed (non-fatal)", e); }
+    }
+    // Back-link the Raw Material Vehicle Gate Entry that spawned this GRN — best-effort,
+    // never blocks the GRN itself from saving.
+    if (gateEntryId) {
+      try { await prisma.vehicleGateEntry.updateMany({ where: { id: gateEntryId, tenantId: user.tenantId }, data: { grnId } }); }
+      catch (e) { console.error("[grn] gate entry back-link failed (non-fatal)", e); }
     }
     await writeAudit(prisma, user, {
       action: post ? "grn.post" : "grn.create", entity: "GoodsReceiptNote", entityId: grnId,

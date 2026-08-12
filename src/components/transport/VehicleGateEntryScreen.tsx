@@ -3,7 +3,7 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Truck, Search, Plus, X, LogIn, PlayCircle, CheckCircle2, LogOut, ShieldCheck, Eye } from "lucide-react";
+import { Truck, Search, Plus, X, LogIn, PlayCircle, CheckCircle2, LogOut, ShieldCheck, Eye, Package, FileText, Scale } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { AppLoader } from "@/components/ui/AppLoader";
@@ -30,10 +30,20 @@ interface Row {
   productName: string | null;
   preLoadWeight: number | null; postLoadWeight: number | null; netWeight: number | null;
   saleType: string | null; saleOutstanding: number | null;
+  entryType: "Dispatch" | "RawMaterial"; supplierId: number | null; supplierName: string | null; supplierGstin: string | null;
+  expectedMaterial: string | null; grossWeight: number | null;
+  grnId: number | null; grnStatus: string | null; tareWeight: number | null;
+  grnNetWeight: number | null; grnTotalValue: number | null; invoiceRecorded: boolean | null;
+  // Once a Purchase Invoice is posted against the GRN, these come from the PI itself.
+  piInvoiceNo: string | null; piInvoiceDate: string | null; piPoNo: string | null; piDocRefNo: string | null;
 }
-interface HoverDetail { productName: string | null; preLoadWeight: number | null; postLoadWeight: number | null; netWeight: number | null }
-interface Stats { total: number; waiting: number; inside: number; completed: number; dcGenerated: number; invoicePosted: number }
-const EMPTY: Stats = { total: 0, waiting: 0, inside: 0, completed: 0, dcGenerated: 0, invoicePosted: 0 };
+interface HoverDetail {
+  productName: string | null; preLoadWeight: number | null; postLoadWeight: number | null; netWeight: number | null;
+  grossWeight: number | null; tareWeight: number | null;
+  invoiceNo: string | null; invoiceDate: string | null; poNo: string | null; docRefNo: string | null;
+}
+interface Stats { total: number; waiting: number; inside: number; completed: number; dcGenerated: number; invoicePosted: number; grnPosted: number; grnInvoicePosted: number }
+const EMPTY: Stats = { total: 0, waiting: 0, inside: 0, completed: 0, dcGenerated: 0, invoicePosted: 0, grnPosted: 0, grnInvoicePosted: 0 };
 const PAYMENT_STATUS_TONE: Record<string, "success" | "warning" | "danger"> = { Paid: "success", Partial: "warning", Credit: "danger" };
 const STATUS_TONE: Record<GateEntryStatus, "neutral" | "info" | "warning" | "success" | "primary"> = {
   Waiting: "neutral", "Inside Factory": "info", Loading: "warning", Completed: "success", Exited: "primary",
@@ -71,17 +81,34 @@ function invoiceStatus(loadDispatchStatus: string | null): { label: string; tone
     ? { label: "Posted", tone: "success" } : { label: "Not Posted", tone: "warning" };
 }
 const FILTERS = ["All", "Waiting", "Inside Factory", "Loading", "Completed", "Exited"] as const;
+const RAW_MATERIAL_FILTERS = ["All", "Inside Factory", "Exited"] as const;
 const DC_STATUS_FILTERS = ["All", "Generated", "NotGenerated"] as const;
 const DC_STATUS_FILTER_LABEL: Record<(typeof DC_STATUS_FILTERS)[number], string> = { All: "All DC statuses", Generated: "DC Generated", NotGenerated: "DC Not Generated" };
 const INVOICE_STATUS_FILTERS = ["All", "Posted", "NotPosted"] as const;
 const INVOICE_STATUS_FILTER_LABEL: Record<(typeof INVOICE_STATUS_FILTERS)[number], string> = { All: "All invoice statuses", Posted: "Invoice Posted", NotPosted: "Invoice Not Posted" };
+const GRN_STATUS_FILTERS = ["All", "Draft", "Posted", "None"] as const;
+const GRN_STATUS_FILTER_LABEL: Record<(typeof GRN_STATUS_FILTERS)[number], string> = { All: "All GRN statuses", Draft: "GRN Draft", Posted: "GRN Posted", None: "No GRN yet" };
+const PI_STATUS_FILTERS = ["All", "Posted", "NotPosted"] as const;
+const PI_STATUS_FILTER_LABEL: Record<(typeof PI_STATUS_FILTERS)[number], string> = { All: "All PI statuses", Posted: "PI Posted", NotPosted: "PI Not Posted" };
 
 export function VehicleGateEntryScreen() {
   const toast = useToast();
   const router = useRouter();
   const fmt = useFmt();
+  // Top tab — "Dispatch" (Stock Dispatch Entry, default — the page opens exactly
+  // as it always has) vs "RawMaterial" (Raw Material Entry). Everything below
+  // (filters, table, stats) scopes to whichever tab is active.
+  const [entryTypeTab, setEntryTypeTab] = useState<"Dispatch" | "RawMaterial">("Dispatch");
+  // Honor a `?entryType=RawMaterial` link (e.g. from the gate-entry submit
+  // popup or a GRN redirect) so it lands on that tab instead of always Dispatch.
+  // Read post-mount (not in the useState initializer) to avoid a server/client
+  // mismatch — matches the window.location.search pattern used elsewhere.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("entryType") === "RawMaterial") setEntryTypeTab("RawMaterial");
+  }, []);
+  const [newEntryOpen, setNewEntryOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<(typeof FILTERS)[number]>("All");
+  const [status, setStatus] = useState<GateEntryStatus | "All">("All");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [dispatchFromDate, setDispatchFromDate] = useState("");
@@ -89,6 +116,8 @@ export function VehicleGateEntryScreen() {
   const [product, setProduct] = useState("");
   const [dcStatusFilter, setDcStatusFilter] = useState<(typeof DC_STATUS_FILTERS)[number]>("All");
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState<(typeof INVOICE_STATUS_FILTERS)[number]>("All");
+  const [grnStatusFilter, setGrnStatusFilter] = useState<(typeof GRN_STATUS_FILTERS)[number]>("All");
+  const [piStatusFilter, setPiStatusFilter] = useState<(typeof PI_STATUS_FILTERS)[number]>("All");
   const [rows, setRows] = useState<Row[]>([]);
   const [stats, setStats] = useState<Stats>(EMPTY);
   const [loading, setLoading] = useState(true);
@@ -118,6 +147,7 @@ export function VehicleGateEntryScreen() {
     setLoading(true);
     try {
       const u = new URLSearchParams();
+      u.set("entryType", entryTypeTab);
       if (status !== "All") u.set("status", status);
       if (query.trim()) u.set("q", query.trim());
       if (fromDate) u.set("fromDate", fromDate);
@@ -127,12 +157,14 @@ export function VehicleGateEntryScreen() {
       if (product.trim()) u.set("product", product.trim());
       if (dcStatusFilter !== "All") u.set("dcStatus", dcStatusFilter);
       if (invoiceStatusFilter !== "All") u.set("invoiceStatus", invoiceStatusFilter);
+      if (grnStatusFilter !== "All") u.set("grnStatus", grnStatusFilter);
+      if (piStatusFilter !== "All") u.set("piStatus", piStatusFilter);
       const res = await fetch(`/api/transport/gate-entry?${u}`, { cache: "no-store" });
       if (res.status === 401) { setNotAuthed(true); return; }
       const j = await res.json().catch(() => ({}));
       if (j.ok) { setNotAuthed(false); setRows(j.rows); setStats(j.stats); setPage(1); }
     } catch { /* ignore */ } finally { setLoading(false); }
-  }, [query, status, fromDate, toDate, dispatchFromDate, dispatchToDate, product, dcStatusFilter, invoiceStatusFilter]);
+  }, [entryTypeTab, query, status, fromDate, toDate, dispatchFromDate, dispatchToDate, product, dcStatusFilter, invoiceStatusFilter, grnStatusFilter, piStatusFilter]);
 
   useEffect(() => { const t = setTimeout(load, 250); return () => clearTimeout(t); }, [load]);
 
@@ -140,7 +172,7 @@ export function VehicleGateEntryScreen() {
   const currentPage = Math.min(page, pageCount);
   const pagedRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  async function runAction(row: Row, action: "move-inside" | "complete") {
+  async function runAction(row: Row, action: "move-inside" | "start-loading" | "complete") {
     setBusy(row.id);
     try {
       const res = await fetch(`/api/transport/gate-entry/${row.id}/status`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) });
@@ -164,17 +196,38 @@ export function VehicleGateEntryScreen() {
     router.push(path);
   }
 
+  // Raw Material — informational navigation only (doesn't advance gate status,
+  // no grn back-link tracked yet); prefills the new GRN from what the gate
+  // entry already captured.
+  function startGrn(row: Row) {
+    const params = new URLSearchParams({ gateEntryId: String(row.id), vehicleNo: row.vehicleNo });
+    if (row.supplierName) params.set("supplier", row.supplierName);
+    if (row.grossWeight != null) params.set("grossWeight", String(row.grossWeight));
+    router.push(`/purchase/grn/new?${params}`);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="mb-1 flex items-center gap-2 text-xs text-muted"><span>Transport &amp; Vehicle Operations</span><span className="text-subtle">/</span><span className="font-medium text-foreground">Vehicle Gate Entry</span></div>
           <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Truck className="h-5 w-5 text-primary" /> Vehicle Gate Entry</h1>
-          <p className="mt-0.5 text-sm text-muted">First step of the physical vehicle flow — records arrival &amp; drives Move Inside → Start Load &amp; Dispatch → Exit (once submitted, status/actions follow the Load &amp; Dispatch document itself).</p>
+          <p className="mt-0.5 text-sm text-muted">
+            {entryTypeTab === "Dispatch"
+              ? "First step of the physical vehicle flow — records arrival & drives Move Inside → Start Load & Dispatch → Exit (once submitted, status/actions follow the Load & Dispatch document itself)."
+              : "Vehicles arriving loaded with raw material — records arrival as Inside Factory, then Create GRN once unloaded."}
+          </p>
         </div>
-        <Button size="md" onClick={() => router.push("/transport/gate-entry/new")}><Plus className="h-4 w-4" /> New Gate Entry</Button>
+        <Button size="md" onClick={() => setNewEntryOpen(true)}><Plus className="h-4 w-4" /> New Gate Entry</Button>
       </div>
 
+      <div className="inline-flex rounded-lg border border-border bg-surface-2 p-1">
+        {([["Dispatch", "Stock Dispatch Entry"], ["RawMaterial", "Raw Material Entry"]] as const).map(([v, label]) => (
+          <button key={v} type="button" onClick={() => setEntryTypeTab(v)} className={cn("rounded-md px-4 py-1.5 text-xs font-semibold transition", entryTypeTab === v ? "bg-brand-gradient text-white shadow-sm" : "text-muted hover:text-foreground")}>{label}</button>
+        ))}
+      </div>
+
+      {entryTypeTab === "Dispatch" ? (
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Stat label="Total" value={stats.total} tone="primary" />
         <Stat label="Waiting" value={stats.waiting} tone="neutral" />
@@ -183,7 +236,16 @@ export function VehicleGateEntryScreen() {
         <Stat label="DC Generated" value={stats.dcGenerated} tone="info" />
         <Stat label="Invoice Posted" value={stats.invoicePosted} tone="success" />
       </div>
+      ) : (
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Stat label="Total" value={stats.total} tone="primary" />
+        <Stat label="Inside" value={stats.inside} tone="info" />
+        <Stat label="GRN Posted" value={stats.grnPosted} tone="warning" />
+        <Stat label="Invoice Posted" value={stats.grnInvoicePosted} tone="success" />
+      </div>
+      )}
 
+      {entryTypeTab === "Dispatch" && (
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <div className="flex flex-col gap-3 border-b border-border p-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -206,7 +268,7 @@ export function VehicleGateEntryScreen() {
               <span className="text-2xs text-subtle">to</span>
               <input type="date" value={dispatchToDate} onChange={(e) => setDispatchToDate(e.target.value)} className="h-8 rounded-md border border-border bg-surface px-2 text-xs text-foreground focus:border-primary focus:outline-none focus:shadow-focus" />
             </div>
-            <select value={status} onChange={(e) => setStatus(e.target.value as (typeof FILTERS)[number])} className="h-9 rounded-md border border-border bg-surface px-3 text-sm font-medium text-foreground focus:border-primary focus:outline-none focus:shadow-focus">
+            <select value={status} onChange={(e) => setStatus(e.target.value as GateEntryStatus | "All")} className="h-9 rounded-md border border-border bg-surface px-3 text-sm font-medium text-foreground focus:border-primary focus:outline-none focus:shadow-focus">
               {FILTERS.map((f) => <option key={f} value={f}>{f === "All" ? "All statuses" : (STATUS_DISPLAY_LABEL[f] ?? f)}</option>)}
             </select>
             <select value={dcStatusFilter} onChange={(e) => setDcStatusFilter(e.target.value as (typeof DC_STATUS_FILTERS)[number])} className="h-9 rounded-md border border-border bg-surface px-3 text-sm font-medium text-foreground focus:border-primary focus:outline-none focus:shadow-focus">
@@ -304,10 +366,120 @@ export function VehicleGateEntryScreen() {
           <Pagination page={currentPage} pageSize={pageSize} total={rows.length} onPageChange={setPage} onPageSizeChange={(s) => { setPageSize(s); setPage(1); }} label="gate entries" />
         )}
       </div>
+      )}
+
+      {entryTypeTab === "RawMaterial" && (
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-border p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search gate entry no…" className="h-9 w-full rounded-md border border-border bg-surface-2 pl-9 pr-3 text-sm text-foreground placeholder:text-subtle focus:border-primary focus:bg-surface focus:outline-none focus:shadow-focus" />
+            </div>
+            <input value={product} onChange={(e) => setProduct(e.target.value)} placeholder="Product name…" className="h-9 w-40 rounded-md border border-border bg-surface px-3 text-sm text-foreground placeholder:text-subtle focus:border-primary focus:outline-none focus:shadow-focus" />
+            <div className="flex items-center gap-1.5 rounded-md border border-border bg-surface-2 px-2 py-1">
+              <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">Entry Date</span>
+              <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="h-8 rounded-md border border-border bg-surface px-2 text-xs text-foreground focus:border-primary focus:outline-none focus:shadow-focus" />
+              <span className="text-2xs text-subtle">to</span>
+              <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="h-8 rounded-md border border-border bg-surface px-2 text-xs text-foreground focus:border-primary focus:outline-none focus:shadow-focus" />
+            </div>
+            <select value={status} onChange={(e) => setStatus(e.target.value as GateEntryStatus | "All")} className="h-9 rounded-md border border-border bg-surface px-3 text-sm font-medium text-foreground focus:border-primary focus:outline-none focus:shadow-focus">
+              {RAW_MATERIAL_FILTERS.map((f) => <option key={f} value={f}>{f === "All" ? "All statuses" : (STATUS_DISPLAY_LABEL[f] ?? f)}</option>)}
+            </select>
+            <select value={grnStatusFilter} onChange={(e) => setGrnStatusFilter(e.target.value as (typeof GRN_STATUS_FILTERS)[number])} className="h-9 rounded-md border border-border bg-surface px-3 text-sm font-medium text-foreground focus:border-primary focus:outline-none focus:shadow-focus">
+              {GRN_STATUS_FILTERS.map((f) => <option key={f} value={f}>{GRN_STATUS_FILTER_LABEL[f]}</option>)}
+            </select>
+            <select value={piStatusFilter} onChange={(e) => setPiStatusFilter(e.target.value as (typeof PI_STATUS_FILTERS)[number])} className="h-9 rounded-md border border-border bg-surface px-3 text-sm font-medium text-foreground focus:border-primary focus:outline-none focus:shadow-focus">
+              {PI_STATUS_FILTERS.map((f) => <option key={f} value={f}>{PI_STATUS_FILTER_LABEL[f]}</option>)}
+            </select>
+            <Button size="sm" variant="primary" onClick={load}><Search className="h-3.5 w-3.5" /> Search</Button>
+            <Button size="sm" variant="outline" onClick={() => { setQuery(""); setStatus("All"); setFromDate(""); setToDate(""); setProduct(""); setGrnStatusFilter("All"); setPiStatusFilter("All"); }}><X className="h-3.5 w-3.5" /> Clear</Button>
+          </div>
+        </div>
+        <div className="max-h-[560px] overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 z-10">
+              <tr className="border-b border-border bg-surface-2 text-left text-2xs font-semibold uppercase tracking-wider text-subtle">
+                <th className="bg-surface-2 px-4 py-3">Gate Entry No</th>
+                <th className="bg-surface-2 px-4 py-3">Vehicle No</th>
+                <th className="bg-surface-2 px-4 py-3">In-Time</th>
+                <th className="bg-surface-2 px-4 py-3">Supplier Name</th>
+                <th className="bg-surface-2 px-4 py-3 text-right">Net Wt / Qty</th>
+                <th className="bg-surface-2 px-4 py-3 text-right">Total Value</th>
+                <th className="bg-surface-2 px-4 py-3">Invoice Number</th>
+                <th className="bg-surface-2 px-4 py-3">Doc Ref Number</th>
+                <th className="bg-surface-2 px-4 py-3 text-center">Status</th>
+                <th className="bg-surface-2 px-4 py-3 text-center">GRN Status</th>
+                <th className="bg-surface-2 px-4 py-3 text-center">PI Status</th>
+                <th className="bg-surface-2 px-4 py-3 text-right min-w-[220px]">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pagedRows.map((r) => (
+                <Fragment key={r.id}>
+                <tr
+                  className="cursor-pointer border-b border-border last:border-0 transition hover:bg-primary-subtle/30"
+                  onClick={() => { setExpandedId((cur) => (cur === r.id ? null : r.id)); ensureDetail(r.id); }}
+                  onMouseEnter={(e) => { setHover({ row: r, x: e.clientX, y: e.clientY }); ensureDetail(r.id); }}
+                  onMouseMove={(e) => setHover({ row: r, x: e.clientX, y: e.clientY })}
+                  onMouseLeave={() => setHover(null)}
+                >
+                  <td className="px-4 py-3"><span className="font-mono text-xs font-semibold text-foreground">{r.gateEntryNo}</span></td>
+                  <td className="px-4 py-3 font-medium text-foreground">{r.vehicleNo}</td>
+                  <td className="px-4 py-3 text-sm font-semibold text-foreground">{r.arrivalTime ? new Date(r.arrivalTime).toLocaleString() : "—"}</td>
+                  <td className="px-4 py-3 text-sm font-semibold text-foreground">{r.supplierName ?? "—"}</td>
+                  <td className="px-4 py-3 text-right text-sm font-semibold tabular-nums text-foreground">{r.grnNetWeight != null ? fmt.qty(r.grnNetWeight) : "—"}</td>
+                  <td className="px-4 py-3 text-right text-sm font-semibold tabular-nums text-foreground">{r.grnTotalValue != null ? fmt.money(r.grnTotalValue) : "—"}</td>
+                  <td className="px-4 py-3 text-sm text-muted">{r.piInvoiceNo ?? "—"}</td>
+                  <td className="px-4 py-3 text-sm text-muted">{r.piDocRefNo ?? "—"}</td>
+                  <td className="px-4 py-3 text-center"><Badge tone={STATUS_TONE[r.status]}>{STATUS_DISPLAY_LABEL[r.status] ?? r.status}</Badge></td>
+                  <td className="px-4 py-3 text-center">{r.grnStatus ? <Badge tone={r.grnStatus === "Posted" ? "success" : r.grnStatus === "Cancelled" ? "danger" : "warning"}>{r.grnStatus}</Badge> : <span className="text-2xs text-subtle">—</span>}</td>
+                  <td className="px-4 py-3 text-center">{r.invoiceRecorded == null ? <span className="text-2xs text-subtle">—</span> : <Badge tone={r.invoiceRecorded ? "success" : "warning"}>{r.invoiceRecorded ? "Posted" : "Not Posted"}</Badge>}</td>
+                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex flex-wrap items-center justify-end gap-1.5">
+                      {/* Raw Material arrives already loaded — it's Inside Factory from the
+                          moment it's recorded, no separate wait/unloading steps to work
+                          through. Gross Weight (if deferred) and Create/View GRN are both
+                          available as soon as it's inside. */}
+                      {r.status === "Inside Factory" && (
+                        <>
+                          {r.grossWeight == null && <Button size="sm" variant="outline" className="whitespace-nowrap" onClick={() => router.push(`/transport/gate-entry/${r.id}/gross-weight`)}><Scale className="h-3.5 w-3.5" /> Update Gross Weight</Button>}
+                          {r.grnId ? (
+                            <Button size="sm" variant="secondary" className="whitespace-nowrap" onClick={() => router.push(`/purchase/grn/${r.grnId}`)}><Eye className="h-3.5 w-3.5" /> {r.grnStatus === "Posted" ? "View Details" : "View GRN"}</Button>
+                          ) : (
+                            <Button size="sm" variant="secondary" className="whitespace-nowrap" onClick={() => startGrn(r)}><FileText className="h-3.5 w-3.5" /> Create GRN</Button>
+                          )}
+                        </>
+                      )}
+                      {r.status === "Exited" && <Badge tone="success"><ShieldCheck className="h-3 w-3" /> Exited</Badge>}
+                    </div>
+                  </td>
+                </tr>
+                {expandedId === r.id && (
+                  <tr className="border-b border-border bg-surface-2/60 last:border-0">
+                    <td colSpan={12} className="px-4 py-3">
+                      <RowDetailGrid row={r} fmt={fmt} detail={detailCache[r.id]} />
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
+              ))}
+              {loading && rows.length === 0 && <tr><td colSpan={12} className="px-4 py-8"><AppLoader label="Loading gate entries…" size="sm" /></td></tr>}
+              {!loading && rows.length === 0 && <tr><td colSpan={12} className="px-4 py-10 text-center text-sm text-muted">{notAuthed ? <>Please <Link href="/login" className="font-semibold text-primary hover:underline">sign in</Link>.</> : "No raw material gate entries yet."}</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        {rows.length > 0 && (
+          <Pagination page={currentPage} pageSize={pageSize} total={rows.length} onPageChange={setPage} onPageSizeChange={(s) => { setPageSize(s); setPage(1); }} label="gate entries" />
+        )}
+      </div>
+      )}
 
       {hover && <RowHoverPopover row={hover.row} x={hover.x} y={hover.y} fmt={fmt} detail={detailCache[hover.row.id]} />}
 
       {exitRow && <GateExitModal row={exitRow} onClose={() => setExitRow(null)} onSaved={(warning) => { setExitRow(null); load(); if (warning) toast.warning(warning); else toast.success("Vehicle exited."); }} />}
+
+      {newEntryOpen && <NewEntryTypeModal onClose={() => setNewEntryOpen(false)} onPick={(t) => { setNewEntryOpen(false); router.push(`/transport/gate-entry/new?entryType=${t}`); }} />}
 
       {/* Full-page loader for every list-refreshing activity — initial load,
           live search-as-you-type, the explicit Search button, and Clear — not
@@ -317,6 +489,31 @@ export function VehicleGateEntryScreen() {
           <AppLoader label="Searching…" />
         </div>
       )}
+    </div>
+  );
+}
+
+function NewEntryTypeModal({ onClose, onPick }: { onClose: () => void; onPick: (type: "Dispatch" | "RawMaterial") => void }) {
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-border bg-surface-2 px-5 py-3.5">
+          <h2 className="text-sm font-bold text-foreground">Vehicle Entry Type</h2>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-surface hover:text-foreground"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="grid gap-3 p-5 sm:grid-cols-2">
+          <button type="button" onClick={() => onPick("Dispatch")} className="flex flex-col items-start gap-2 rounded-xl border border-border bg-surface p-4 text-left transition hover:border-primary hover:bg-primary-subtle/30">
+            <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary-subtle text-primary"><Truck className="h-5 w-5" /></span>
+            <span className="text-sm font-bold text-foreground">Empty Vehicle</span>
+            <span className="text-2xs text-muted">For Stock Dispatch from the Unit</span>
+          </button>
+          <button type="button" onClick={() => onPick("RawMaterial")} className="flex flex-col items-start gap-2 rounded-xl border border-border bg-surface p-4 text-left transition hover:border-primary hover:bg-primary-subtle/30">
+            <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary-subtle text-primary"><Package className="h-5 w-5" /></span>
+            <span className="text-sm font-bold text-foreground">Loaded Vehicle</span>
+            <span className="text-2xs text-muted">Raw Material Entry to the unit</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -379,6 +576,22 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: "pri
 function detailFields(row: Row, fmt: ReturnType<typeof useFmt>, detail: HoverDetail | null | undefined): { label: string; value: string; highlight?: boolean }[] {
   const loading = detail === null;
   const weight = (v: number | null | undefined) => (loading ? "…" : v != null ? `${v} kg` : "—");
+  if (row.entryType === "RawMaterial") {
+    return [
+      { label: "Driver", value: row.driverName ?? "—" },
+      { label: "Transport Company", value: row.transportCompanyName ?? "—" },
+      { label: "Supplier GSTIN", value: row.supplierGstin ?? "—" },
+      { label: "Product", value: loading ? "…" : detail?.productName ?? "—", highlight: true },
+      { label: "Gross Weight", value: weight(detail?.grossWeight) },
+      { label: "Tare Weight", value: weight(detail?.tareWeight) },
+      { label: "Net Weight / Qty", value: weight(detail?.netWeight) },
+      { label: "Invoice No", value: loading ? "…" : detail?.invoiceNo ?? "—" },
+      { label: "Invoice Date", value: loading ? "…" : detail?.invoiceDate ?? "—" },
+      { label: "PO No", value: loading ? "…" : detail?.poNo ?? "—" },
+      { label: "Doc Ref No", value: loading ? "…" : detail?.docRefNo ?? "—" },
+      { label: "Remarks", value: row.remarks ?? "—" },
+    ];
+  }
   return [
     { label: "Driver", value: row.driverName ?? "—" },
     { label: "Transport Company", value: row.transportCompanyName ?? "—" },

@@ -10,6 +10,7 @@ import { getDispatchConfig } from "@/lib/settings/dispatchConfig";
 import { buildGateEntryNo } from "@/lib/settings/transportConfigDefaults";
 
 const PERM = "transport.gate-entry";
+const num = (v: unknown) => (v == null ? 0 : Number(v));
 
 // GET /api/transport/gate-entry — list + stats.
 export async function GET(req: Request) {
@@ -39,9 +40,18 @@ export async function GET(req: Request) {
   // so e.g. "DC Generated but Invoice Not Posted" is just both filters set at once.
   const dcStatusFilter = url.searchParams.get("dcStatus") ?? "All";
   const invoiceStatusFilter = url.searchParams.get("invoiceStatus") ?? "All";
+  // Raw Material tab equivalents of dcStatus/invoiceStatus above — filter by the
+  // linked GRN's own status / invoice-recorded flag instead of a Load & Dispatch's.
+  const grnStatusFilter = url.searchParams.get("grnStatus") ?? "All"; // All | Draft | Posted | None
+  const piStatusFilter = url.searchParams.get("piStatus") ?? "All"; // All | Posted | NotPosted
+  // Vehicle Entry Type tab — "Dispatch" (outbound, default) vs "RawMaterial"
+  // (inbound). Empty means "don't filter" (kept for any caller not yet aware
+  // of the tab split); the list page always sends one of the two explicitly.
+  const entryType = (url.searchParams.get("entryType") ?? "").trim();
 
   const sw = scopeWhere(await getActiveScope(user), { branch: true });
   const where: Prisma.VehicleGateEntryWhereInput = { ...sw, deletedAt: null };
+  if (entryType) where.entryType = entryType;
   if (q) where.OR = [{ gateEntryNo: { contains: q } }, { referenceNo: { contains: q } }, { customerName: { contains: q } }];
   // Used by Direct Customer Dispatch to auto-load Transport/Driver details +
   // the gate reference number once a customer is picked, without a separate
@@ -83,6 +93,27 @@ export async function GET(req: Request) {
     const matches = await prisma.loadDispatch.findMany({ where: dw, select: { vehicleGateEntryId: true } });
     idRestrictions.push(Array.from(new Set(matches.map((m) => m.vehicleGateEntryId).filter((v): v is number => v != null))));
   }
+  // GRN Status / PI Status filters (Raw Material) — combinable, same rule as
+  // dcStatus/invoiceStatus above: resolve against the linked GRN's own status
+  // / invoiceRecorded flag, scoped by everything already on `where` so far.
+  if (grnStatusFilter !== "All" || piStatusFilter !== "All") {
+    const candidates = await prisma.vehicleGateEntry.findMany({ where, select: { id: true, grnId: true } });
+    const gIds = Array.from(new Set(candidates.map((c) => c.grnId).filter((v): v is number => !!v)));
+    const gRows = gIds.length ? await prisma.goodsReceiptNote.findMany({ where: { id: { in: gIds } }, select: { id: true, status: true, invoiceRecorded: true } }) : [];
+    const gMap = new Map(gRows.map((g) => [g.id, g]));
+    const matchIds = candidates.filter((c) => {
+      const g = c.grnId ? gMap.get(c.grnId) : null;
+      if (grnStatusFilter === "None" && g) return false;
+      if (grnStatusFilter !== "All" && grnStatusFilter !== "None" && (!g || g.status !== grnStatusFilter)) return false;
+      if (piStatusFilter !== "All") {
+        const posted = !!g?.invoiceRecorded;
+        if (piStatusFilter === "Posted" && !posted) return false;
+        if (piStatusFilter === "NotPosted" && posted) return false;
+      }
+      return true;
+    }).map((c) => c.id);
+    idRestrictions.push(matchIds);
+  }
   // Stats cards read scope-wide (ignoring the list's own search/status/date
   // filters) — Load & Dispatch Completed / DC Generated / Invoice Posted are
   // derived from each gate entry's most-recent linked Load & Dispatch status,
@@ -90,7 +121,7 @@ export async function GET(req: Request) {
   const DISPATCHED_OR_LATER = ["Dispatched", "Delivery Challan Generated", "Sales Invoice Posted"];
   const DC_OR_LATER = ["Delivery Challan Generated", "Sales Invoice Posted"];
   async function computeStats() {
-    const allEntries = await prisma.vehicleGateEntry.findMany({ where: { ...sw, deletedAt: null }, select: { id: true } });
+    const allEntries = await prisma.vehicleGateEntry.findMany({ where: { ...sw, deletedAt: null, ...(entryType ? { entryType } : {}) }, select: { id: true } });
     const allIds = allEntries.map((e) => e.id);
     const allDispatchesForStats = allIds.length
       ? await prisma.loadDispatch.findMany({ where: { vehicleGateEntryId: { in: allIds }, deletedAt: null }, orderBy: { id: "desc" }, select: { vehicleGateEntryId: true, status: true } })
@@ -140,8 +171,8 @@ export async function GET(req: Request) {
 
   const [rows, waiting, inside] = await Promise.all([
     prisma.vehicleGateEntry.findMany({ where, orderBy: { createdAt: "desc" }, take: 100 }),
-    prisma.vehicleGateEntry.count({ where: { ...sw, status: "Waiting", deletedAt: null } }),
-    prisma.vehicleGateEntry.count({ where: { ...sw, status: "Inside Factory", deletedAt: null } }),
+    prisma.vehicleGateEntry.count({ where: { ...sw, status: "Waiting", deletedAt: null, ...(entryType ? { entryType } : {}) } }),
+    prisma.vehicleGateEntry.count({ where: { ...sw, status: "Inside Factory", deletedAt: null, ...(entryType ? { entryType } : {}) } }),
   ]);
 
   const vehicleIds = Array.from(new Set(rows.map((r) => r.vehicleId)));
@@ -158,6 +189,24 @@ export async function GET(req: Request) {
     // status/action for that row instead of the raw physical gate status.
     gateEntryIds.length ? prisma.loadDispatch.findMany({ where: { vehicleGateEntryId: { in: gateEntryIds }, deletedAt: null }, orderBy: { id: "desc" }, select: { id: true, vehicleGateEntryId: true, status: true, totalQty: true, saleId: true, dispatchDate: true } }) : Promise.resolve([]),
   ]);
+  // The GRN a Raw Material entry spawned, once created — its own status/tare/net
+  // weight/value/invoice-recorded takes over the Raw Material table's GRN-derived columns.
+  const grnIds = Array.from(new Set(rows.map((r) => r.grnId).filter((v): v is number => !!v)));
+  const grns = grnIds.length
+    ? await prisma.goodsReceiptNote.findMany({ where: { id: { in: grnIds } }, select: { id: true, status: true, tareWeight: true, totalQty: true, totalValue: true, invoiceRecorded: true, purchaseInvoiceId: true } })
+    : [];
+  const grnMap = new Map(grns.map((g) => [g.id, g]));
+  // Once a Purchase Invoice is posted against the GRN, its own supplierInvoiceNo/
+  // supplierRef/poNo/date are the authoritative "Invoice Number"/"Doc Ref Number" —
+  // the GRN's own supplierInvoiceNo may be blank/stale if it wasn't filled in at GRN time.
+  const piIds = Array.from(new Set(grns.map((g) => g.purchaseInvoiceId).filter((v): v is number => !!v)));
+  const pis = piIds.length
+    ? await prisma.purchaseInvoice.findMany({ where: { id: { in: piIds } }, select: { id: true, supplierInvoiceNo: true, supplierInvoiceDate: true, poNo: true, supplierRef: true } })
+    : [];
+  const piMap = new Map(pis.map((p) => [p.id, p]));
+  const supplierIds = Array.from(new Set(rows.map((r) => r.supplierId).filter((v): v is number => !!v)));
+  const rmSuppliers = supplierIds.length ? await prisma.supplier.findMany({ where: { id: { in: supplierIds } }, select: { id: true, gstin: true } }) : [];
+  const supplierGstinMap = new Map(rmSuppliers.map((s) => [s.id, s.gstin]));
   const vMap = new Map(vehicles.map((v) => [v.id, v.vehicleNo]));
   const dMap = new Map(drivers.map((d) => [d.id, d.name]));
   const cMap = new Map(companies.map((c) => [c.id, c.name]));
@@ -184,6 +233,8 @@ export async function GET(req: Request) {
   const shaped = rows.map((r) => {
     const dispatch = dispatchMap.get(r.id);
     const sale = dispatch?.saleId ? saleMap.get(dispatch.saleId) : undefined;
+    const grn = r.grnId ? grnMap.get(r.grnId) : null;
+    const pi = grn?.purchaseInvoiceId ? piMap.get(grn.purchaseInvoiceId) : null;
     return {
       id: r.id, gateEntryNo: r.gateEntryNo, vehicleId: r.vehicleId, vehicleNo: vMap.get(r.vehicleId) ?? "—",
       // Prefer the actual driver captured at the gate (may differ from any planned driver) —
@@ -206,11 +257,34 @@ export async function GET(req: Request) {
       preLoadWeight: null as number | null, postLoadWeight: null as number | null, netWeight: null as number | null,
       saleType: sale?.paymentMode ?? null, saleOutstanding: sale ? Number(sale.total) - Number(sale.amountPaid) : null,
       createdAt: r.createdAt.toISOString(),
+      entryType: r.entryType, supplierId: r.supplierId, supplierName: r.supplierName,
+      supplierGstin: r.supplierId ? (supplierGstinMap.get(r.supplierId) ?? null) : null,
+      expectedMaterial: r.expectedMaterial, grossWeight: r.grossWeight != null ? Number(r.grossWeight) : null,
+      grnId: r.grnId, grnStatus: r.grnId ? (grnMap.get(r.grnId)?.status ?? null) : null,
+      tareWeight: r.grnId ? num(grnMap.get(r.grnId)?.tareWeight) : null,
+      grnNetWeight: r.grnId ? num(grnMap.get(r.grnId)?.totalQty) : null,
+      grnTotalValue: r.grnId ? num(grnMap.get(r.grnId)?.totalValue) : null,
+      invoiceRecorded: r.grnId ? (grnMap.get(r.grnId)?.invoiceRecorded ?? false) : null,
+      // Once a PI is posted, its own fields are authoritative for these — see the piMap comment above.
+      piInvoiceNo: pi?.supplierInvoiceNo ?? null, piInvoiceDate: pi?.supplierInvoiceDate ?? null,
+      piPoNo: pi?.poNo ?? null, piDocRefNo: pi?.supplierRef ?? null,
     };
   });
 
   const stats = await statsPromise!;
-  return NextResponse.json({ ok: true, rows: shaped, stats: { total: stats.total, waiting, inside, completed: stats.completed, dcGenerated: stats.dcGenerated, invoicePosted: stats.invoicePosted } });
+  // Raw Material stat cards (GRN Posted / Invoice Posted) — scope-wide like
+  // waiting/inside above, ignoring the list's own search/date/status filters.
+  let grnPosted = 0, grnInvoicePosted = 0;
+  if (entryType === "RawMaterial") {
+    const allRM = await prisma.vehicleGateEntry.findMany({ where: { ...sw, deletedAt: null, entryType: "RawMaterial" }, select: { grnId: true } });
+    const rmGrnIds = Array.from(new Set(allRM.map((e) => e.grnId).filter((v): v is number => !!v)));
+    if (rmGrnIds.length) {
+      const rmGrns = await prisma.goodsReceiptNote.findMany({ where: { id: { in: rmGrnIds } }, select: { status: true, invoiceRecorded: true } });
+      grnPosted = rmGrns.filter((g) => g.status === "Posted").length;
+      grnInvoicePosted = rmGrns.filter((g) => g.invoiceRecorded).length;
+    }
+  }
+  return NextResponse.json({ ok: true, rows: shaped, stats: { total: stats.total, waiting, inside, completed: stats.completed, dcGenerated: stats.dcGenerated, invoicePosted: stats.invoicePosted, grnPosted, grnInvoicePosted } });
   } catch (err) {
     console.error("[transport/gate-entry] list error", err);
     return NextResponse.json({ ok: false, message: "Could not load gate entries — please try again." }, { status: 500 });
@@ -282,6 +356,15 @@ export async function POST(req: Request) {
     if (dupe) return NextResponse.json({ ok: false, message: `Gate Entry No "${input.gateEntryNo}" is already in use.` }, { status: 409 });
   }
 
+  // Raw Material entry — supplier NAME is always re-resolved server-side from
+  // supplierId, never trusted from the client (same pattern as customerName above).
+  let supplierName: string | null = null;
+  if (input.entryType === "RawMaterial" && input.supplierId) {
+    const sup = await prisma.supplier.findFirst({ where: { id: input.supplierId, tenantId: user.tenantId }, select: { name: true } });
+    if (!sup) return NextResponse.json({ ok: false, message: "Selected supplier was not found." }, { status: 422 });
+    supplierName = sup.name;
+  }
+
   let sourceWarehouse: string | null = null;
   let destinationWarehouse: string | null = null;
   if (input.dispatchType === "StockTransfer" && input.transferRequestId) {
@@ -331,6 +414,13 @@ export async function POST(req: Request) {
           gpsAvailable: input.gpsAvailable ?? false, sealNumber: input.sealNumber ?? undefined,
           purpose: input.purpose ?? undefined, expectedExitTime: input.expectedExitTime ? new Date(input.expectedExitTime) : undefined,
           loadingBayId: input.loadingBayId ?? undefined,
+          entryType: input.entryType ?? "Dispatch", supplierId: input.supplierId ?? undefined, supplierName: supplierName ?? undefined,
+          expectedMaterial: input.expectedMaterial ?? undefined, grossWeight: input.grossWeight ?? undefined,
+          // Raw Material arrives already loaded — it's inside from the moment it's
+          // recorded (no separate "Waiting"/Move Inside step); there's no unloading
+          // status/process to track either, straight to Inside Factory → Create GRN.
+          // Gross Weight is tracked independently (grossWeight null/not-null), not via status.
+          status: input.entryType === "RawMaterial" ? "Inside Factory" : "Waiting",
           createdBy: user.id,
         },
         select: { id: true },

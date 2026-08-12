@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Truck, Search, Save, Send, ArrowLeft, Boxes, IndianRupee, ListChecks, Plus, Trash2, ChevronDown, Layers, Wallet, FileText, Info, ShoppingBag } from "lucide-react";
+import { Truck, Search, Save, Send, ArrowLeft, Boxes, IndianRupee, ListChecks, Plus, Trash2, ChevronDown, Layers, Wallet, FileText, Info, ShoppingBag, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SectionCard } from "@/components/ui/SectionCard";
+import { GrnFlowStepper } from "@/components/purchase/GrnFlowStepper";
 import { formatMoneyWith, formatQtyWith } from "@/lib/settings/generalConfig";
 import { useGeneralConfig } from "@/components/settings/GeneralConfigProvider";
 import { useToast } from "@/components/ui/Toast";
@@ -77,6 +78,9 @@ export function GrnEditor() {
   const router = useRouter();
   const toaster = useToast();
   const [grnId, setGrnId] = useState<number | null>(null);
+  // Set only when arriving from a Raw Material Vehicle Gate Entry's "Create GRN"
+  // link — forwarded on save so the server can back-link the gate entry to this GRN.
+  const [sourceGateEntryId, setSourceGateEntryId] = useState<number | null>(null);
   const [grnNo, setGrnNo] = useState("");
   const [grnDate, setGrnDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [supplier, setSupplier] = useState("");
@@ -148,17 +152,20 @@ export function GrnEditor() {
   const [tareWeight, setTareWeight] = useState("");
   const [grossWeight, setGrossWeight] = useState("");
   const netWeight = n(grossWeight) > 0 || n(tareWeight) > 0 ? +(n(grossWeight) - n(tareWeight)).toFixed(3) : null;
-  useEffect(() => {
-    if (!enableTruckWeightGrn || netWeight == null || netWeight <= 0) return;
+  // Supplier-stated net weight from their bill — stored separately from the
+  // calculated netWeight above (never overwrites it), but drives Qty when applied.
+  const [billNetWeight, setBillNetWeight] = useState("");
+  const effectiveNetWeight = n(billNetWeight) > 0 ? n(billNetWeight) : netWeight;
+  // Applying is an explicit action (button), not automatic-on-type — typing digits
+  // one at a time would otherwise recompute Qty/value on every keystroke.
+  function applyWeightToQty() {
+    if (effectiveNetWeight == null || effectiveNetWeight <= 0) return;
     setLines((prev) => {
       if (prev.length !== 1 || !prev[0].productId) return prev;
-      const qty = String(+convertWeightToQty(netWeight, truckWeightUom, prev[0].uom).toFixed(3));
+      const qty = String(+convertWeightToQty(effectiveNetWeight, truckWeightUom, prev[0].uom).toFixed(3));
       return prev[0].qty === qty ? prev : [{ ...prev[0], qty }];
     });
-    // Re-fires when a line is added/removed (lines.length) or the single line's
-    // product changes (productId) — not just when the weight/config itself changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [netWeight, enableTruckWeightGrn, truckWeightUom, lines.length, lines[0]?.productId]);
+  }
 
   // Supplier master (dropdown + inline add-new)
   const [suppliers, setSuppliers] = useState<SupplierRow[]>([]);
@@ -178,6 +185,17 @@ export function GrnEditor() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suppliers, supplier]);
+  // Resolve a supplier known by id (from a Raw Material Gate Entry prefill) once
+  // the supplier list arrives — sets name/GSTIN/contact together, like pickSupplier.
+  const [gatePrefillSupplierId, setGatePrefillSupplierId] = useState<number | null>(null);
+  useEffect(() => {
+    if (gatePrefillSupplierId == null) return;
+    const sup = suppliers.find((s) => s.id === gatePrefillSupplierId);
+    if (sup) {
+      setSupplier(sup.name); setSupplierId(sup.id); setSupplierGstin(sup.gstin); setSupplierContact(sup.phone || sup.contactPerson);
+      setGatePrefillSupplierId(null);
+    }
+  }, [suppliers, gatePrefillSupplierId]);
   useEffect(() => {
     (async () => {
       try { const p = await fetch("/api/settings/pos", { cache: "no-store" }).then((r) => r.json()); if (p.ok && p.config?.taxMethod) setTaxIncl(p.config.taxMethod !== "exclusive"); } catch { /* default inclusive */ }
@@ -258,6 +276,50 @@ export function GrnEditor() {
   const [showInvoiceWarn, setShowInvoiceWarn] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
 
+  // Prefill from a Raw Material Vehicle Gate Entry's "Create GRN" link — only
+  // applies to a fresh GRN (never overwrites data loaded for an edit below).
+  // Query params give an immediate minimal prefill; the gate entry's full detail
+  // (fetched right after) fills in GSTIN, transporter and the item/brand line.
+  // Guarded against React StrictMode's dev-mode double effect invocation, which
+  // would otherwise fetch + addLine twice and leave a duplicate product line.
+  const gatePrefillStarted = useRef(false);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("id")) return;
+    const vNo = params.get("vehicleNo");
+    const supName = params.get("supplier");
+    const gw = params.get("grossWeight");
+    const geId = Number(params.get("gateEntryId"));
+    if (vNo) setE("vehicleNo", vNo);
+    if (supName) setSupplier(supName);
+    if (gw) setGrossWeight(gw);
+    if (!geId || gatePrefillStarted.current) return;
+    gatePrefillStarted.current = true;
+    setSourceGateEntryId(geId);
+    (async () => {
+      try {
+        const j = await fetch(`/api/transport/gate-entry/${geId}`, { cache: "no-store" }).then((r) => r.json());
+        if (!j.ok || !j.data) return;
+        const d = j.data;
+        if (d.supplierId) setGatePrefillSupplierId(d.supplierId);
+        else if (d.supplierName) setSupplier(d.supplierName);
+        if (d.transportCompanyName) setE("transporterName", d.transportCompanyName);
+        if (d.grossWeight != null) setGrossWeight(String(d.grossWeight));
+        const item = (d.items ?? [])[0];
+        if (item?.productId) {
+          const cj = await fetch(`/api/products?q=${encodeURIComponent(item.sku || item.productName)}&pageSize=20`, { cache: "no-store" }).then((r) => r.json());
+          if (cj.ok) {
+            const cand = flatten(cj.rows).find((c) => c.productId === item.productId);
+            // Qty starts blank — the user applies the vehicle weight explicitly (Apply to
+            // Qty), rather than a default "1" that looks like a real value if left alone.
+            if (cand) addLine(cand, { qty: "", supplierIdOverride: d.supplierId || undefined });
+          }
+        }
+      } catch { /* keep the minimal query-param prefill already applied */ }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     const id = Number(new URLSearchParams(window.location.search).get("id"));
     if (!id) return;
@@ -268,6 +330,7 @@ export function GrnEditor() {
       setGrnId(d.id); setGrnNo(d.grnNo); setGrnDate(d.grnDate); setSupplier(d.supplier); setSupplierId(suppliers.find((s) => s.name === d.supplier)?.id ?? ""); setSupplierGstin(d.supplierGstin);
       setSupplierContact(d.supplierContact); setSupplierInvoiceNo(d.supplierInvoiceNo); setSupplierInvoiceDate(d.supplierInvoiceDate);
       setPoNo(d.poNo); setWarehouse(d.warehouse || WAREHOUSES[0]); setNotes(d.notes);
+      if (d.gateEntryId) setSourceGateEntryId(d.gateEntryId);
       const sv = (v: unknown) => (v === null || v === undefined || v === "" ? "" : String(v));
       setGstMode(d.gstMode === "invoice" ? "invoice" : "line");
       setGstApplicable(Number(d.taxTotal) > 0 || Number(d.gstPct) > 0 || (d.lines ?? []).some((l: Record<string, unknown>) => Number(l.taxPct) > 0));
@@ -280,6 +343,7 @@ export function GrnEditor() {
       // Re-open a truck-weight GRN with its captured weighment values (net weight stays derived).
       if (d.weightUom) {
         setTareWeight(sv(d.tareWeight)); setGrossWeight(sv(d.grossWeight)); setTruckWeightUom(String(d.weightUom));
+        setBillNetWeight(sv(d.billNetWeight));
       }
       setLines(d.lines.map((l: Record<string, unknown>) => ({
         key: `k${keySeq++}`, productId: l.productId as number, productName: l.productName as string, sku: (l.sku as string) || "",
@@ -333,13 +397,17 @@ export function GrnEditor() {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  async function addLine(c: Candidate) {
+  // supplierIdOverride lets a caller that already knows the supplier (e.g. the
+  // gate-entry prefill, which fires before the `supplierId` state has resolved)
+  // look up the Supplier Product Price without waiting on that state to catch up.
+  async function addLine(c: Candidate, opts?: { qty?: string; supplierIdOverride?: number }) {
     // Purchase price prefers the Supplier Product Price master (per-supplier rate);
     // falls back to the 70%-of-MRP heuristic when no supplier is picked or no match exists.
     let cost = c.mrp ? Math.round(c.mrp * 0.7) : 0;
-    if (supplierId !== "") {
+    const sid = opts?.supplierIdOverride ?? supplierId;
+    if (sid !== "" && sid != null) {
       try {
-        const j = await fetch(`/api/masters/purchase/supplier-product-price?supplierId=${supplierId}&productId=${c.productId}`, { cache: "no-store" }).then((r) => r.json());
+        const j = await fetch(`/api/masters/purchase/supplier-product-price?supplierId=${sid}&productId=${c.productId}`, { cache: "no-store" }).then((r) => r.json());
         const match = j.ok ? (j.rows ?? []).find((r: { status: string }) => r.status === "Active") ?? j.rows?.[0] : null;
         if (match) cost = Number(match.purchasePrice) || cost;
       } catch { /* fall back to the MRP heuristic */ }
@@ -348,7 +416,8 @@ export function GrnEditor() {
     // Auto-expand the batch section when the product is batch/mfg/expiry tracked so
     // the required fields are visible immediately.
     const tracked = !!(c.invBatch || c.invMfg || c.invExpiry || c.invSerial);
-    setLines((p) => [...p, { ...c, key: `k${keySeq++}`, qty: "1", rate: cost ? String(cost) : "", sellingPrice: c.mrp ? String(c.mrp) : "", profitPct: profit, discPct: "", taxPct: c.gst ? String(c.gst) : "", mrpStr: c.mrp ? String(c.mrp) : "", batchNo: "", mfgDate: "", expiryDate: "", remarks: "", qrMode: c.invSerial ? "unique" : "shared", expanded: tracked, serials: [] }]);
+    const qty = opts?.qty ?? "1";
+    setLines((p) => [...p, { ...c, key: `k${keySeq++}`, qty, rate: cost ? String(cost) : "", sellingPrice: c.mrp ? String(c.mrp) : "", profitPct: profit, discPct: "", taxPct: c.gst ? String(c.gst) : "", mrpStr: c.mrp ? String(c.mrp) : "", batchNo: "", mfgDate: "", expiryDate: "", remarks: "", qrMode: c.invSerial ? "unique" : "shared", expanded: tracked, serials: [] }]);
     // Keep trackMap in sync so validation works even if flags are read from the map.
     setTrackMap((m) => ({ ...m, [c.productId]: { invBatch: c.invBatch, invMfg: c.invMfg, invExpiry: c.invExpiry, invSerial: c.invSerial } }));
     setQuery(""); setCandidates([]); setOpenPicker(false);
@@ -432,6 +501,8 @@ export function GrnEditor() {
       gstPct: gstApplicable && gstMode === "invoice" ? extra.gstPct : "",
       tareWeight: enableTruckWeightGrn ? tareWeight : "", grossWeight: enableTruckWeightGrn ? grossWeight : "",
       netWeight: enableTruckWeightGrn && netWeight != null ? String(netWeight) : "", weightUom: enableTruckWeightGrn ? truckWeightUom : "",
+      billNetWeight: enableTruckWeightGrn ? billNetWeight : "",
+      gateEntryId: !grnId && sourceGateEntryId ? sourceGateEntryId : undefined,
       lines: lines.map((l) => ({ productId: l.productId, productName: l.productName, sku: l.sku, uom: l.uom, category: l.category, qty: l.qty, rate: l.rate, sellingPrice: l.sellingPrice, discPct: l.discPct, taxPct: gstApplicable && gstMode === "line" ? l.taxPct : "", mrp: l.mrpStr, batchNo: l.batchNo, mfgDate: l.mfgDate, expiryDate: l.expiryDate, remarks: l.remarks, qrMode: reqFor(l).serial ? "unique" : l.qrMode, serials: reqFor(l).serial ? l.serials.map((s) => s.trim()).filter(Boolean) : undefined })),
     };
     try {
@@ -439,6 +510,10 @@ export function GrnEditor() {
       const j = await res.json().catch(() => ({}));
       if (!res.ok) { setError(j?.message || "Could not save."); toaster.error(j?.message || "Could not save the GRN."); setBusy(null); return; }
       toaster.result(j, "Saved.", "Could not save the GRN.");
+      // A GRN linked to a Vehicle Gate Entry returns to that list (it now
+      // surfaces GRN/PI status, invoice number and full detail on hover) instead
+      // of landing on the standalone GRN view page or staying on this editor.
+      if (sourceGateEntryId) { router.push("/transport/gate-entry?entryType=RawMaterial"); return; }
       if (status === "Posted") { router.push(`/purchase/grn/${grnId ?? j.id}`); return; }
       if (!grnId && j.id) setGrnId(j.id);
       setToast(j.message || "Draft saved."); window.setTimeout(() => setToast(""), 2500);
@@ -456,10 +531,23 @@ export function GrnEditor() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link href="/purchase/grn"><Button variant="outline" size="md"><ArrowLeft className="h-4 w-4" /> Back</Button></Link>
-          <Button variant="secondary" size="md" onClick={() => save("Draft")} disabled={!!busy}><Save className="h-4 w-4" /> {busy === "draft" ? "Saving…" : "Save Draft"}</Button>
-          <Button size="md" onClick={() => save("Posted")} disabled={!!busy}><Send className="h-4 w-4" /> {busy === "post" ? "Posting…" : "Post GRN"}</Button>
+          <Button variant="secondary" size="md" onClick={() => save("Draft")} disabled={!!busy}>{busy === "draft" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {busy === "draft" ? "Saving…" : "Save Draft"}</Button>
+          <Button size="md" onClick={() => save("Posted")} disabled={!!busy}>{busy === "post" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {busy === "post" ? "Posting…" : "Post GRN"}</Button>
         </div>
       </div>
+
+      {sourceGateEntryId && (
+        <GrnFlowStepper
+          steps={[
+            { label: "Vehicle Entered", done: true },
+            { label: "Gross Weight Updated", done: n(grossWeight) > 0 },
+            { label: "Stock Unloaded", done: lines.length > 0 },
+            { label: "Tare Weight Updated", done: n(tareWeight) > 0 },
+            { label: "GRN Submitted", done: false },
+            { label: "Purchase Invoice Posted", done: false },
+          ]}
+        />
+      )}
 
       {/* Create from — a fresh receipt, or one loaded from an open Purchase Order. */}
       <div className="rounded-2xl border border-border bg-card p-3 shadow-sm">
@@ -528,18 +616,22 @@ export function GrnEditor() {
 
       {enableTruckWeightGrn && (
         <SectionCard icon={Truck} title="Vehicle Weighment">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-4">
             <Field label={`Tare Weight (${truckWeightUom})`}><input type="number" min={0} value={tareWeight} onChange={(e) => setTareWeight(e.target.value)} placeholder="0" className={inp} /></Field>
             <Field label={`Gross Weight (${truckWeightUom})`}><input type="number" min={0} value={grossWeight} onChange={(e) => setGrossWeight(e.target.value)} placeholder="0" className={inp} /></Field>
             <Field label={`Net Weight (${truckWeightUom})`}><input readOnly value={netWeight != null ? String(netWeight) : ""} placeholder="0" className={cn(inp, "bg-surface-2 font-semibold text-primary")} /></Field>
+            <Field label={`Net Weight as per Bill (${truckWeightUom})`}><input type="number" min={0} value={billNetWeight} onChange={(e) => setBillNetWeight(e.target.value)} placeholder="Optional" className={inp} /></Field>
           </div>
           {lines.length === 1 && (
-            <p className="mt-2 flex flex-wrap items-center justify-between gap-2 text-2xs text-muted">
-              <span>Net Weight auto-fills the line&apos;s Qty below (converted to its own UOM).</span>
-              {netWeight != null && lines[0].uom && <span className="font-semibold text-primary">{netWeight} {truckWeightUom} = {+convertWeightToQty(netWeight, truckWeightUom, lines[0].uom).toFixed(3)} {lines[0].uom}</span>}
-            </p>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-2xs text-muted">
+                {n(billNetWeight) > 0 ? "Applying uses Net Weight as per Bill (converted to the product's UOM) — the calculated Net Weight above is kept only for record." : "Applying uses the calculated Net Weight. Enter Net Weight as per Bill to bill against the supplier's stated weight instead."}
+                {effectiveNetWeight != null && lines[0].uom && <> <span className="font-semibold text-primary">{effectiveNetWeight} {truckWeightUom} = {+convertWeightToQty(effectiveNetWeight, truckWeightUom, lines[0].uom).toFixed(3)} {lines[0].uom}</span></>}
+              </p>
+              <Button size="sm" variant="outline" onClick={applyWeightToQty} disabled={effectiveNetWeight == null || effectiveNetWeight <= 0}>Apply to Qty</Button>
+            </div>
           )}
-          {lines.length > 1 && <p className="mt-2 text-2xs text-warning">Qty auto-fill from weight only applies with a single product line — enter Qty manually for each line.</p>}
+          {lines.length > 1 && <p className="mt-2 text-2xs text-warning">Qty auto-fill from weight only applies with a single product line — remove one line first.</p>}
         </SectionCard>
       )}
 
@@ -764,8 +856,8 @@ export function GrnEditor() {
           {error && <span className="ml-3 font-medium text-danger">{error}</span>}{toast && <span className="ml-3 font-medium text-success">{toast}</span>}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="lg" onClick={() => save("Draft")} disabled={!!busy}><Save className="h-4 w-4" /> Save Draft</Button>
-          <Button size="lg" onClick={() => save("Posted")} disabled={!!busy || !valid.length}><Send className="h-4 w-4" /> {busy === "post" ? "Posting…" : "Post GRN & Receive Stock"}</Button>
+          <Button variant="secondary" size="lg" onClick={() => save("Draft")} disabled={!!busy}>{busy === "draft" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {busy === "draft" ? "Saving…" : "Save Draft"}</Button>
+          <Button size="lg" onClick={() => save("Posted")} disabled={!!busy || !valid.length}>{busy === "post" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {busy === "post" ? "Posting…" : "Post GRN & Receive Stock"}</Button>
         </div>
       </div>
 

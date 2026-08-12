@@ -28,6 +28,10 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const prods = await prisma.product.findMany({ where: { id: { in: grn.lines.map((l) => l.productId) } }, select: { id: true, qrRequired: true } });
   const qrReqMap = new Map(prods.map((p) => [p.id, p.qrRequired]));
 
+  const gateEntry = grn.gateEntryId
+    ? await prisma.vehicleGateEntry.findFirst({ where: { id: grn.gateEntryId, tenantId: user.tenantId }, select: { gateEntryNo: true, grossWeight: true, status: true } })
+    : null;
+
   const data: GrnDetail = {
       id: grn.id, grnNo: grn.grnNo, status: grn.status as GrnStatus, grnDate: grn.grnDate,
       supplier: grn.supplier ?? "", supplierGstin: grn.supplierGstin ?? "", supplierContact: grn.supplierContact ?? "",
@@ -43,11 +47,14 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       lrNo: grn.lrNo ?? "", ewayBillNo: grn.ewayBillNo ?? "", freightPaidBy: grn.freightPaidBy ?? "",
       numPackages: grn.numPackages ?? "", transportRemarks: grn.transportRemarks ?? "",
       tareWeight: grn.tareWeight != null ? num(grn.tareWeight) : "", grossWeight: grn.grossWeight != null ? num(grn.grossWeight) : "",
-      netWeight: grn.netWeight != null ? num(grn.netWeight) : "", weightUom: grn.weightUom ?? "",
+      netWeight: grn.netWeight != null ? num(grn.netWeight) : "", billNetWeight: grn.billNetWeight != null ? num(grn.billNetWeight) : "",
+      weightUom: grn.weightUom ?? "",
       emptyWeight: grn.emptyWeight != null ? num(grn.emptyWeight) : "", emptyWeightAt: grn.emptyWeightAt ? grn.emptyWeightAt.toISOString() : "",
       emptyWeightRemarks: grn.emptyWeightRemarks ?? "",
       invoiceRecorded: grn.invoiceRecorded, purchaseInvoiceId: grn.purchaseInvoiceId,
       totalQty: num(grn.totalQty), totalValue: num(grn.totalValue), lineCount: grn.lineCount,
+      gateEntryId: grn.gateEntryId ?? null,
+      gateEntry: gateEntry ? { gateEntryNo: gateEntry.gateEntryNo, grossWeight: gateEntry.grossWeight != null ? num(gateEntry.grossWeight) : null, status: gateEntry.status } : null,
       lines: grn.lines.map((l) => ({
         id: l.id, productId: l.productId, productName: l.productName, sku: l.sku ?? "", uom: l.uom ?? "", category: l.category ?? "",
         qty: num(l.qty), freeQty: l.freeQty != null ? num(l.freeQty) : "", rate: l.rate != null ? num(l.rate) : "",

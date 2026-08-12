@@ -2571,11 +2571,21 @@ model GoodsReceiptNote {
   grossWeight Decimal? @db.Decimal(18, 3)
   netWeight   Decimal? @db.Decimal(18, 3)
   weightUom   String?  @db.VarChar(10)
+  // Supplier-stated net weight (from their bill), captured separately from the
+  // calculated netWeight (Gross − Tare) above — never derived from one another.
+  // Drives line qty/value when present; kept distinct for a future reconciliation
+  // pass that diffs the two figures.
+  billNetWeight Decimal? @db.Decimal(18, 3)
   // Empty (post-unload) weight — captured after posting via "Update Empty Weight"
   emptyWeight        Decimal?  @db.Decimal(18, 3)
   emptyWeightAt      DateTime?
   emptyWeightBy      Int?
   emptyWeightRemarks String?   @db.VarChar(300)
+
+  // Back-link to the Raw Material Vehicle Gate Entry this GRN was created from
+  // (the reverse of VehicleGateEntry.grnId), so the view page can show the
+  // gate-to-GRN flow diagram without a reverse scan.
+  gateEntryId Int?
 
   totalQty   Decimal @default(0) @db.Decimal(18, 3)
   totalValue Decimal @default(0) @db.Decimal(18, 2)
@@ -8845,7 +8855,7 @@ model VehicleGateEntry {
   arrivalTime  DateTime?
   securityOfficer String? @db.VarChar(160)
   remarks String? @db.Text
-  status  String  @default("Waiting") @db.VarChar(16) // Waiting | Inside Factory | Loading | Completed | Exited
+  status  String  @default("Waiting") @db.VarChar(32) // Waiting | Inside Factory | Loading | Completed | Exited | Gross Weight Pending | Raw Material Entered (RawMaterial only)
 
   // Section 1 – Gate Information
   gate     String? @db.VarChar(60)
@@ -8884,6 +8894,15 @@ model VehicleGateEntry {
   purpose          String?   @db.VarChar(200)
   expectedExitTime DateTime?
   loadingBayId     Int?
+
+  // Vehicle Entry Type — Dispatch (outbound, default, all existing rows) vs
+  // RawMaterial (inbound, arrives loaded against a Supplier, feeds a GRN).
+  entryType        String   @default("Dispatch") @db.VarChar(20)
+  supplierId       Int?
+  supplierName     String?  @db.VarChar(200) // server-resolved from supplierId, never client-trusted
+  expectedMaterial String?  @db.VarChar(200) // free-text brand/material expected (RawMaterial only)
+  grossWeight      Decimal? @db.Decimal(18, 3) // vehicle gross weight captured at the gate (RawMaterial only)
+  grnId            Int?     // the GRN this Raw Material entry spawned, once created
 
   createdBy Int?
   updatedBy Int?

@@ -238,6 +238,13 @@ export const gateEntryInput = z.object({
     qty: z.coerce.number().min(0),
     remarks: z.string().trim().max(300).optional().nullable(),
   })).optional(),
+  // Vehicle Entry Type — Dispatch (outbound, default) vs RawMaterial (inbound,
+  // arrives loaded against a Supplier, feeds a GRN). `supplierName` is never
+  // accepted from the client — the server re-resolves it from supplierId.
+  entryType: z.enum(["Dispatch", "RawMaterial"]).optional(),
+  supplierId: z.coerce.number().int().positive().optional().nullable(),
+  expectedMaterial: z.string().trim().max(200).optional().nullable(),
+  grossWeight: z.coerce.number().min(0).optional().nullable(),
 });
 /** Gate Entry's own Dispatch Type picker — a friendly-labelled subset of
  * DISPATCH_DOC_TYPES (values stay consistent with Dispatch Execution's docType). */

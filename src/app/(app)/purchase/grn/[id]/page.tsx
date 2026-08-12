@@ -1,14 +1,16 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { ArrowLeft, Boxes, IndianRupee, CalendarClock, Truck, Pencil, X, CheckCircle2, XCircle, Scale, FileText, Wallet } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft, Boxes, IndianRupee, CalendarClock, Truck, Pencil, X, XCircle, Scale, FileText, Wallet, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { AppLoader } from "@/components/ui/AppLoader";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { useFmt } from "@/components/settings/GeneralConfigProvider";
+import { GrnFlowStepper } from "@/components/purchase/GrnFlowStepper";
+import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 
 // Shared API contract — one source of truth for the GRN detail shapes.
@@ -30,6 +32,8 @@ export default function GrnViewPage() {
   const fmt = useFmt();
   const money = (n: number) => fmt.money(n);
   const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const toast = useToast();
   const id = Number(params.id);
   const [grn, setGrn] = useState<Grn | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,9 +95,13 @@ export default function GrnViewPage() {
         poNo: piPoNo.trim() || undefined, supplierRef: piRefNo.trim() || undefined,
       }),
     }).then((r) => r.json()).catch(() => ({}));
-    setPiBusy(false);
-    if (!j.ok) { setPiError(j.message || "Could not post the purchase invoice."); return; }
+    if (!j.ok) { setPiBusy(false); setPiError(j.message || "Could not post the purchase invoice."); return; }
     setPiConfirmOpen(false);
+    toast.success("Purchase Invoice posted.");
+    // A gate-entry sourced GRN returns to that list (Raw Material tab) — same
+    // rule as GrnEditor's post-save redirect — rather than staying on this page.
+    if (grn?.gateEntryId) { router.push("/transport/gate-entry?entryType=RawMaterial"); return; }
+    setPiBusy(false);
     await load();
   }
 
@@ -101,8 +109,10 @@ export default function GrnViewPage() {
   if (!grn) return <div className="py-16 text-center text-sm text-muted">GRN not found. <Link href="/purchase/grn" className="font-semibold text-primary hover:underline">Back to list</Link></div>;
 
   // Purchase Invoice can only be posted after the GRN itself is Posted, and — for
-  // Truck Weight Based receipts — after the Empty Weight has been captured.
-  const canPostInvoice = grn.status === "Posted" && !grn.invoiceRecorded && (!grn.weightUom || hasVal(grn.emptyWeight));
+  // Truck Weight Based receipts — after the Empty Weight has been captured. Gate-entry
+  // sourced GRNs skip that gate: Tare Weight is already captured at GRN creation time,
+  // so there's no separate post-unload empty-weight step for them.
+  const canPostInvoice = grn.status === "Posted" && !grn.invoiceRecorded && (!grn.weightUom || !!grn.gateEntryId || hasVal(grn.emptyWeight));
 
   return (
     <div className="space-y-5">
@@ -115,7 +125,7 @@ export default function GrnViewPage() {
         <div className="flex items-center gap-2">
           <Link href="/purchase/grn"><Button variant="outline" size="md"><ArrowLeft className="h-4 w-4" /> Back</Button></Link>
           {grn.status !== "Cancelled" && <Link href={`/purchase/grn/new?id=${grn.id}`}><Button size="md"><Pencil className="h-4 w-4" /> Edit</Button></Link>}
-          {canPostInvoice && <Button size="md" onClick={openPiConfirm} disabled={piBusy}><FileText className="h-4 w-4" /> {piBusy ? "Posting…" : "Post Purchase Invoice"}</Button>}
+          {canPostInvoice && <Button size="md" onClick={openPiConfirm} disabled={piBusy}>{piBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />} {piBusy ? "Posting…" : "Post Purchase Invoice"}</Button>}
           {grn.status === "Posted" && <Button variant="outline" size="md" onClick={cancelGrn}><XCircle className="h-4 w-4" /> Cancel GRN</Button>}
         </div>
       </div>
@@ -185,17 +195,24 @@ export default function GrnViewPage() {
             <KV k={`Tare Weight (${grn.weightUom})`} v={fmtWt(grn.tareWeight)} />
             <KV k={`Gross Weight (${grn.weightUom})`} v={fmtWt(grn.grossWeight)} />
             <KV k={`Net Weight (${grn.weightUom})`} v={fmtWt(grn.netWeight)} strong />
-            <div className="my-1 h-px bg-border" />
-            {hasVal(grn.emptyWeight) ? (
+            {hasVal(grn.billNetWeight) && <KV k={`Net Weight as per Bill (${grn.weightUom})`} v={fmtWt(grn.billNetWeight)} tone="info" />}
+            {/* Gate-entry sourced GRNs already captured Tare Weight at GRN creation —
+                no separate post-unload Empty Weight step for them. */}
+            {!grn.gateEntryId && (
               <>
-                <KV k={`Empty Weight (${grn.weightUom})`} v={fmtWt(grn.emptyWeight)} tone="success" />
-                {grn.emptyWeightAt && <KV k="Captured On" v={new Date(grn.emptyWeightAt).toLocaleString()} />}
-                {grn.emptyWeightRemarks && <KV k="Remarks" v={grn.emptyWeightRemarks} />}
+                <div className="my-1 h-px bg-border" />
+                {hasVal(grn.emptyWeight) ? (
+                  <>
+                    <KV k={`Empty Weight (${grn.weightUom})`} v={fmtWt(grn.emptyWeight)} tone="success" />
+                    {grn.emptyWeightAt && <KV k="Captured On" v={new Date(grn.emptyWeightAt).toLocaleString()} />}
+                    {grn.emptyWeightRemarks && <KV k="Remarks" v={grn.emptyWeightRemarks} />}
+                  </>
+                ) : grn.status === "Posted" ? (
+                  <div className="flex justify-end"><Button variant="secondary" size="sm" onClick={() => setEmptyWeightOpen(true)}><Scale className="h-3.5 w-3.5" /> Update Empty Weight</Button></div>
+                ) : (
+                  <p className="text-2xs text-subtle">Available once this GRN is Posted.</p>
+                )}
               </>
-            ) : grn.status === "Posted" ? (
-              <div className="flex justify-end"><Button variant="secondary" size="sm" onClick={() => setEmptyWeightOpen(true)}><Scale className="h-3.5 w-3.5" /> Update Empty Weight</Button></div>
-            ) : (
-              <p className="text-2xs text-subtle">Available once this GRN is Posted.</p>
             )}
           </SectionCard>
         )}
@@ -244,7 +261,7 @@ export default function GrnViewPage() {
             </div>
             <div className="flex items-center justify-end gap-2 border-t border-border bg-surface-2/50 px-5 py-3">
               <Button variant="ghost" size="md" onClick={() => setPiConfirmOpen(false)}>Cancel</Button>
-              <Button size="md" onClick={postPurchaseInvoice} disabled={piBusy}><FileText className="h-4 w-4" /> {piBusy ? "Posting…" : "Post Invoice"}</Button>
+              <Button size="md" onClick={postPurchaseInvoice} disabled={piBusy}>{piBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />} {piBusy ? "Posting…" : "Post Invoice"}</Button>
             </div>
           </div>
         </div>
@@ -256,31 +273,24 @@ export default function GrnViewPage() {
 function GrnProgressFlow({ grn }: { grn: Grn }) {
   const isWeightGrn = !!grn.weightUom;
   const posted = grn.status === "Posted";
-  const steps = [
-    { label: "GRN Submitted", done: posted },
-    { label: "Inventory Updated", done: posted },
-    ...(isWeightGrn ? [{ label: "Empty Weight Updated", done: hasVal(grn.emptyWeight) }] : []),
-    { label: "Purchase Invoice", done: grn.invoiceRecorded },
-  ];
-  const currentIdx = Math.max(0, steps.findIndex((s) => !s.done));
-  const activeIdx = steps.every((s) => s.done) ? steps.length - 1 : currentIdx;
-  return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-      <div className="flex items-start">
-        {steps.map((s, i) => (
-          <Fragment key={s.label}>
-            <div className="flex w-24 shrink-0 flex-col items-center gap-1.5 sm:w-32">
-              <div className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 text-xs font-bold", s.done ? "border-success bg-success-subtle text-success" : i === activeIdx ? "border-primary bg-primary-subtle text-primary" : "border-border bg-surface text-subtle")}>
-                {s.done ? <CheckCircle2 className="h-5 w-5" /> : <span>{i + 1}</span>}
-              </div>
-              <span className={cn("text-center text-2xs font-semibold leading-tight", s.done ? "text-success" : i === activeIdx ? "text-primary" : "text-subtle")}>{s.label}</span>
-            </div>
-            {i < steps.length - 1 && <div className={cn("mt-[18px] h-0.5 flex-1", s.done ? "bg-success" : "bg-border")} />}
-          </Fragment>
-        ))}
-      </div>
-    </div>
-  );
+  // GRNs sourced from a Raw Material Vehicle Gate Entry narrate the whole
+  // gate-to-GRN journey; other GRNs keep the generic document-only steps.
+  const steps = grn.gateEntryId
+    ? [
+        { label: "Vehicle Entered", done: true },
+        { label: "Gross Weight Updated", done: hasVal(grn.gateEntry?.grossWeight ?? "") },
+        { label: "Stock Unloaded", done: grn.lineCount > 0 },
+        { label: "Tare Weight Updated", done: hasVal(grn.tareWeight) },
+        { label: "GRN Submitted", done: posted },
+        { label: "Purchase Invoice Posted", done: grn.invoiceRecorded },
+      ]
+    : [
+        { label: "GRN Submitted", done: posted },
+        { label: "Inventory Updated", done: posted },
+        ...(isWeightGrn ? [{ label: "Empty Weight Updated", done: hasVal(grn.emptyWeight) }] : []),
+        { label: "Purchase Invoice", done: grn.invoiceRecorded },
+      ];
+  return <GrnFlowStepper steps={steps} />;
 }
 
 function EmptyWeightModal({ id, weightUom, onClose, onSaved }: { id: number; weightUom: string; onClose: () => void; onSaved: () => void }) {
