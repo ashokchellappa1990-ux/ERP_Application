@@ -19,10 +19,11 @@ interface Line extends Candidate {
   serials: string[]; // manufacturer serials for serial-managed products
 }
 interface SupplierRow { id: number; name: string; gstin: string; contactPerson: string; phone: string }
-interface VehicleHit { id: number; vehicleNo: string; transportCompanyId: number | null; transportCompanyName: string | null }
+interface VehicleHit { id: number; vehicleNo: string; transportCompanyId: number | null; transportCompanyName: string | null; ownerType: string | null }
 interface PoHit { id: number; poNo: string; poDate: string; supplier: string; itemCount: number; netAmount: number }
 interface PoLoad { id: number; poNo: string; supplier: string; supplierGstin: string; supplierContact: string; warehouse: string; lines: { productId: number | null; description: string; sku: string; hsn: string; uom: string; qty: number; rate: number; taxPct: number; discPct: number }[] }
 const WAREHOUSES = ["Main Store", "Warehouse A", "Cold Storage", "Back Office"];
+const INVENTORY_MOVEMENTS = ["Move to Raw Material Main Stock", "Move to Production Plant Stock"];
 let keySeq = 1;
 const parseGst = (v: unknown) => { const n = parseFloat(String(v ?? "").replace("%", "")); return Number.isFinite(n) ? n : 0; };
 
@@ -91,6 +92,7 @@ export function GrnEditor() {
   const [poNo, setPoNo] = useState("");
   const [weightSlipRefNo, setWeightSlipRefNo] = useState("");
   const [inventoryMovement, setInventoryMovement] = useState("");
+  const [vehicleOwnerType, setVehicleOwnerType] = useState("");
   const [poSource, setPoSource] = useState<"none" | "po">("none");
   const [poQuery, setPoQuery] = useState("");
   const [poMatches, setPoMatches] = useState<PoHit[] | null>(null);
@@ -268,6 +270,7 @@ export function GrnEditor() {
   function pickVehicle(hit: VehicleHit) {
     setE("vehicleNo", hit.vehicleNo);
     if (hit.transportCompanyName) setE("transporterName", hit.transportCompanyName);
+    setVehicleOwnerType(hit.ownerType ?? "");
     setVehicleHits(null);
   }
 
@@ -310,6 +313,7 @@ export function GrnEditor() {
         if (d.transportCompanyName) setE("transporterName", d.transportCompanyName);
         if (d.weightSlipRefNo) setWeightSlipRefNo(d.weightSlipRefNo);
         if (d.inventoryMovement) setInventoryMovement(d.inventoryMovement);
+        if (d.vehicleOwnerType) setVehicleOwnerType(d.vehicleOwnerType);
         if (d.grossWeight != null) setGrossWeight(String(d.grossWeight));
         if (d.tareWeight != null) setTareWeight(String(d.tareWeight));
         // The gate-entry weighment's manually-entered Net Weight maps onto the
@@ -342,6 +346,7 @@ export function GrnEditor() {
       setSupplierContact(d.supplierContact); setSupplierInvoiceNo(d.supplierInvoiceNo); setSupplierInvoiceDate(d.supplierInvoiceDate);
       setPoNo(d.poNo); setWarehouse(d.warehouse || WAREHOUSES[0]); setNotes(d.notes);
       setWeightSlipRefNo(d.weightSlipRefNo || ""); setInventoryMovement(d.inventoryMovement || "");
+      setVehicleOwnerType(d.vehicleOwnerType || "");
       if (d.gateEntryId) setSourceGateEntryId(d.gateEntryId);
       const sv = (v: unknown) => (v === null || v === undefined || v === "" ? "" : String(v));
       setGstMode(d.gstMode === "invoice" ? "invoice" : "line");
@@ -511,7 +516,7 @@ export function GrnEditor() {
     }
     setBusy(status === "Draft" ? "draft" : "post");
     const payload = {
-      grnDate, supplier, supplierGstin, supplierContact, supplierInvoiceNo, supplierInvoiceDate, poNo, weightSlipRefNo, inventoryMovement, warehouse, notes, status,
+      grnDate, supplier, supplierGstin, supplierContact, supplierInvoiceNo, supplierInvoiceDate, poNo, weightSlipRefNo, inventoryMovement, vehicleOwnerType, warehouse, notes, status,
       gstMode: gstApplicable ? gstMode : "line", ...extra,
       gstPct: gstApplicable && gstMode === "invoice" ? extra.gstPct : "",
       tareWeight: enableTruckWeightGrn ? tareWeight : "", grossWeight: enableTruckWeightGrn ? grossWeight : "",
@@ -617,7 +622,14 @@ export function GrnEditor() {
             <Field label="GRN No."><input readOnly value={grnNo || "Auto on save"} className={cn(inp, "bg-surface-2 font-mono text-primary")} /></Field>
             <Field label="GRN Date *"><input type="date" value={grnDate} onChange={(e) => setGrnDate(e.target.value)} className={inp} /></Field>
             {enableTruckWeightGrn && <Field label="Weight Slip Ref Number"><input value={weightSlipRefNo} onChange={(e) => setWeightSlipRefNo(e.target.value)} placeholder="Optional" className={inp} /></Field>}
-            {enableTruckWeightGrn && inventoryMovement && <Field label="Inventory Movement"><input readOnly value={inventoryMovement} className={cn(inp, "bg-surface-2 text-subtle")} /></Field>}
+            {enableTruckWeightGrn && (
+              <Field label="Inventory Movement">
+                <select value={inventoryMovement} onChange={(e) => setInventoryMovement(e.target.value)} className={inp}>
+                  <option value="">— Select —</option>
+                  {INVENTORY_MOVEMENTS.map((m) => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </Field>
+            )}
             {enablePurchaseInvoice && !sourceGateEntryId && (
               <>
                 <Field label="Supplier Invoice No."><input value={supplierInvoiceNo} onChange={(e) => setSupplierInvoiceNo(e.target.value)} placeholder="INV-1234" className={inp} /></Field>
@@ -634,9 +646,9 @@ export function GrnEditor() {
         <SectionCard icon={Truck} title="Vehicle Weighment">
           <div className="grid gap-3 sm:grid-cols-4">
             <Field label={`Tare Weight (${truckWeightUom})`}><input type="number" min={0} value={tareWeight} onChange={(e) => setTareWeight(e.target.value)} placeholder="0" className={inp} /></Field>
-            <Field label={`Gross Weight (${truckWeightUom})`}><input type="number" min={0} value={grossWeight} onChange={(e) => setGrossWeight(e.target.value)} placeholder="0" className={inp} /></Field>
-            <Field label={`Net Weight (${truckWeightUom})`}><input readOnly value={netWeight != null ? String(netWeight) : ""} placeholder="0" className={cn(inp, "bg-surface-2 font-semibold text-primary")} /></Field>
-            <Field label={`Net Weight as per Bill (${truckWeightUom})`}><input type="number" min={0} value={billNetWeight} onChange={(e) => setBillNetWeight(e.target.value)} placeholder="Optional" className={inp} /></Field>
+            <Field label={`Gross Weight (${truckWeightUom})`}><input readOnly value={grossWeight} placeholder="0" className={cn(inp, "bg-surface-2 text-subtle")} /></Field>
+            <Field label={`Net Weight (${truckWeightUom})`}><input readOnly value={n(tareWeight) > 0 && netWeight != null ? String(netWeight) : ""} placeholder="Enter Tare Weight to calculate" className={cn(inp, "bg-surface-2 font-semibold text-primary placeholder:text-2xs placeholder:text-subtle")} /></Field>
+            <Field label={`Net Weight as per Bill (${truckWeightUom})`}><input readOnly value={billNetWeight} placeholder="—" className={cn(inp, "bg-surface-2 text-subtle")} /></Field>
           </div>
           {lines.length === 1 && (
             <p className="mt-2 flex flex-wrap items-center justify-between gap-2 text-2xs text-muted">
@@ -843,21 +855,11 @@ export function GrnEditor() {
               ) : <div className="absolute z-30 mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-2xs text-muted shadow-lg">No vehicles matched.</div>)}
             </div>
             <Field label="Transporter"><input value={extra.transporterName} onChange={(e) => setE("transporterName", e.target.value)} placeholder="Transporter / courier" className={inpSm} /></Field>
-            <Field label="LR / Docket No"><input value={extra.lrNo} onChange={(e) => setE("lrNo", e.target.value)} placeholder="LR-0091" className={inpSm} /></Field>
-            <Field label="E-Way Bill No"><input value={extra.ewayBillNo} onChange={(e) => setE("ewayBillNo", e.target.value)} placeholder="EWB number" className={inpSm} /></Field>
-            <Field label="Freight Amount"><input type="number" value={extra.freightAmount} onChange={(e) => setE("freightAmount", e.target.value)} placeholder="0" className={inpSm} /></Field>
-            <Field label="Freight Paid By"><select value={extra.freightPaidBy} onChange={(e) => setE("freightPaidBy", e.target.value)} className={inpSm}><option value="">Select…</option>{["Supplier", "Us", "To Pay", "Self"].map((m) => <option key={m}>{m}</option>)}</select></Field>
-            <div className="sm:col-span-2">
-              <Field label="Transport Type">
-                <div className="flex h-9 items-center gap-6">
-                  {["Own Vehicle", "Supplier Vehicle"].map((t) => (
-                    <label key={t} className="flex items-center gap-1.5 whitespace-nowrap text-sm text-foreground">
-                      <input type="radio" name="transportType" checked={extra.transportType === t} onChange={() => setE("transportType", t)} className="h-4 w-4 shrink-0 border-border-strong text-primary focus:ring-primary" /> {t}
-                    </label>
-                  ))}
-                </div>
-              </Field>
-            </div>
+            {vehicleOwnerType && <Field label="Vehicle Owner Type"><input readOnly value={vehicleOwnerType} className={cn(inpSm, "bg-surface-2 text-subtle")} /></Field>}
+            {!enableTruckWeightGrn && <Field label="LR / Docket No"><input value={extra.lrNo} onChange={(e) => setE("lrNo", e.target.value)} placeholder="LR-0091" className={inpSm} /></Field>}
+            {!enableTruckWeightGrn && <Field label="E-Way Bill No"><input value={extra.ewayBillNo} onChange={(e) => setE("ewayBillNo", e.target.value)} placeholder="EWB number" className={inpSm} /></Field>}
+            <Field label="Freight Amount"><input type="number" value={extra.freightAmount} onChange={(e) => setE("freightAmount", e.target.value)} disabled={vehicleOwnerType === "Own"} placeholder="0" className={cn(inpSm, vehicleOwnerType === "Own" && "cursor-not-allowed bg-surface-2 text-subtle")} /></Field>
+            <Field label="Freight Paid By"><select value={extra.freightPaidBy} onChange={(e) => setE("freightPaidBy", e.target.value)} disabled={vehicleOwnerType === "Own"} className={cn(inpSm, vehicleOwnerType === "Own" && "cursor-not-allowed bg-surface-2 text-subtle")}><option value="">Select…</option>{["Supplier", "Us", "To Pay", "Self"].map((m) => <option key={m}>{m}</option>)}</select></Field>
             <div className="sm:col-span-2"><Field label="Transport Remarks"><input value={extra.transportRemarks} onChange={(e) => setE("transportRemarks", e.target.value)} placeholder="Optional" className={inpSm} /></Field></div>
           </div>
         </SectionCard>

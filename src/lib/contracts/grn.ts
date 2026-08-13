@@ -100,6 +100,7 @@ export interface GrnDetail {
   transportRemarks: string;
   weightSlipRefNo: string;
   inventoryMovement: string;
+  vehicleOwnerType: string;
   tareWeight: number | string;
   grossWeight: number | string;
   netWeight: number | string;

@@ -18,7 +18,7 @@ const req = (key: string) => (fieldMust(SCREEN, key) ? " *" : "");
 const TRANSPORT_MODES = ["", "Road", "Rail", "Air", "Courier", "Own Vehicle", "Third Party"];
 
 interface Opt { id: number; label: string }
-interface VehicleOpt extends Opt { vehicleType: string | null; transportCompanyId: number | null }
+interface VehicleOpt extends Opt { vehicleType: string | null; transportCompanyId: number | null; ownerType: string | null }
 interface ProductHit { id: number; name: string; sku?: string; uom?: string }
 interface ItemLine { id: string; productId: number; productName: string; sku: string; uom: string; qty: string }
 interface SalesOrderHit { id: number; docNo: string; customerName: string }
@@ -94,6 +94,7 @@ export function GateEntryEditor() {
   const [transportMode, setTransportMode] = useState("");
   const [vehicleType, setVehicleType] = useState("");
   const [vehicleId, setVehicleId] = useState<number | "">("");
+  const [vehicleOwnerType, setVehicleOwnerType] = useState("");
   const [vehicleQuery, setVehicleQuery] = useState("");
   const [vehicleHits, setVehicleHits] = useState<VehicleOpt[] | null>(null);
   const [trailerNumber, setTrailerNumber] = useState("");
@@ -137,14 +138,13 @@ export function GateEntryEditor() {
   const [supplierQuery, setSupplierQuery] = useState("");
   const [supplierHits, setSupplierHits] = useState<SupplierHit[] | null>(null);
   const [supplierGstin, setSupplierGstin] = useState("");
-  const [weightSlipRefNo, setWeightSlipRefNo] = useState("");
 
   const loadMasters = () => {
     return Promise.all([
       fetch("/api/transport/masters/vehicle?status=Active", { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
       fetch("/api/transport/masters/transport-company?status=Active", { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
     ]).then(([v, c]) => {
-      if (v.ok) setVehicles(v.rows.map((x: { id: number; vehicleNo: string; vehicleType: string | null; transportCompanyId: number | null }) => ({ id: x.id, label: x.vehicleNo, vehicleType: x.vehicleType, transportCompanyId: x.transportCompanyId })));
+      if (v.ok) setVehicles(v.rows.map((x: { id: number; vehicleNo: string; vehicleType: string | null; transportCompanyId: number | null; ownerType: string | null }) => ({ id: x.id, label: x.vehicleNo, vehicleType: x.vehicleType, transportCompanyId: x.transportCompanyId, ownerType: x.ownerType })));
       if (c.ok) setCompanies(c.rows.map((x: { id: number; name: string }) => ({ id: x.id, label: x.name })));
     });
   };
@@ -251,6 +251,7 @@ export function GateEntryEditor() {
     setVehicleId(v.id); setVehicleQuery(v.label); setVehicleHits(null);
     if (v.vehicleType) setVehicleType(v.vehicleType);
     if (v.transportCompanyId) setTransportCompanyId(v.transportCompanyId);
+    setVehicleOwnerType(v.ownerType ?? "");
   };
 
   const trTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -363,7 +364,6 @@ export function GateEntryEditor() {
           // placeholder the schema requires (no downstream use makes sense of it).
           items: items.map((l) => ({ productId: l.productId, productName: l.productName, sku: l.sku || null, uom: l.uom || null, qty: captureQtyAtGate ? Number(l.qty) || 0 : 1 })),
           entryType, supplierId: isRawMaterial ? (supplierId || null) : null,
-          weightSlipRefNo: isRawMaterial ? (weightSlipRefNo || null) : null,
         }),
       });
       const j = await res.json().catch(() => ({}));
@@ -496,7 +496,6 @@ export function GateEntryEditor() {
             )}
           </div>
           <Fld label="Supplier GSTIN"><input value={supplierGstin} disabled placeholder="Loads from Supplier master" className={cn(inp, "text-subtle")} /></Fld>
-          <Fld label="Weight Slip Ref Number (optional)"><input value={weightSlipRefNo} onChange={(e) => setWeightSlipRefNo(e.target.value)} placeholder="If already available at the gate" className={inp} /></Fld>
         </div>
       </SectionCard>
       )}
@@ -526,6 +525,7 @@ export function GateEntryEditor() {
             </div>
           </div>
           {fieldOn(SCREEN, "vehicleType") && <Fld label={`Vehicle Type${req("vehicleType")}`}><select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} className={inp}><option value="">— Select —</option>{VEHICLE_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></Fld>}
+          {vehicleOwnerType && <Fld label="Vehicle Owner Type"><input readOnly value={vehicleOwnerType} className={cn(inp, "text-subtle")} /></Fld>}
           {fieldOn(SCREEN, "transportCompany") && (
           <div>
             <label className="mb-1 block text-2xs font-semibold text-muted">Transport Company{req("transportCompany")}</label>
@@ -648,7 +648,7 @@ export function GateEntryEditor() {
       </div>
 
       {addCompanyOpen && <AddTransportCompanyModal onClose={() => setAddCompanyOpen(false)} onAdded={(row) => { setCompanies((p) => [{ id: row.id, label: row.name }, ...p]); setTransportCompanyId(row.id); setAddCompanyOpen(false); }} />}
-      {addVehicleOpen && <AddVehicleModal companies={companies} onClose={() => setAddVehicleOpen(false)} onAdded={(row) => { setVehicles((p) => [{ id: row.id, label: row.vehicleNo, vehicleType: row.vehicleType ?? null, transportCompanyId: row.transportCompanyId ?? null }, ...p]); setVehicleId(row.id); setVehicleQuery(row.vehicleNo); if (row.vehicleType) setVehicleType(row.vehicleType); if (row.transportCompanyId) setTransportCompanyId(row.transportCompanyId); setAddVehicleOpen(false); }} />}
+      {addVehicleOpen && <AddVehicleModal companies={companies} onClose={() => setAddVehicleOpen(false)} onAdded={(row) => { setVehicles((p) => [{ id: row.id, label: row.vehicleNo, vehicleType: row.vehicleType ?? null, transportCompanyId: row.transportCompanyId ?? null, ownerType: row.ownerType ?? null }, ...p]); setVehicleId(row.id); setVehicleQuery(row.vehicleNo); if (row.vehicleType) setVehicleType(row.vehicleType); if (row.transportCompanyId) setTransportCompanyId(row.transportCompanyId); setVehicleOwnerType(row.ownerType ?? ""); setAddVehicleOpen(false); }} />}
       {addDriverOpen && <AddDriverModal companies={companies} onClose={() => setAddDriverOpen(false)} onAdded={(row) => { setDriverMasterId(row.id); setDriverName(row.name); setDriverQuery(row.name); setDriverMobile(row.phone ?? ""); setDriverLicenseNo(row.licenseNo ?? ""); setAddDriverOpen(false); }} />}
       {savedId != null && (
         <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/40 p-4">
@@ -656,13 +656,18 @@ export function GateEntryEditor() {
             <div className="flex flex-col items-center gap-2 px-6 py-6 text-center">
               <span className="grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success"><CheckCircle2 className="h-6 w-6" /></span>
               <h2 className="text-sm font-bold text-foreground">Gate Entry Recorded</h2>
-              <p className="text-sm text-muted">{isRawMaterial ? "Once inside, use Update Weight from the gate entry list to capture the product and weighment — then create the GRN." : "Would you like to continue with the Pre Loading Weighment now, or do it later?"}</p>
+              <p className="text-sm text-muted">{isRawMaterial ? "Would you like to update the weighment now, or do it later from the gate entry list?" : "Would you like to continue with the Pre Loading Weighment now, or do it later?"}</p>
             </div>
             <div className="flex flex-col gap-2 border-t border-border bg-surface-2 px-5 py-4">
               {isRawMaterial ? (
-                <Button size="md" disabled={navigating} onClick={() => { setNavigating(true); router.push("/transport/gate-entry?entryType=RawMaterial"); }}>
-                  {navigating ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Back to Gate Entry List
-                </Button>
+                <>
+                  <Button size="md" disabled={navigating} onClick={() => { setNavigating(true); router.push(`/transport/gate-entry/${savedId}/weighment`); }}>
+                    {navigating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Scale className="h-4 w-4" />} Update Weight
+                  </Button>
+                  <Button variant="outline" size="md" disabled={navigating} onClick={() => { setNavigating(true); router.push("/transport/gate-entry?entryType=RawMaterial"); }}>
+                    {navigating ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Back to Gate Entry List
+                  </Button>
+                </>
               ) : (
                 <>
                   <Button size="md" disabled={navigating} onClick={() => { setNavigating(true); router.push(`/transport/pre-weighment/new?gateEntryId=${savedId}`); }}>
@@ -675,7 +680,7 @@ export function GateEntryEditor() {
           </div>
         </div>
       )}
-      {navigating && <AppLoader fullScreen label={isRawMaterial ? "Returning to Gate Entry List" : "Opening Pre Loading Weighment"} />}
+      {navigating && <AppLoader fullScreen label={isRawMaterial ? "Please wait…" : "Opening Pre Loading Weighment"} />}
     </div>
   );
 }
@@ -736,14 +741,14 @@ function AddTransportCompanyModal({ onClose, onAdded }: { onClose: () => void; o
   );
 }
 
-function AddVehicleModal({ companies, onClose, onAdded }: { companies: Opt[]; onClose: () => void; onAdded: (row: { id: number; vehicleNo: string; vehicleType: string | null; transportCompanyId: number | null }) => void }) {
+function AddVehicleModal({ companies, onClose, onAdded }: { companies: Opt[]; onClose: () => void; onAdded: (row: { id: number; vehicleNo: string; vehicleType: string | null; transportCompanyId: number | null; ownerType: string | null }) => void }) {
   const toast = useToast();
   const [vehicleNo, setVehicleNo] = useState("");
   const [vehicleType, setVehicleType] = useState("");
   const [capacity, setCapacity] = useState("");
   const [capacityUnit, setCapacityUnit] = useState("");
   const [transportCompanyId, setTransportCompanyId] = useState<number | "">("");
-  const [ownerType, setOwnerType] = useState<"Own" | "Hired" | "Transporter">("Own");
+  const [ownerType, setOwnerType] = useState<"Own" | "Hired" | "Transporter" | "Supplier">("Own");
   const [remarks, setRemarks] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -775,7 +780,7 @@ function AddVehicleModal({ companies, onClose, onAdded }: { companies: Opt[]; on
             <Fld label="Capacity"><input type="number" value={capacity} onChange={(e) => setCapacity(e.target.value)} className={inp} /></Fld>
             <Fld label="Capacity Unit"><input value={capacityUnit} onChange={(e) => setCapacityUnit(e.target.value)} className={inp} /></Fld>
             <Fld label="Transport Company"><select value={transportCompanyId} onChange={(e) => setTransportCompanyId(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">— None —</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select></Fld>
-            <Fld label="Owner Type"><select value={ownerType} onChange={(e) => setOwnerType(e.target.value as typeof ownerType)} className={inp}><option value="Own">Own</option><option value="Hired">Hired</option><option value="Transporter">Transporter</option></select></Fld>
+            <Fld label="Owner Type"><select value={ownerType} onChange={(e) => setOwnerType(e.target.value as typeof ownerType)} className={inp}><option value="Own">Own</option><option value="Hired">Hired</option><option value="Transporter">Transporter</option><option value="Supplier">Supplier</option></select></Fld>
             <div className="sm:col-span-2"><Fld label="Remarks"><input value={remarks} onChange={(e) => setRemarks(e.target.value)} className={inp} /></Fld></div>
           </div>
         </div>

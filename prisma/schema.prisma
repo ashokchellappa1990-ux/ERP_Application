@@ -2560,6 +2560,9 @@ model GoodsReceiptNote {
   transporterName  String?  @db.VarChar(150)
   transportMode    String?  @db.VarChar(20) // Road | Rail | Air | Courier | Hand
   transportType    String?  @db.VarChar(20) // Own Vehicle | Supplier Vehicle
+  // The picked/prefilled vehicle's own Owner Type (from Vehicle Master), captured
+  // at GRN time — distinct from transportType above (a separate manual declaration).
+  vehicleOwnerType String?  @db.VarChar(16)
   vehicleNo        String?  @db.VarChar(40)
   lrNo             String?  @db.VarChar(60) // LR / docket no
   ewayBillNo       String?  @db.VarChar(40)
@@ -8584,7 +8587,7 @@ model VehicleMaster {
   capacity     Decimal @default(0) @db.Decimal(18, 3)
   capacityUnit String? @db.VarChar(20)
   transportCompanyId Int?
-  ownerType String @default("Own") @db.VarChar(16) // Own | Hired | Transporter
+  ownerType String @default("Own") @db.VarChar(16) // Own | Hired | Transporter | Supplier
   status    String @default("Active") @db.VarChar(16)
   remarks   String? @db.Text
   createdBy Int?

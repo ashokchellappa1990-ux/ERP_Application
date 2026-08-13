@@ -109,9 +109,10 @@ export default function GrnViewPage() {
   if (!grn) return <div className="py-16 text-center text-sm text-muted">GRN not found. <Link href="/purchase/grn" className="font-semibold text-primary hover:underline">Back to list</Link></div>;
 
   // Purchase Invoice can only be posted after the GRN itself is Posted, and — for
-  // Truck Weight Based receipts (including gate-entry sourced ones) — after the
-  // Empty Weight has been captured.
-  const canPostInvoice = grn.status === "Posted" && !grn.invoiceRecorded && (!grn.weightUom || hasVal(grn.emptyWeight));
+  // Truck Weight Based receipts — after the post-unload weight has been captured.
+  // Gate-entry sourced GRNs capture that as Tare Weight (see the repurposed
+  // "Update Tare Weight" modal below); other truck-weight GRNs use Empty Weight.
+  const canPostInvoice = grn.status === "Posted" && !grn.invoiceRecorded && (!grn.weightUom || hasVal(grn.gateEntryId ? grn.tareWeight : grn.emptyWeight));
 
   return (
     <div className="space-y-5">
@@ -151,7 +152,7 @@ export default function GrnViewPage() {
           {grn.paymentTerms && <KV k="Terms" v={grn.paymentTerms} />}{grn.dueDate && <KV k="Due Date" v={grn.dueDate} />}
         </SectionCard>
         <SectionCard icon={Truck} title="Transport & Logistics">
-          <KV k="Transporter" v={grn.transporterName} /><KV k="Transport Type" v={grn.transportType} /><KV k="Mode" v={grn.transportMode} /><KV k="Vehicle" v={grn.vehicleNo} />
+          <KV k="Transporter" v={grn.transporterName} /><KV k="Vehicle Owner Type" v={grn.vehicleOwnerType} /><KV k="Mode" v={grn.transportMode} /><KV k="Vehicle" v={grn.vehicleNo} />
           <KV k="LR / Docket" v={grn.lrNo} /><KV k="E-Way Bill" v={grn.ewayBillNo} /><KV k="Packages" v={grn.numPackages ? String(grn.numPackages) : ""} />
           <KV k="Freight" v={grn.freightAmount ? money(grn.freightAmount) : ""} /><KV k="Freight By" v={grn.freightPaidBy} />
         </SectionCard>
@@ -193,23 +194,42 @@ export default function GrnViewPage() {
       <div className={cn("grid gap-4", grn.weightUom ? "lg:grid-cols-2" : "lg:grid-cols-1")}>
         {!!grn.weightUom && (
           <SectionCard icon={Scale} title="Vehicle Weighment">
-            <KV k={`Tare Weight (${grn.weightUom})`} v={fmtWt(grn.tareWeight)} />
             <KV k={`Gross Weight (${grn.weightUom})`} v={fmtWt(grn.grossWeight)} />
-            <KV k={`Net Weight (${grn.weightUom})`} v={fmtWt(grn.netWeight)} strong />
             {hasVal(grn.billNetWeight) && <KV k={`Net Weight as per Bill (${grn.weightUom})`} v={fmtWt(grn.billNetWeight)} tone="info" />}
             {grn.weightSlipRefNo && <KV k="Weight Slip Ref Number" v={grn.weightSlipRefNo} />}
             {grn.inventoryMovement && <KV k="Inventory Movement" v={grn.inventoryMovement} tone="info" />}
             <div className="my-1 h-px bg-border" />
-            {hasVal(grn.emptyWeight) ? (
-              <>
-                <KV k={`Empty Weight (${grn.weightUom})`} v={fmtWt(grn.emptyWeight)} tone="success" />
-                {grn.emptyWeightAt && <KV k="Captured On" v={new Date(grn.emptyWeightAt).toLocaleString()} />}
-                {grn.emptyWeightRemarks && <KV k="Remarks" v={grn.emptyWeightRemarks} />}
-              </>
-            ) : grn.status === "Posted" ? (
-              <div className="flex justify-end"><Button variant="secondary" size="sm" onClick={() => setEmptyWeightOpen(true)}><Scale className="h-3.5 w-3.5" /> Update Empty Weight</Button></div>
+            {grn.gateEntryId ? (
+              hasVal(grn.tareWeight) ? (
+                <>
+                  <KV k={`Tare Weight (${grn.weightUom})`} v={fmtWt(grn.tareWeight)} tone="success" />
+                  <KV k={`Net Weight Calculated (${grn.weightUom})`} v={fmtWt(grn.netWeight)} strong />
+                  {hasVal(grn.billNetWeight) && (
+                    <KV k={`Difference (${grn.weightUom})`} v={fmtWt(+(Number(grn.netWeight) - Number(grn.billNetWeight)).toFixed(3))} tone={Number(grn.netWeight) === Number(grn.billNetWeight) ? "success" : "warning"} />
+                  )}
+                </>
+              ) : grn.status === "Posted" ? (
+                <div className="flex justify-end"><Button variant="secondary" size="sm" onClick={() => setEmptyWeightOpen(true)}><Scale className="h-3.5 w-3.5" /> Update Tare Weight</Button></div>
+              ) : (
+                <p className="text-2xs text-subtle">Available once this GRN is Posted.</p>
+              )
             ) : (
-              <p className="text-2xs text-subtle">Available once this GRN is Posted.</p>
+              <>
+                <KV k={`Tare Weight (${grn.weightUom})`} v={fmtWt(grn.tareWeight)} />
+                <KV k={`Net Weight (${grn.weightUom})`} v={fmtWt(grn.netWeight)} strong />
+                <div className="my-1 h-px bg-border" />
+                {hasVal(grn.emptyWeight) ? (
+                  <>
+                    <KV k={`Empty Weight (${grn.weightUom})`} v={fmtWt(grn.emptyWeight)} tone="success" />
+                    {grn.emptyWeightAt && <KV k="Captured On" v={new Date(grn.emptyWeightAt).toLocaleString()} />}
+                    {grn.emptyWeightRemarks && <KV k="Remarks" v={grn.emptyWeightRemarks} />}
+                  </>
+                ) : grn.status === "Posted" ? (
+                  <div className="flex justify-end"><Button variant="secondary" size="sm" onClick={() => setEmptyWeightOpen(true)}><Scale className="h-3.5 w-3.5" /> Update Empty Weight</Button></div>
+                ) : (
+                  <p className="text-2xs text-subtle">Available once this GRN is Posted.</p>
+                )}
+              </>
             )}
           </SectionCard>
         )}
@@ -224,7 +244,11 @@ export default function GrnViewPage() {
         </SectionCard>
       </div>
 
-      {emptyWeightOpen && <EmptyWeightModal id={id} weightUom={grn.weightUom} onClose={() => setEmptyWeightOpen(false)} onSaved={async () => { setEmptyWeightOpen(false); await load(); }} />}
+      {emptyWeightOpen && (grn.gateEntryId ? (
+        <TareWeightModal id={id} weightUom={grn.weightUom} grossWeight={grn.grossWeight} billNetWeight={grn.billNetWeight} onClose={() => setEmptyWeightOpen(false)} onSaved={async () => { setEmptyWeightOpen(false); await load(); }} />
+      ) : (
+        <EmptyWeightModal id={id} weightUom={grn.weightUom} onClose={() => setEmptyWeightOpen(false)} onSaved={async () => { setEmptyWeightOpen(false); await load(); }} />
+      ))}
       {piConfirmOpen && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4" onClick={() => setPiConfirmOpen(false)}>
           <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
@@ -277,7 +301,7 @@ function GrnProgressFlow({ grn }: { grn: Grn }) {
         { label: "Vehicle Entry", done: true },
         { label: "Weight Update", done: hasVal(grn.gateEntry?.grossWeight ?? "") },
         { label: "GRN Posted", done: posted },
-        { label: "Empty Vehicle Weight Update", done: hasVal(grn.emptyWeight) },
+        { label: "Empty Vehicle Weight Update", done: hasVal(grn.tareWeight) },
         { label: "Purchase Invoice Update", done: grn.invoiceRecorded },
       ]
     : [
@@ -320,6 +344,46 @@ function EmptyWeightModal({ id, weightUom, onClose, onSaved }: { id: number; wei
             <label className="mb-1.5 block text-xs font-semibold text-foreground">Remarks (optional)</label>
             <input value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder="Optional" className="h-10 w-full rounded-md border border-border-strong bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:shadow-focus" />
           </div>
+          {error && <p className="text-2xs font-medium text-danger">{error}</p>}
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t border-border bg-surface-2 px-5 py-3"><Button variant="ghost" size="md" onClick={onClose}>Cancel</Button><Button size="md" onClick={submit} disabled={saving}><Scale className="h-4 w-4" /> {saving ? "Saving…" : "Save"}</Button></div>
+      </div>
+    </div>
+  );
+}
+
+function TareWeightModal({ id, weightUom, grossWeight, billNetWeight, onClose, onSaved }: { id: number; weightUom: string; grossWeight: number | string; billNetWeight: number | string; onClose: () => void; onSaved: () => void }) {
+  const [tareWeight, setTareWeight] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const netCalc = tareWeight.trim() !== "" && Number.isFinite(Number(tareWeight)) ? +(Number(grossWeight || 0) - Number(tareWeight)).toFixed(3) : null;
+  async function submit() {
+    setError("");
+    const n = Number(tareWeight);
+    if (!Number.isFinite(n) || n < 0) { setError("Enter a valid tare weight."); return; }
+    setSaving(true);
+    const j = await fetch(`/api/purchase/grn/${id}/empty-weight`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tareWeight: n }) }).then((r) => r.json()).catch(() => ({}));
+    setSaving(false);
+    if (!j.ok) { setError(j.message || "Could not save."); return; }
+    onSaved();
+  }
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-border bg-surface-2 px-5 py-3.5">
+          <div className="flex items-center gap-2.5"><span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-gradient text-white"><Scale className="h-4 w-4" /></span><div><h2 className="text-sm font-bold text-foreground">Update Tare Weight</h2><p className="text-2xs text-muted">After the vehicle is unloaded and weighed empty</p></div></div>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-surface hover:text-foreground"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="space-y-3 p-5">
+          <div className="grid grid-cols-2 gap-3 rounded-lg bg-surface-2 p-3 text-sm">
+            <div><p className="text-2xs text-subtle">Gross Weight</p><p className="font-semibold text-foreground">{fmtWt(grossWeight)} {weightUom}</p></div>
+            <div><p className="text-2xs text-subtle">Net Weight as per Bill</p><p className="font-semibold text-foreground">{hasVal(billNetWeight) ? `${fmtWt(billNetWeight)} ${weightUom}` : "—"}</p></div>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-foreground">{`Tare Weight (${weightUom})`}</label>
+            <input type="number" min={0} autoFocus value={tareWeight} onChange={(e) => setTareWeight(e.target.value)} placeholder="0" className="h-10 w-full rounded-md border border-border-strong bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:shadow-focus" />
+          </div>
+          {netCalc != null && <p className="text-2xs text-muted">Net Weight (calculated): <span className="font-semibold text-primary">{netCalc} {weightUom}</span></p>}
           {error && <p className="text-2xs font-medium text-danger">{error}</p>}
         </div>
         <div className="flex items-center justify-end gap-2 border-t border-border bg-surface-2 px-5 py-3"><Button variant="ghost" size="md" onClick={onClose}>Cancel</Button><Button size="md" onClick={submit} disabled={saving}><Scale className="h-4 w-4" /> {saving ? "Saving…" : "Save"}</Button></div>

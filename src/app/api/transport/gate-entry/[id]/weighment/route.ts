@@ -22,7 +22,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   if (!entry) return NextResponse.json({ ok: false, message: "Gate entry not found." }, { status: 404 });
 
   const [vehicle, driver, company, supplier, items] = await Promise.all([
-    prisma.vehicleMaster.findFirst({ where: { id: entry.vehicleId }, select: { vehicleNo: true } }),
+    prisma.vehicleMaster.findFirst({ where: { id: entry.vehicleId }, select: { vehicleNo: true, ownerType: true } }),
     entry.driverId ? prisma.driverMaster.findFirst({ where: { id: entry.driverId }, select: { name: true, phone: true } }) : null,
     entry.transportCompanyId ? prisma.transportCompany.findFirst({ where: { id: entry.transportCompanyId }, select: { name: true } }) : null,
     entry.supplierId ? prisma.supplier.findFirst({ where: { id: entry.supplierId }, select: { gstin: true } }) : null,
@@ -33,7 +33,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     ok: true,
     data: {
       id: entry.id, gateEntryNo: entry.gateEntryNo, status: entry.status, entryType: entry.entryType,
-      vehicleNo: vehicle?.vehicleNo ?? "—",
+      vehicleNo: vehicle?.vehicleNo ?? "—", vehicleOwnerType: vehicle?.ownerType ?? null,
       driverName: entry.driverName || driver?.name || null, driverMobile: entry.driverMobile || driver?.phone || null,
       transportCompanyName: company?.name ?? null, transportMode: entry.transportMode,
       supplierName: entry.supplierName, supplierGstin: supplier?.gstin ?? null,
@@ -49,11 +49,11 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   });
 }
 
-// POST /api/transport/gate-entry/[id]/weighment — { tareWeight?, grossWeight?,
-// netWeight?, items: [{ productId, productName, sku, uom }] } (at most one item
-// — Truck Weight Based GRN receives one product per document). Weight Slip Ref
-// Number is captured at gate-entry creation, not here — this endpoint never
-// touches it, so it can't be accidentally overwritten to blank.
+// POST /api/transport/gate-entry/[id]/weighment — { grossWeight?, netWeight?,
+// weightSlipRefNo?, inventoryMovement?, items: [{ productId, productName, sku,
+// uom }] } (at most one item — Truck Weight Based GRN receives one product per
+// document). Tare Weight is NOT captured here — the vehicle hasn't been
+// unloaded/weighed empty yet; it's captured later on the posted GRN instead.
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ ok: false, message: "Not signed in." }, { status: 401 });
@@ -62,11 +62,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   let raw: unknown;
   try { raw = await req.json(); } catch { return NextResponse.json({ ok: false, message: "Invalid request body." }, { status: 400 }); }
-  const b = raw as { tareWeight?: unknown; grossWeight?: unknown; netWeight?: unknown; inventoryMovement?: unknown; items?: { productId?: unknown; productName?: unknown; sku?: unknown; uom?: unknown }[] };
+  const b = raw as { grossWeight?: unknown; netWeight?: unknown; weightSlipRefNo?: unknown; inventoryMovement?: unknown; items?: { productId?: unknown; productName?: unknown; sku?: unknown; uom?: unknown }[] };
   const dec = (v: unknown) => { const n = Number(v); return v != null && v !== "" && Number.isFinite(n) && n >= 0 ? n : null; };
-  const tareWeight = dec(b.tareWeight);
   const grossWeight = dec(b.grossWeight);
   const netWeight = dec(b.netWeight);
+  const weightSlipRefNo = typeof b.weightSlipRefNo === "string" && b.weightSlipRefNo.trim() ? b.weightSlipRefNo.trim().slice(0, 60) : null;
   const INVENTORY_MOVEMENTS = ["Move to Raw Material Main Stock", "Move to Production Plant Stock"];
   const inventoryMovement = typeof b.inventoryMovement === "string" && INVENTORY_MOVEMENTS.includes(b.inventoryMovement) ? b.inventoryMovement : null;
   const item = (b.items ?? []).find((i) => Number(i.productId) > 0);
@@ -87,7 +87,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.vehicleGateEntry.update({ where: { id: entry.id }, data: { tareWeight, grossWeight, netWeight, inventoryMovement, updatedBy: user.id } });
+    await tx.vehicleGateEntry.update({ where: { id: entry.id }, data: { grossWeight, netWeight, weightSlipRefNo, inventoryMovement, updatedBy: user.id } });
     await tx.vehicleGateEntryItem.deleteMany({ where: { gateEntryId: entry.id } });
     if (item) {
       await tx.vehicleGateEntryItem.create({ data: { tenantId: user.tenantId, gateEntryId: entry.id, productId: Number(item.productId), productName, sku: sku ?? undefined, uom: uom ?? undefined, qty: 1 } });

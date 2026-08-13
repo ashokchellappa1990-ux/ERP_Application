@@ -38,7 +38,7 @@ export const vehicleInput = z.object({
   capacity: z.coerce.number().min(0).default(0),
   capacityUnit: z.string().trim().max(20).optional().nullable(),
   transportCompanyId: z.coerce.number().int().positive().optional().nullable(),
-  ownerType: z.enum(["Own", "Hired", "Transporter"]).default("Own"),
+  ownerType: z.enum(["Own", "Hired", "Transporter", "Supplier"]).default("Own"),
   ...masterBase,
 });
 export type VehicleInput = z.infer<typeof vehicleInput>;

@@ -9,11 +9,10 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import { AppLoader } from "@/components/ui/AppLoader";
 import { useToast } from "@/components/ui/Toast";
 import { Field } from "@/components/transport/VehicleGateEntryScreen";
-import { cn } from "@/lib/cn";
 
 interface ProductHit { id: number; name: string; sku?: string; uom?: string }
 interface Data {
-  id: number; gateEntryNo: string; status: string; entryType: string; vehicleNo: string;
+  id: number; gateEntryNo: string; status: string; entryType: string; vehicleNo: string; vehicleOwnerType: string | null;
   driverName: string | null; driverMobile: string | null; transportCompanyName: string | null; transportMode: string | null;
   supplierName: string | null; supplierGstin: string | null; arrivalTime: string | null; grnId: number | null;
   grossWeight: number | null; tareWeight: number | null; netWeight: number | null; weightSlipRefNo: string | null;
@@ -22,7 +21,6 @@ interface Data {
 }
 
 const INVENTORY_MOVEMENTS = ["Move to Raw Material Main Stock", "Move to Production Plant Stock"];
-const n = (v: unknown) => Number(v) || 0;
 const inp = "h-10 w-full rounded-md border border-border-strong bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:shadow-focus";
 
 export function UpdateWeightScreen() {
@@ -39,15 +37,14 @@ export function UpdateWeightScreen() {
   const [pq, setPq] = useState("");
   const [productHits, setProductHits] = useState<ProductHit[] | null>(null);
   const [searchingProduct, setSearchingProduct] = useState(false);
-  const [tareWeight, setTareWeight] = useState("");
   const [grossWeight, setGrossWeight] = useState("");
-  // Net Weight (calculated) is always Gross − Tare — read-only, never stored
-  // as its own input. Net Weight as per Slip is the manually-entered figure
-  // from the physical weight slip, captured separately (kept independent, same
-  // pattern as the GRN's own calculated Net Weight vs Net Weight as per Bill).
-  const netCalc = (n(grossWeight) > 0 || n(tareWeight) > 0) ? +(n(grossWeight) - n(tareWeight)).toFixed(3) : null;
+  // Tare Weight isn't known yet at this stage — the vehicle hasn't been
+  // unloaded and weighed empty. It's captured later, after the GRN is posted
+  // (GRN view page's "Update Tare Weight"), which is also where the calculated
+  // Net Weight (Gross − Tare) becomes meaningful — not shown here.
   const [netWeightSlip, setNetWeightSlip] = useState("");
   const [inventoryMovement, setInventoryMovement] = useState("");
+  const [weightSlipRefNo, setWeightSlipRefNo] = useState("");
 
   useEffect(() => {
     fetch(`/api/transport/gate-entry/${id}/weighment`, { cache: "no-store" })
@@ -56,10 +53,10 @@ export function UpdateWeightScreen() {
         if (!j.ok) return;
         const d: Data = j.data;
         setData(d);
-        setTareWeight(d.tareWeight != null ? String(d.tareWeight) : "");
         setGrossWeight(d.grossWeight != null ? String(d.grossWeight) : "");
         setNetWeightSlip(d.netWeight != null ? String(d.netWeight) : "");
         setInventoryMovement(d.inventoryMovement ?? "");
+        setWeightSlipRefNo(d.weightSlipRefNo ?? "");
         const it = d.items[0];
         if (it) setProduct({ productId: it.productId, productName: it.productName, sku: it.sku ?? "", uom: it.uom ?? "" });
       })
@@ -92,8 +89,8 @@ export function UpdateWeightScreen() {
       const j = await fetch(`/api/transport/gate-entry/${id}/weighment`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          tareWeight: tareWeight || null, grossWeight: grossWeight || null, netWeight: netWeightSlip || null,
-          inventoryMovement: inventoryMovement || null,
+          grossWeight: grossWeight || null, netWeight: netWeightSlip || null,
+          inventoryMovement: inventoryMovement || null, weightSlipRefNo: weightSlipRefNo || null,
           items: product ? [{ productId: product.productId, productName: product.productName, sku: product.sku, uom: product.uom }] : [],
         }),
       }).then((r) => r.json()).catch(() => ({}));
@@ -128,13 +125,13 @@ export function UpdateWeightScreen() {
       <SectionCard icon={Truck} title="Vehicle Entry Details">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <KV k="Vehicle No" v={data.vehicleNo} />
+          <KV k="Vehicle Owner Type" v={data.vehicleOwnerType ?? "—"} />
           <KV k="Driver" v={data.driverName ? `${data.driverName}${data.driverMobile ? ` — ${data.driverMobile}` : ""}` : "—"} />
           <KV k="Transport Company" v={data.transportCompanyName ?? "—"} />
           <KV k="Transport Mode" v={data.transportMode ?? "—"} />
           <KV k="Supplier" v={data.supplierName ?? "—"} />
           <KV k="Supplier GSTIN" v={data.supplierGstin ?? "—"} />
           <KV k="Arrival Time" v={data.arrivalTime ? new Date(data.arrivalTime).toLocaleString() : "—"} />
-          <KV k="Weight Slip Ref Number" v={data.weightSlipRefNo ?? "—"} />
         </div>
       </SectionCard>
 
@@ -165,10 +162,9 @@ export function UpdateWeightScreen() {
 
       <SectionCard icon={Scale} title="Weighment Details">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label="Tare Weight (Kg)"><input type="number" min={0} value={tareWeight} onChange={(e) => setTareWeight(e.target.value)} placeholder="0" className={inp} /></Field>
           <Field label="Gross Weight (Kg)"><input type="number" min={0} value={grossWeight} onChange={(e) => setGrossWeight(e.target.value)} placeholder="0" className={inp} /></Field>
-          <Field label="Net Weight (Kg)"><input readOnly value={netCalc != null ? String(netCalc) : ""} placeholder="0" className={cn(inp, "bg-surface-2 font-semibold text-primary")} /></Field>
           <Field label="Net Weight as per Slip (Kg)"><input type="number" min={0} value={netWeightSlip} onChange={(e) => setNetWeightSlip(e.target.value)} placeholder="Optional" className={inp} /></Field>
+          <Field label="Weight Slip Ref Number"><input value={weightSlipRefNo} onChange={(e) => setWeightSlipRefNo(e.target.value)} placeholder="Optional" className={inp} /></Field>
           <Field label="Inventory Movement">
             <select value={inventoryMovement} onChange={(e) => setInventoryMovement(e.target.value)} className={inp}>
               <option value="">— Select —</option>
@@ -176,7 +172,7 @@ export function UpdateWeightScreen() {
             </select>
           </Field>
         </div>
-        <p className="mt-2 text-2xs text-subtle">Net Weight is calculated as Gross − Tare. If the physical weight slip states a different net weight, enter it separately above.</p>
+        <p className="mt-2 text-2xs text-subtle">Tare Weight and the calculated Net Weight are captured later, after the vehicle is unloaded and weighed empty (on the GRN once it's posted).</p>
       </SectionCard>
 
       <div className="flex items-center justify-end gap-2">

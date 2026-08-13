@@ -46,7 +46,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       transporterName: grn.transporterName ?? "", transportMode: grn.transportMode ?? "", transportType: grn.transportType ?? "", vehicleNo: grn.vehicleNo ?? "",
       lrNo: grn.lrNo ?? "", ewayBillNo: grn.ewayBillNo ?? "", freightPaidBy: grn.freightPaidBy ?? "",
       numPackages: grn.numPackages ?? "", transportRemarks: grn.transportRemarks ?? "", weightSlipRefNo: grn.weightSlipRefNo ?? "",
-      inventoryMovement: grn.inventoryMovement ?? "",
+      inventoryMovement: grn.inventoryMovement ?? "", vehicleOwnerType: grn.vehicleOwnerType ?? "",
       tareWeight: grn.tareWeight != null ? num(grn.tareWeight) : "", grossWeight: grn.grossWeight != null ? num(grn.grossWeight) : "",
       netWeight: grn.netWeight != null ? num(grn.netWeight) : "", billNetWeight: grn.billNetWeight != null ? num(grn.billNetWeight) : "",
       weightUom: grn.weightUom ?? "",

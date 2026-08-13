@@ -131,7 +131,7 @@ function VehicleModal({ mode, id, companies, onClose, onSaved }: { mode: "add" |
               <div><label className={lbl}>Vehicle Type</label><select value={f.vehicleType ?? ""} onChange={(e) => set("vehicleType", e.target.value)} className={inp}><option value="">— Select —</option>{VEHICLE_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
               <div><label className={lbl}>Capacity</label><input type="number" value={f.capacity} onChange={(e) => set("capacity", Number(e.target.value) || 0)} className={inp} /></div>
               <div><label className={lbl}>Capacity Unit</label><input value={f.capacityUnit ?? ""} onChange={(e) => set("capacityUnit", e.target.value)} className={inp} /></div>
-              <div><label className={lbl}>Owner Type</label><select value={f.ownerType} onChange={(e) => set("ownerType", e.target.value as VehicleInput["ownerType"])} className={inp}><option value="Own">Own</option><option value="Hired">Hired</option><option value="Transporter">Transporter</option></select></div>
+              <div><label className={lbl}>Owner Type</label><select value={f.ownerType} onChange={(e) => set("ownerType", e.target.value as VehicleInput["ownerType"])} className={inp}><option value="Own">Own</option><option value="Hired">Hired</option><option value="Transporter">Transporter</option><option value="Supplier">Supplier</option></select></div>
               <div>
                 <label className={lbl}>Transport Company</label>
                 <div className="flex gap-1.5">

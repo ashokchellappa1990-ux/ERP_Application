@@ -38,7 +38,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   if (!entry) return NextResponse.json({ ok: false, message: "Gate entry not found." }, { status: 404 });
 
   const [vehicle, driver, company, plan, preWeighment, loading, postWeighment, gateExit, items, supplier] = await Promise.all([
-    prisma.vehicleMaster.findFirst({ where: { id: entry.vehicleId }, select: { id: true, vehicleNo: true, vehicleType: true } }),
+    prisma.vehicleMaster.findFirst({ where: { id: entry.vehicleId }, select: { id: true, vehicleNo: true, vehicleType: true, ownerType: true } }),
     entry.driverId ? prisma.driverMaster.findFirst({ where: { id: entry.driverId }, select: { id: true, name: true, phone: true } }) : null,
     entry.transportCompanyId ? prisma.transportCompany.findFirst({ where: { id: entry.transportCompanyId }, select: { id: true, name: true } }) : null,
     entry.dispatchPlanningId ? prisma.dispatchPlanning.findFirst({ where: { id: entry.dispatchPlanningId }, select: { id: true, planningNo: true, status: true, estimatedWeight: true } }) : null,
@@ -55,6 +55,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     data: {
       id: entry.id, gateEntryNo: entry.gateEntryNo, status: entry.status,
       vehicleId: entry.vehicleId, vehicleNo: vehicle?.vehicleNo ?? "—", vehicleType: vehicle?.vehicleType ?? null,
+      vehicleOwnerType: vehicle?.ownerType ?? null,
       driverId: entry.driverId, driverPhone: driver?.phone ?? null,
       transportCompanyId: entry.transportCompanyId, transportCompanyName: company?.name ?? null,
       dispatchPlanningId: entry.dispatchPlanningId, dispatchPlanningNo: plan?.planningNo ?? null, dispatchPlanningStatus: plan?.status ?? null,
