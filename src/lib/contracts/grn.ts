@@ -72,6 +72,8 @@ export interface GrnDetail {
   supplierInvoiceDate: string;
   poNo: string;
   warehouse: string;
+  areaId: number | null;
+  areaName: string;
   notes: string;
   gstMode: string;
   gstPct: number | string;

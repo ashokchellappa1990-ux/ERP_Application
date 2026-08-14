@@ -21,12 +21,13 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const entry = await prisma.vehicleGateEntry.findFirst({ where: { ...sw, id, deletedAt: null } });
   if (!entry) return NextResponse.json({ ok: false, message: "Gate entry not found." }, { status: 404 });
 
-  const [vehicle, driver, company, supplier, items] = await Promise.all([
+  const [vehicle, driver, company, supplier, items, area] = await Promise.all([
     prisma.vehicleMaster.findFirst({ where: { id: entry.vehicleId }, select: { vehicleNo: true, ownerType: true } }),
     entry.driverId ? prisma.driverMaster.findFirst({ where: { id: entry.driverId }, select: { name: true, phone: true } }) : null,
     entry.transportCompanyId ? prisma.transportCompany.findFirst({ where: { id: entry.transportCompanyId }, select: { name: true } }) : null,
     entry.supplierId ? prisma.supplier.findFirst({ where: { id: entry.supplierId }, select: { gstin: true } }) : null,
     prisma.vehicleGateEntryItem.findMany({ where: { gateEntryId: id }, orderBy: { id: "asc" } }),
+    entry.areaId ? prisma.area.findFirst({ where: { id: entry.areaId, tenantId: user.tenantId }, select: { name: true } }) : null,
   ]);
 
   return NextResponse.json({
@@ -43,7 +44,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       tareWeight: entry.tareWeight != null ? Number(entry.tareWeight) : null,
       netWeight: entry.netWeight != null ? Number(entry.netWeight) : null,
       weightSlipRefNo: entry.weightSlipRefNo,
-      inventoryMovement: entry.inventoryMovement,
+      areaId: entry.areaId,
+      areaName: area?.name ?? null,
       items: items.map((i) => ({ productId: i.productId, productName: i.productName, sku: i.sku, uom: i.uom })),
     },
   });
@@ -62,13 +64,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   let raw: unknown;
   try { raw = await req.json(); } catch { return NextResponse.json({ ok: false, message: "Invalid request body." }, { status: 400 }); }
-  const b = raw as { grossWeight?: unknown; netWeight?: unknown; weightSlipRefNo?: unknown; inventoryMovement?: unknown; items?: { productId?: unknown; productName?: unknown; sku?: unknown; uom?: unknown }[] };
+  const b = raw as { grossWeight?: unknown; netWeight?: unknown; weightSlipRefNo?: unknown; areaId?: unknown; items?: { productId?: unknown; productName?: unknown; sku?: unknown; uom?: unknown }[] };
   const dec = (v: unknown) => { const n = Number(v); return v != null && v !== "" && Number.isFinite(n) && n >= 0 ? n : null; };
   const grossWeight = dec(b.grossWeight);
   const netWeight = dec(b.netWeight);
   const weightSlipRefNo = typeof b.weightSlipRefNo === "string" && b.weightSlipRefNo.trim() ? b.weightSlipRefNo.trim().slice(0, 60) : null;
-  const INVENTORY_MOVEMENTS = ["Move to Raw Material Main Stock", "Move to Production Plant Stock"];
-  const inventoryMovement = typeof b.inventoryMovement === "string" && INVENTORY_MOVEMENTS.includes(b.inventoryMovement) ? b.inventoryMovement : null;
+  const areaIdInput = Number(b.areaId) || null;
   const item = (b.items ?? []).find((i) => Number(i.productId) > 0);
 
   const sw = scopeWhere(await getActiveScope(user), { branch: true });
@@ -76,6 +77,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if (!entry) return NextResponse.json({ ok: false, message: "Gate entry not found." }, { status: 404 });
   if (entry.entryType !== "RawMaterial") return NextResponse.json({ ok: false, message: "This action only applies to Raw Material gate entries." }, { status: 422 });
   if (entry.grnId) return NextResponse.json({ ok: false, message: "A GRN has already been created for this gate entry." }, { status: 422 });
+
+  const areaId = areaIdInput ? (await prisma.area.findFirst({ where: { id: areaIdInput, tenantId: user.tenantId }, select: { id: true } }))?.id ?? null : null;
 
   let productName = "", sku: string | null = null, uom: string | null = null;
   if (item) {
@@ -87,7 +90,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.vehicleGateEntry.update({ where: { id: entry.id }, data: { grossWeight, netWeight, weightSlipRefNo, inventoryMovement, updatedBy: user.id } });
+    await tx.vehicleGateEntry.update({ where: { id: entry.id }, data: { grossWeight, netWeight, weightSlipRefNo, areaId, updatedBy: user.id } });
     await tx.vehicleGateEntryItem.deleteMany({ where: { gateEntryId: entry.id } });
     if (item) {
       await tx.vehicleGateEntryItem.create({ data: { tenantId: user.tenantId, gateEntryId: entry.id, productId: Number(item.productId), productName, sku: sku ?? undefined, uom: uom ?? undefined, qty: 1 } });

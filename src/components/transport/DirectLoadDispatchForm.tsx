@@ -93,6 +93,8 @@ export function DirectLoadDispatchForm() {
   const [customerHits, setCustomerHits] = useState<CustomerHit[] | null>(null);
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [remarks, setRemarks] = useState("");
+  const [areas, setAreas] = useState<{ id: number; name: string; code: string }[]>([]);
+  const [areaId, setAreaId] = useState<number | "">("");
 
   // ---- Vehicle Gate Entry — auto-matched from the selected customer, no manual search ----
   const [vehicleGateEntryId, setVehicleGateEntryId] = useState<number | null>(null);
@@ -134,6 +136,13 @@ export function DirectLoadDispatchForm() {
   const [requireWeighment, setRequireWeighment] = useState(false);
   const tareWeight = preWeighment && preWeighment.length ? preWeighment[0].tareWeight : null;
   const postNetWeight = tareWeight != null ? r2(n(postGrossWeight) - tareWeight) : null;
+
+  useEffect(() => {
+    (async () => {
+      const j = await fetch("/api/system/areas", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+      if (j.ok) setAreas(j.rows.map((a: { id: number; name: string; code: string }) => ({ id: a.id, name: a.name, code: a.code })));
+    })();
+  }, []);
 
   useEffect(() => {
     if (postWeightCaptureMode === "CaptureLater") setPostWeightTiming("later");
@@ -452,6 +461,7 @@ export function DirectLoadDispatchForm() {
       customerName: customerName.trim() || null,
       deliveryAddress: deliveryAddress.trim() || null,
       warehouse: null,
+      areaId: areaId || null,
       vehicleGateEntryId: vehicleGateEntryId || null,
       transportCompanyId: transportCompanyId || null,
       vehicleId: vehicleId || null,
@@ -605,6 +615,12 @@ export function DirectLoadDispatchForm() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Fld label="Dispatch Date"><input type="date" value={dispatchDate} onChange={(e) => setDispatchDate(e.target.value)} className={inp} /></Fld>
           <Fld label="Loading Unit"><input readOnly value={loadingUnit || "—"} className={cn(inp, "cursor-not-allowed bg-surface-2")} /></Fld>
+          <Fld label="Inventory Movement From">
+            <select value={areaId} onChange={(e) => setAreaId(e.target.value ? Number(e.target.value) : "")} className={inp}>
+              <option value="">— Select —</option>
+              {areas.map((a) => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
+            </select>
+          </Fld>
           <div className="relative">
             <label className="mb-1 block text-2xs font-semibold text-muted">Customer</label>
             <input value={customerQuery} onChange={(e) => onCustomerQuery(e.target.value)} placeholder="Search customer master…" className={inp} />

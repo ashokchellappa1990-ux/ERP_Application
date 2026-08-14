@@ -95,7 +95,7 @@ export async function POST(req: Request) {
       case "PURCHASE_RETURN": case "SALES_RETURN_PICKUP": case "PRODUCTION_TRANSFER": case "JOB_WORK": case "OTHERS": {
         const body = otherDispatchInput.parse(raw);
         const docType = OTHER_SOURCE_TO_DOC_TYPE[body.source];
-        const res = await createOtherDispatch(scope, user, { docType, dispatchDate: body.dispatchDate, partyName: body.partyName, warehouse: body.warehouse, remarks: body.remarks, items: body.items });
+        const res = await createOtherDispatch(scope, user, { docType, dispatchDate: body.dispatchDate, partyName: body.partyName, warehouse: body.warehouse, areaId: body.areaId, remarks: body.remarks, items: body.items });
         return NextResponse.json({ ok: true, message: "Dispatch created.", id: res.id }, { status: 201 });
       }
       default:

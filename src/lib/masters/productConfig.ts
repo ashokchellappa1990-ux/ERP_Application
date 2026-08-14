@@ -76,6 +76,7 @@ const opt = (arr: string[]) => arr.map((x) => ({ value: x, label: x }));
 export const STATUS_OPTS = opt(["Active", "Inactive", "Blocked"]);
 export const INDUSTRY_OPTS = opt(["Electronics", "Pharmaceuticals", "FMCG", "Garments & Apparel", "Cosmetics", "Footwear", "Grocery", "Hardware", "Other"]);
 export const PRODUCT_TYPE_OPTS = opt(["Inventory Item", "Non-Inventory Item", "Service"]);
+export const INVENTORY_CATEGORY_OPTS = opt(["Raw Material", "Finished Product"]);
 export const CATEGORY_OPTS = opt(["Grocery", "Beverages", "Personal Care", "Household", "Pharmacy", "Electronics", "Textile", "Stationery"]);
 export const SUBCATEGORY_OPTS = opt(["Biscuits", "Milk & Dairy", "Oral Care", "Detergents", "Tablets", "Mobiles", "Shirts", "Notebooks"]);
 export const GROUP_OPTS = opt(["FMCG", "Durables", "Consumables", "Apparel"]);
@@ -107,6 +108,8 @@ export const QR_TEMPLATE_OPTS = opt(["Standard", "GS1 Digital Link", "Custom"]);
 /* ====================================================== tab field defs == */
 
 export const GENERAL_FIELDS: PField[] = [
+  { name: "productType", label: "Product Type", icon: Boxes, info: "Inventory items are stock-tracked; services are not.", type: "select", options: PRODUCT_TYPE_OPTS },
+  { name: "inventoryCategory", label: "Inventory Category", icon: Boxes, info: "Raw Material vs Finished Product — only applies to Inventory items.", type: "select", options: INVENTORY_CATEGORY_OPTS },
   { name: "code", label: "Product Code", icon: Tag, info: "Your internal product code — must be unique.", sample: "PRD-1001" },
   { name: "name", label: "Product Name *", icon: Package, info: "Primary display name on bills, lists and reports.", sample: "Parle-G Biscuit 100g" },
   { name: "shortName", label: "Product Short Name", icon: Tag, info: "Compact name for POS & receipts.", sample: "Parle-G 100g" },
@@ -120,7 +123,6 @@ export const GENERAL_FIELDS: PField[] = [
 
 export const CLASSIFICATION_FIELDS: PField[] = [
   { name: "industry", label: "Industry", icon: Boxes, info: "Business vertical this product belongs to (Electronics, Pharmaceuticals, FMCG, Garments, Cosmetics, Footwear…).", type: "select", options: INDUSTRY_OPTS, creatable: true },
-  { name: "productType", label: "Product Type", icon: Boxes, info: "Inventory items are stock-tracked; services are not.", type: "select", options: PRODUCT_TYPE_OPTS },
   { name: "category", label: "Product Category", icon: Layers, info: "Top-level category for reporting & navigation.", type: "select", options: CATEGORY_OPTS, creatable: true },
   { name: "subCategory", label: "Product Sub Category", icon: Layers, info: "Finer grouping under the category.", type: "select", options: SUBCATEGORY_OPTS, creatable: true },
   { name: "group", label: "Product Group", icon: Layers, info: "Cross-category grouping (e.g. FMCG).", type: "select", options: GROUP_OPTS, creatable: true },

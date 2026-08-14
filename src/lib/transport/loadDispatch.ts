@@ -137,7 +137,7 @@ export interface PaymentCollectionInput {
 }
 export interface DirectCustomerDispatchInput {
   dispatchDate: string; customerId?: number | null; customerName?: string | null; deliveryAddress?: string | null;
-  warehouse?: string | null;
+  warehouse?: string | null; areaId?: number | null;
   vehicleGateEntryId?: number | null; transportCompanyId?: number | null; vehicleId?: number | null; vehicleType?: string | null;
   driverName?: string | null; driverMobile?: string | null; driverLicenseNo?: string | null;
   helperName?: string | null; helperMobile?: string | null; sealNumber?: string | null;
@@ -207,7 +207,7 @@ export async function createDirectCustomerDispatch(scope: ActiveScope, user: Act
         tenantId: scope.tenantId, businessId: scope.businessId ?? undefined, branchId: scope.branchId ?? undefined,
         dispatchNo: "TMP", dispatchDate: input.dispatchDate, docType: "Customer", sourceRefType: "DIRECT",
         partyType: "Customer", partyId: input.customerId ?? undefined, partyName: input.customerName ?? undefined,
-        deliveryAddress: input.deliveryAddress ?? undefined, warehouse: input.warehouse ?? undefined,
+        deliveryAddress: input.deliveryAddress ?? undefined, warehouse: input.warehouse ?? undefined, areaId: input.areaId ?? undefined,
         vehicleGateEntryId: input.vehicleGateEntryId ?? undefined,
         transportCompanyId: input.transportCompanyId ?? gateEntry?.transportCompanyId ?? undefined,
         vehicleId: input.vehicleId ?? gateEntry?.vehicleId ?? undefined,
@@ -304,7 +304,7 @@ export async function loadFromTransferRequest(scope: ActiveScope, user: Actor, i
 /* -------------------------------------------------------- other docTypes */
 export interface OtherDispatchInput {
   docType: "PurchaseReturn" | "SalesReturnPickup" | "ProductionTransfer" | "JobWork" | "Others";
-  dispatchDate: string; partyName?: string | null; warehouse?: string | null; remarks?: string | null;
+  dispatchDate: string; partyName?: string | null; warehouse?: string | null; areaId?: number | null; remarks?: string | null;
   items?: DirectDispatchItemInput[];
 }
 
@@ -330,7 +330,7 @@ export async function createOtherDispatch(scope: ActiveScope, user: Actor, input
       data: {
         tenantId: scope.tenantId, businessId: scope.businessId ?? undefined, branchId: scope.branchId ?? undefined,
         dispatchNo: "TMP", dispatchDate: input.dispatchDate, docType: input.docType, sourceRefType: "DIRECT",
-        partyName: input.partyName ?? undefined, warehouse: input.warehouse ?? undefined, remarks: input.remarks ?? undefined,
+        partyName: input.partyName ?? undefined, warehouse: input.warehouse ?? undefined, areaId: input.areaId ?? undefined, remarks: input.remarks ?? undefined,
         status: "Draft", totalProducts: created.length, totalQty: r3(totalQty), totalPackages: 0,
         createdBy: user.id, createdByName: user.fullName ?? undefined,
         items: created.length ? { create: created } : undefined,
@@ -398,7 +398,7 @@ export async function completeLoadDispatch(scope: ActiveScope, user: Actor, id: 
  * whenever it posts, uses skipInventoryMovement and never re-consumes stock. */
 async function consumeInventoryForCustomerDispatch(
   scope: ActiveScope, user: Actor,
-  doc: { id: number; warehouse: string | null; dispatchDate: string; dispatchNo: string; items: { id: number; productId: number; dispatchedQty: Prisma.Decimal; batchNo: string | null; mfgDate: string | null; expiryDate: string | null }[] },
+  doc: { id: number; warehouse: string | null; areaId: number | null; dispatchDate: string; dispatchNo: string; items: { id: number; productId: number; dispatchedQty: Prisma.Decimal; batchNo: string | null; mfgDate: string | null; expiryDate: string | null }[] },
 ) {
   await prisma.$transaction(async (tx) => {
     for (const it of doc.items) {
@@ -412,7 +412,7 @@ async function consumeInventoryForCustomerDispatch(
       }
       await postMovement(tx, {
         tenantId: scope.tenantId, businessId: scope.businessId ?? undefined, branchId: scope.branchId ?? undefined,
-        productId: it.productId, txnType: "SALES", direction: "OUT", qty, rate: res.cost, warehouse: doc.warehouse,
+        productId: it.productId, txnType: "SALES", direction: "OUT", qty, rate: res.cost, warehouse: doc.warehouse, areaId: doc.areaId,
         batchNo: it.batchNo ?? res.batchNo, mfgDate: it.mfgDate ?? res.mfgDate, expiryDate: it.expiryDate ?? res.expiryDate,
         refType: "LOAD_DISPATCH", refId: it.id, refNo: doc.dispatchNo, txnDate: doc.dispatchDate, createdBy: user.id,
       });

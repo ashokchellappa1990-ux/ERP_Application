@@ -19,8 +19,15 @@ export const BUCKET_WAREHOUSE: Record<string, string> = {
  * Transfer Receipt moves it into a real destination warehouse. */
 export const IN_TRANSIT_WAREHOUSE = "In-Transit";
 
+/** Virtual warehouse holding raw material that has been issued into a Material
+ * Processing transaction but not yet completed — WIP is a DISTINCT state from
+ * In-Transit (material isn't moving between locations, it's being consumed at
+ * one). Excluded from sellable/available stock until Complete Process clears it
+ * and receives the Finished Goods. See src/lib/manufacturing/materialProcessing.ts. */
+export const WIP_WAREHOUSE = "WIP / Processing";
+
 /** The warehouse names that must be EXCLUDED from sellable stock (POS / billing). */
-export const BUCKET_WAREHOUSES: string[] = [...Object.values(BUCKET_WAREHOUSE), IN_TRANSIT_WAREHOUSE];
+export const BUCKET_WAREHOUSES: string[] = [...Object.values(BUCKET_WAREHOUSE), IN_TRANSIT_WAREHOUSE, WIP_WAREHOUSE];
 
 export type InventoryHandling = "good" | "damaged" | "expired" | "vendor" | "scrap" | "quarantine";
 

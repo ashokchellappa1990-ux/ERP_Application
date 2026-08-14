@@ -31,12 +31,13 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const gateEntry = grn.gateEntryId
     ? await prisma.vehicleGateEntry.findFirst({ where: { id: grn.gateEntryId, tenantId: user.tenantId }, select: { gateEntryNo: true, grossWeight: true, status: true } })
     : null;
+  const area = grn.areaId ? await prisma.area.findFirst({ where: { id: grn.areaId, tenantId: user.tenantId }, select: { name: true } }) : null;
 
   const data: GrnDetail = {
       id: grn.id, grnNo: grn.grnNo, status: grn.status as GrnStatus, grnDate: grn.grnDate,
       supplier: grn.supplier ?? "", supplierGstin: grn.supplierGstin ?? "", supplierContact: grn.supplierContact ?? "",
       supplierInvoiceNo: grn.supplierInvoiceNo ?? "", supplierInvoiceDate: grn.supplierInvoiceDate ?? "",
-      poNo: grn.poNo ?? "", warehouse: grn.warehouse ?? "", notes: grn.notes ?? "",
+      poNo: grn.poNo ?? "", warehouse: grn.warehouse ?? "", areaId: grn.areaId ?? null, areaName: area?.name ?? "", notes: grn.notes ?? "",
       gstMode: grn.gstMode, gstPct: grn.gstPct != null ? num(grn.gstPct) : "",
       subtotal: num(grn.subtotal), taxTotal: num(grn.taxTotal), freightAmount: num(grn.freightAmount),
       otherCharges: num(grn.otherCharges), roundOff: num(grn.roundOff), totalInvoiceValue: num(grn.totalInvoiceValue),
@@ -113,7 +114,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
             productId: line.productId, sku: line.sku, docNo: grn.grnNo, qty: Number(line.qty), mode: !qrRequired ? "none" : line.qrMode === "unique" ? "unique" : "shared",
             txnType: "PURCHASE", refType: "GRN", refNo: grn.grnNo, txnDate: header.grnDate,
             rate: line.rate != null ? Number(line.rate) : null, sellingRate: line.sellingPrice != null ? Number(line.sellingPrice) : null,
-            warehouse: header.warehouse, batchNo: line.batchNo, mfgDate: line.mfgDate,
+            warehouse: header.warehouse, areaId: header.areaId, batchNo: line.batchNo, mfgDate: line.mfgDate,
             expiryDate: line.expiryDate, purchaseDate: header.supplierInvoiceDate ?? header.grnDate, grnId: grn.id, createdBy: user.id,
           }, seq);
           seq = r.endSeq;

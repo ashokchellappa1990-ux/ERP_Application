@@ -28,6 +28,7 @@ export interface GenLineOpts {
   rate?: number | null;
   sellingRate?: number | null;
   warehouse?: string | null;
+  areaId?: number | null; // additive Area Config link (GRN only)
   batchNo?: string | null;
   mfgDate?: string | null;
   expiryDate?: string | null;
@@ -59,7 +60,7 @@ export async function generateLineQr(tx: Prisma.TransactionClient, o: GenLineOpt
   await reverseRef(tx, o.tenantId, o.refType, o.sourceId);
   const base = {
     tenantId: o.tenantId, businessId: o.businessId ?? null, branchId: o.branchId ?? null, productId: o.productId, txnType: o.txnType, direction: "IN" as const,
-    rate: o.rate ?? null, sellingRate: o.sellingRate ?? null, warehouse: o.warehouse, batchNo: o.batchNo, mfgDate: o.mfgDate, expiryDate: o.expiryDate,
+    rate: o.rate ?? null, sellingRate: o.sellingRate ?? null, warehouse: o.warehouse, areaId: o.areaId ?? null, batchNo: o.batchNo, mfgDate: o.mfgDate, expiryDate: o.expiryDate,
     refType: o.refType, refId: o.sourceId, refNo: o.refNo, grnId: o.grnId ?? null, txnDate: o.txnDate, createdBy: o.createdBy,
   };
   if (o.mode === "unique") {
@@ -69,7 +70,7 @@ export async function generateLineQr(tx: Prisma.TransactionClient, o: GenLineOpt
     await postMovement(tx, { ...base, qrCode: made[0] ?? null, qty });
   }
   await addLot(tx, {
-    tenantId: o.tenantId, businessId: o.businessId ?? null, branchId: o.branchId ?? null, productId: o.productId, warehouse: o.warehouse, batchNo: o.batchNo, grnId: o.grnId ?? null,
+    tenantId: o.tenantId, businessId: o.businessId ?? null, branchId: o.branchId ?? null, productId: o.productId, warehouse: o.warehouse, areaId: o.areaId ?? null, batchNo: o.batchNo, grnId: o.grnId ?? null,
     refType: o.refType, refId: o.sourceId, refNo: o.refNo, receivedDate: o.txnDate, purchaseDate: o.purchaseDate,
     mfgDate: o.mfgDate, expiryDate: o.expiryDate, qty, unitRate: o.rate ?? null, sellingRate: o.sellingRate ?? null,
   });

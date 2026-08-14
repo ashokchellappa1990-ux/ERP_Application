@@ -117,6 +117,7 @@ export interface LedgerBalance {
   brand: string;
   warehouse: string;
   qtyOnHand: number;
+  wipQty: number; // In-Process — raw material issued into a Material Processing transaction, not yet completed
   purchaseRate: number | null;
   sellingRate: number | null;
   value: number;
@@ -151,9 +152,9 @@ export interface LedgerResponse {
 }
 
 /* --------------------------------------------------- stock position */
-export interface StockPositionRow { date: string; ob: number; receipt: number; ret: number; sales: number; purchaseRet: number; transfer: number; damage: number; cb: number }
+export interface StockPositionRow { date: string; ob: number; receipt: number; ret: number; sales: number; purchaseRet: number; transfer: number; inTransit: number; wastage: number; damage: number; cb: number }
 export interface StockPositionProduct { id: number; name: string; sku: string; brand: string }
-export interface StockPositionTotals { receipt: number; ret: number; sales: number; purchaseRet: number; transfer: number; damage: number }
+export interface StockPositionTotals { receipt: number; ret: number; sales: number; purchaseRet: number; transfer: number; inTransit: number; wastage: number; damage: number }
 export interface StockPositionResponse {
   ok: true;
   product: StockPositionProduct | null;
@@ -162,3 +163,21 @@ export interface StockPositionResponse {
   closing: number;
   totals: StockPositionTotals;
 }
+
+/* ------------------------------------------- stock position — drill-in */
+export type StockPositionBucket = "receipt" | "ret" | "sales" | "purchaseRet" | "transfer" | "inTransit" | "wastage" | "damage";
+export interface StockPositionDetailRow {
+  id: number;
+  txnType: string;
+  refType: string;
+  refNo: string;
+  grnId: number | null;
+  qty: number;
+  rate: number | null;
+  value: number | null;
+  warehouse: string;
+  areaName: string;
+  batchNo: string;
+  createdAt: string;
+}
+export interface StockPositionDetailResponse { ok: true; date: string; bucket: StockPositionBucket; rows: StockPositionDetailRow[]; totalQty: number; totalValue: number }

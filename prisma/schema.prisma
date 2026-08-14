@@ -1744,6 +1744,38 @@ model Branch {
   @@map("branches")
 }
 
+/// Area Config — standalone Branch-scoped master for physical/operational areas
+/// (Raw Material Store, Processing Area, WIP, Finished Goods, etc.), with optional
+/// parent/child hierarchy within the same branch. `branchId` is a soft link (plain
+/// int, matching CostCentre's convention) — not a hard Prisma relation to Branch.
+model Area {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int
+
+  code String @db.VarChar(30)
+  name String @db.VarChar(150)
+  type String @db.VarChar(30) // Storage | Processing | WIP | Finished Goods | Rejection/Waste | Quarantine | Packing | Dispatch | Other
+
+  parentAreaId Int?
+  parentArea   Area?  @relation("AreaTree", fields: [parentAreaId], references: [id], onDelete: SetNull)
+  children     Area[] @relation("AreaTree")
+
+  description String? @db.Text
+  status      String  @default("Active") @db.VarChar(20) // Active | Inactive
+
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, branchId, code])
+  @@index([tenantId, branchId])
+  @@index([parentAreaId])
+  @@map("areas")
+}
+
 /// Entity Type master — the category of an org node (Head Office, Regional
 /// Office, Warehouse, Retail Store, Factory …). Data-driven so an admin can add
 /// more types without code changes. `allowChild` is the default for branches of
@@ -2032,6 +2064,7 @@ model Product {
   // Classification
   industry     String? @db.VarChar(40) // vertical: Electronics | Pharmaceuticals | FMCG | …
   productType  String? @db.VarChar(40)
+  inventoryCategory String? @db.VarChar(20) // Raw Material | Finished Product — only meaningful when productType = "Inventory Item"
   category     String? @db.VarChar(120)
   subCategory  String? @db.VarChar(120)
   group        String? @db.VarChar(120)
@@ -2441,6 +2474,11 @@ model InventoryLedger {
   @@index([grnId])
   businessId Int?
   branchId   Int?
+  // Additive area dimension — tags which Area (from Area Config) this movement
+  // happened in. Nullable, alongside `warehouse` (not replacing it); only GRN
+  // receipts and Load & Dispatch stamp this today — every other flow leaves it null.
+  areaId     Int?
+  @@index([tenantId, areaId])
 
   @@map("inventory_ledger")
 }
@@ -2509,6 +2547,8 @@ model InventoryLot {
   @@index([grnId])
   businessId Int?
   branchId   Int?
+  areaId     Int? // additive, same convention as InventoryLedger.areaId
+  @@index([tenantId, areaId])
 
   @@map("inventory_lots")
 }
@@ -2573,7 +2613,9 @@ model GoodsReceiptNote {
   // Inventory Movement selection when this GRN was created from one (see
   // gateEntryId below) — display-only here, captured at the gate-entry side.
   weightSlipRefNo   String? @db.VarChar(60)
-  inventoryMovement String? @db.VarChar(60)
+  inventoryMovement String? @db.VarChar(60) // legacy free-text field, superseded by areaId below — kept for old data, no longer written
+  // The real Area (Area Config) stock from this GRN was received into.
+  areaId            Int?
 
   // Vehicle weighment (Purchase Config → enableTruckWeightGrn)
   tareWeight  Decimal? @db.Decimal(18, 3)
@@ -8916,9 +8958,11 @@ model VehicleGateEntry {
   tareWeight       Decimal? @db.Decimal(18, 3)
   netWeight        Decimal? @db.Decimal(18, 3)
   weightSlipRefNo  String?  @db.VarChar(60)
-  // Where the received material goes — "Move to Raw Material Main Stock" |
-  // "Move to Production Plant Stock" — selected at the Update Weight step.
+  // Legacy free-text field, superseded by areaId below — kept for old data, no longer written.
   inventoryMovement String? @db.VarChar(60)
+  // Inventory Movement Area — the real Area (Area Config) the received material
+  // goes into, selected at the Update Weight step; prefills the GRN's own areaId.
+  areaId           Int?
   grnId            Int?     // the GRN this Raw Material entry spawned, once created
 
   createdBy Int?
@@ -9157,6 +9201,11 @@ model LoadDispatch {
   businessId Int?
   branchId   Int?
   warehouse    String? @db.VarChar(120)
+  // Additive area dimension, same convention as InventoryLedger.areaId —
+  // set only on the Direct Customer Dispatch and "Other" doc-type paths
+  // (the two that already have a location field); Sales-Order/Transfer-
+  // Request-sourced dispatches leave this null.
+  areaId       Int?
   dispatchNo   String  @db.VarChar(40)
   dispatchDate String  @db.VarChar(20)
   docType String @default("Customer") @db.VarChar(24) // Customer | StockTransfer | PurchaseReturn | SalesReturnPickup | ProductionTransfer | JobWork | Others
@@ -9438,4 +9487,171 @@ model SupplierProductPriceHistory {
 
   @@index([tenantId, supplierProductPriceId])
   @@map("supplier_product_price_history")
+}
+
+// ==========================================================================
+// Processing Set Configuration — a ONE-TIME master defining how one Raw
+// Material is normally converted into multiple Finished Goods by expected
+// output %. Configuration ONLY: no processing quantity, lot, WIP, material
+// issue, or stock/GL posting here — those belong to a future Processing
+// Transaction, which will read this set's outputs to auto-calculate expected
+// output qty from the actual raw material qty processed.
+// ==========================================================================
+model ProcessingSet {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+
+  code                  String  @db.VarChar(20) // auto-generated, e.g. PS-001
+  name                  String  @db.VarChar(150) // must be unique per tenant
+  rawMaterialProductId  Int
+  description           String? @db.VarChar(500)
+  status                String  @default("Active") @db.VarChar(16) // Active | Inactive
+  // Expected process loss/wastage % — NOT a Finished Good product, just a
+  // number so Finished Goods % + Process Loss % must tally to 100%. A future
+  // Processing Transaction posts this share of the raw material qty to a
+  // wastage/scrap inventory movement instead of any output product.
+  processLossPercentage Decimal @default(0) @db.Decimal(6, 3)
+
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  outputs ProcessingSetOutput[]
+
+  @@unique([tenantId, code])
+  @@unique([tenantId, name])
+  @@index([tenantId, status])
+  @@index([rawMaterialProductId])
+  @@map("processing_sets")
+}
+
+model ProcessingSetOutput {
+  id              Int           @id @default(autoincrement())
+  tenantId        Int
+  processingSetId Int
+  processingSet   ProcessingSet @relation(fields: [processingSetId], references: [id], onDelete: Cascade)
+
+  finishedGoodProductId Int
+  expectedPercentage    Decimal @db.Decimal(6, 3) // 0–100
+  remarks               String? @db.VarChar(300)
+  displayOrder          Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([processingSetId])
+  @@index([finishedGoodProductId])
+  @@map("processing_set_outputs")
+}
+
+// ==========================================================================
+// Material Processing — the TRANSACTION that consumes Processing Set
+// Configuration as a starting template. Selecting a Processing Set COPIES its
+// configured raw material + output % into this transaction (a snapshot); the
+// master is never dynamically re-read afterwards, so editing the master never
+// changes an existing Material Processing row. Flow: Draft (no stock impact)
+// -> Initiate (raw material moves Source Area -> WIP bucket) -> Complete (WIP
+// cleared, Finished Goods received into each line's output area) -> or
+// Cancelled (only before Completed; reverses any WIP movement already made).
+// All stock movements this module creates are tagged
+// refType="MATERIAL_PROCESSING", refNo=processingNumber for traceability.
+// ==========================================================================
+model MaterialProcessing {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+
+  processingNumber String @db.VarChar(40) // auto-generated, e.g. MP-2026-00001
+  processingDate   String @db.VarChar(20)
+
+  processingAreaId Int // Area Config row, type = Processing
+  processingUnit   String? @db.VarChar(120) // free-text sub-unit, e.g. "Crusher Unit 01" — no separate master
+
+  processingSetId      Int // the master template used to start this transaction
+  processingSetVersion Int @default(1) // informational snapshot marker only
+
+  rawMaterialProductId Int
+  sourceAreaId          Int // Area Config row the raw material is issued from
+  inputQuantity         Decimal @db.Decimal(18, 3)
+  inputUom              String? @db.VarChar(20)
+
+  status String @default("Draft") @db.VarChar(20) // Draft | InProgress | Completed | Cancelled
+  // Snapshot of the "Require 100% Output Allocation" config flag at creation
+  // time, so a later config change never silently alters an existing draft's rule.
+  requireFullAllocation Boolean @default(false)
+
+  totalActualOutputQty Decimal @default(0) @db.Decimal(18, 3) // sum of outputs.actualQuantity, kept in sync
+  finalOutputQty        Decimal? @db.Decimal(18, 3) // sum of outputs.finalActualQuantity, set at Complete
+  processLossQty         Decimal? @db.Decimal(18, 3) // inputQuantity - finalOutputQty, computed at Complete
+
+  fgReceiptNo String? @db.VarChar(40) // e.g. FGR-2026-00001, generated at Complete (display label only — same ledger refNo as the MP itself)
+
+  initiatedAt DateTime?
+  initiatedBy Int?
+  completedAt DateTime?
+  completedBy Int?
+  cancelledAt DateTime?
+  cancelledBy Int?
+  cancelReason String? @db.VarChar(300)
+
+  createdBy     Int?
+  createdByName String? @db.VarChar(160)
+  createdAt     DateTime  @default(now())
+  updatedBy     Int?
+  updatedAt     DateTime  @updatedAt
+
+  outputs MaterialProcessingOutput[]
+
+  @@unique([tenantId, processingNumber])
+  @@index([tenantId, status])
+  @@index([tenantId, branchId, processingDate])
+  @@index([processingSetId])
+  @@index([rawMaterialProductId])
+  @@map("material_processing")
+}
+
+model MaterialProcessingOutput {
+  id                   Int                @id @default(autoincrement())
+  tenantId             Int
+  materialProcessingId Int
+  materialProcessing   MaterialProcessing @relation(fields: [materialProcessingId], references: [id], onDelete: Cascade)
+
+  productId             Int
+  configuredPercentage  Decimal? @db.Decimal(6, 3) // the master's % at copy time; null when added ad-hoc (not from the set)
+  actualPercentage      Decimal  @db.Decimal(6, 3) // editable pre-Initiate; kept in sync with actualQuantity
+  calculatedQuantity    Decimal  @db.Decimal(18, 3) // configuredPercentage x inputQuantity, at add/set-select time
+  actualQuantity        Decimal  @db.Decimal(18, 3) // the working qty the user can freely edit before Initiate
+  finalActualQuantity   Decimal? @db.Decimal(18, 3) // entered at Complete Process; drives the real FG receipt qty
+  outputAreaId          Int // Area Config row this Finished Good is received into
+  outputType            String   @default("FinishedGood") @db.VarChar(20)
+  displayOrder           Int     @default(0)
+  remarks                String? @db.VarChar(300)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([materialProcessingId])
+  @@index([productId])
+  @@map("material_processing_outputs")
+}
+
+/// Processing Configuration — single scoped-JSON-blob settings row, same
+/// override-ladder pattern as DispatchConfiguration (branch -> business ->
+/// tenant default). See src/lib/settings/processingConfig.ts.
+model ProcessingConfiguration {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+
+  config Json // { flags: { requireFullOutputAllocation: boolean } }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, businessId, branchId])
+  @@map("processing_configurations")
 }

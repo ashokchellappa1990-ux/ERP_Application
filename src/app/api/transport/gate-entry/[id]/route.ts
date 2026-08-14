@@ -74,7 +74,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       grossWeight: entry.grossWeight != null ? Number(entry.grossWeight) : null,
       tareWeight: entry.tareWeight != null ? Number(entry.tareWeight) : null,
       netWeight: entry.netWeight != null ? Number(entry.netWeight) : null,
-      weightSlipRefNo: entry.weightSlipRefNo, inventoryMovement: entry.inventoryMovement,
+      weightSlipRefNo: entry.weightSlipRefNo, inventoryMovement: entry.inventoryMovement, areaId: entry.areaId,
       preWeighment: preWeighment ? { id: preWeighment.id, weighmentNo: preWeighment.weighmentNo, tareWeight: Number(preWeighment.tareWeight) } : null,
       loadingConfirmation: loading ? { id: loading.id, loadingNo: loading.loadingNo, loadingStart: loading.loadingStart?.toISOString() ?? null, loadingEnd: loading.loadingEnd?.toISOString() ?? null } : null,
       postWeighment: postWeighment ? { id: postWeighment.id, grossWeight: Number(postWeighment.grossWeight), netWeight: Number(postWeighment.netWeight), toleranceExceeded: postWeighment.toleranceExceeded, approvalStatus: postWeighment.approvalStatus } : null,

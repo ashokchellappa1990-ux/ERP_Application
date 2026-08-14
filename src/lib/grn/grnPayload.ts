@@ -11,6 +11,7 @@ interface GrnLineInput {
 const s = (v: unknown) => { const t = typeof v === "string" ? v.trim() : v == null ? "" : String(v).trim(); return t ? t : null; };
 const dec = (v: unknown) => { const t = typeof v === "string" ? v.trim() : v; if (t === "" || t == null) return null; const n = Number(t); return Number.isFinite(n) ? n : null; };
 const n0 = (v: unknown) => dec(v) ?? 0;
+const intOrNull = (v: unknown) => { const n = dec(v); return n != null ? Math.round(n) : null; };
 const r2 = (n: number) => +n.toFixed(2);
 function addDays(date: string, days: number): string {
   const d = new Date(date + "T00:00:00");
@@ -23,7 +24,7 @@ export interface GrnHeader {
   grnDate: string;
   supplier: string | null; supplierGstin: string | null; supplierContact: string | null;
   supplierInvoiceNo: string | null; supplierInvoiceDate: string | null; poNo: string | null;
-  warehouse: string | null; notes: string | null; status: string;
+  warehouse: string | null; areaId: number | null; notes: string | null; status: string;
   gstMode: string; gstPct: number | null;
   subtotal: number; taxTotal: number; freightAmount: number; otherCharges: number; roundOff: number; totalInvoiceValue: number;
   paymentStatus: string; amountPaid: number; paymentMode: string | null; paymentRef: string | null; paymentDate: string | null;
@@ -107,7 +108,7 @@ export function buildGrnPayload(body: unknown): BuiltGrn | { error: string } {
     grnDate,
     supplier: s(b.supplier), supplierGstin: s(b.supplierGstin), supplierContact: s(b.supplierContact),
     supplierInvoiceNo: s(b.supplierInvoiceNo), supplierInvoiceDate: s(b.supplierInvoiceDate), poNo: s(b.poNo),
-    warehouse: s(b.warehouse), notes: s(b.notes), status,
+    warehouse: s(b.warehouse), areaId: intOrNull(b.areaId), notes: s(b.notes), status,
     gstMode, gstPct,
     subtotal, taxTotal, freightAmount, otherCharges, roundOff, totalInvoiceValue,
     paymentStatus, amountPaid, paymentMode: s(b.paymentMode), paymentRef: s(b.paymentRef), paymentDate: s(b.paymentDate),

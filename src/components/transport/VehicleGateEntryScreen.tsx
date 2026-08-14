@@ -504,14 +504,14 @@ function NewEntryTypeModal({ onClose, onPick }: { onClose: () => void; onPick: (
           <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-surface hover:text-foreground"><X className="h-4 w-4" /></button>
         </div>
         <div className="grid gap-3 p-5 sm:grid-cols-2">
-          <button type="button" onClick={() => onPick("Dispatch")} className="flex flex-col items-start gap-2 rounded-xl border border-border bg-surface p-4 text-left transition hover:border-primary hover:bg-primary-subtle/30">
-            <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary-subtle text-primary"><Truck className="h-5 w-5" /></span>
-            <span className="text-sm font-bold text-foreground">Empty Vehicle</span>
+          <button type="button" onClick={() => onPick("Dispatch")} className="flex flex-col items-start gap-2 rounded-xl border border-info/30 bg-info-subtle/40 p-4 text-left transition hover:border-info hover:bg-info-subtle/70">
+            <span className="grid h-10 w-10 place-items-center rounded-lg bg-info text-white"><Truck className="h-5 w-5" /></span>
+            <span className="text-sm font-bold text-foreground">Sales (Empty Vehicle In)</span>
             <span className="text-2xs text-muted">For Stock Dispatch from the Unit</span>
           </button>
-          <button type="button" onClick={() => onPick("RawMaterial")} className="flex flex-col items-start gap-2 rounded-xl border border-border bg-surface p-4 text-left transition hover:border-primary hover:bg-primary-subtle/30">
-            <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary-subtle text-primary"><Package className="h-5 w-5" /></span>
-            <span className="text-sm font-bold text-foreground">Loaded Vehicle</span>
+          <button type="button" onClick={() => onPick("RawMaterial")} className="flex flex-col items-start gap-2 rounded-xl border border-warning/30 bg-warning-subtle/40 p-4 text-left transition hover:border-warning hover:bg-warning-subtle/70">
+            <span className="grid h-10 w-10 place-items-center rounded-lg bg-warning text-white"><Package className="h-5 w-5" /></span>
+            <span className="text-sm font-bold text-foreground">Purchase (Loaded Vehicle In)</span>
             <span className="text-2xs text-muted">Raw Material Entry to the unit</span>
           </button>
         </div>

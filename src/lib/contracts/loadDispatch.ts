@@ -103,6 +103,7 @@ export const directCustomerDispatchInput = z.object({
   customerName: z.string().trim().max(200).optional().nullable(),
   deliveryAddress: z.string().trim().max(400).optional().nullable(),
   warehouse: z.string().trim().max(120).optional().nullable(),
+  areaId: z.coerce.number().int().positive().optional().nullable(),
   // Linking an existing Vehicle Gate Entry auto-loads Transport/Driver details
   // from it (client-side convenience); the server still stores whatever
   // Transport/Driver fields are submitted below, editable independently.
@@ -144,6 +145,7 @@ export const otherDispatchInput = z.object({
   dispatchDate: z.string().trim().min(1),
   partyName: z.string().trim().max(200).optional().nullable(),
   warehouse: z.string().trim().max(120).optional().nullable(),
+  areaId: z.coerce.number().int().positive().optional().nullable(),
   remarks: z.string().trim().max(2000).optional().nullable(),
   items: z.array(loadDispatchItemInput).default([]),
 });
@@ -225,7 +227,7 @@ export interface LoadDispatchDetail {
   id: number; dispatchNo: string; dispatchDate: string; docType: LoadDispatchDocType;
   sourceRefType: string | null; sourceRefId: number | null; sourceRefNo: string | null;
   partyType: string | null; partyId: number | null; partyName: string | null;
-  deliveryAddress: string | null; warehouse: string | null; destinationWarehouse: string | null;
+  deliveryAddress: string | null; warehouse: string | null; areaId: number | null; areaName: string | null; destinationWarehouse: string | null;
   vehicleGateEntryId: number | null;
   transportCompanyId: number | null; vehicleId: number | null; vehicleNo: string | null; vehicleType: string | null;
   driverName: string | null; driverMobile: string | null; driverLicenseNo: string | null;

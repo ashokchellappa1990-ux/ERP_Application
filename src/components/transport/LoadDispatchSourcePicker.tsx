@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -108,13 +108,21 @@ export function LoadDispatchSourcePicker() {
   // Other doc types (Purchase Return / Sales Return Pickup / Production Transfer / Job Work / Others)
   const [partyName, setPartyName] = useState("");
   const [warehouse, setWarehouse] = useState("");
+  const [areaId, setAreaId] = useState<number | "">("");
+  const [areas, setAreas] = useState<{ id: number; name: string; code: string }[]>([]);
   const [remarks, setRemarks] = useState("");
+  useEffect(() => {
+    (async () => {
+      const j = await fetch("/api/system/areas", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+      if (j.ok) setAreas(j.rows.map((a: { id: number; name: string; code: string }) => ({ id: a.id, name: a.name, code: a.code })));
+    })();
+  }, []);
   async function createOther(source: LoadDispatchSource) {
     setBusy(true);
     try {
       const res = await fetch("/api/warehouse/load-dispatch", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source, dispatchDate: today(), partyName: partyName.trim() || null, warehouse: warehouse.trim() || null, remarks: remarks.trim() || null, items: [] }),
+        body: JSON.stringify({ source, dispatchDate: today(), partyName: partyName.trim() || null, warehouse: warehouse.trim() || null, areaId: areaId || null, remarks: remarks.trim() || null, items: [] }),
       });
       const j = await res.json().catch(() => ({}));
       if (res.ok && j.ok) { toast.success(j.message || "Dispatch created."); router.push(`/warehouse/transfer/load-dispatch/${j.id}`); }
@@ -126,7 +134,7 @@ export function LoadDispatchSourcePicker() {
     setSelected(v);
     setSoQ(""); setSoHits(null);
     setTrQ(""); setTrHits(null);
-    setPartyName(""); setWarehouse(""); setRemarks("");
+    setPartyName(""); setWarehouse(""); setAreaId(""); setRemarks("");
     if (v === "STOCK_TRANSFER") searchTransferRequests("");
   }
 
@@ -242,6 +250,12 @@ export function LoadDispatchSourcePicker() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Fld label="Party Name"><input value={partyName} onChange={(e) => setPartyName(e.target.value)} className={inp} /></Fld>
             <Fld label="Warehouse"><input value={warehouse} onChange={(e) => setWarehouse(e.target.value)} className={inp} /></Fld>
+            <Fld label="Storage Area">
+              <select value={areaId} onChange={(e) => setAreaId(e.target.value ? Number(e.target.value) : "")} className={inp}>
+                <option value="">— Select —</option>
+                {areas.map((a) => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
+              </select>
+            </Fld>
             <div className="sm:col-span-2 lg:col-span-1"><Fld label="Remarks"><input value={remarks} onChange={(e) => setRemarks(e.target.value)} className={inp} /></Fld></div>
           </div>
           <p className="mt-2 text-2xs text-subtle">Items are Phase-1 physical tracking only and can be recorded once the dispatch is created.</p>

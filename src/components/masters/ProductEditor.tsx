@@ -128,6 +128,20 @@ function FieldRenderer({ def }: { def: PField }) {
   if (def.type === "select") {
     if (def.name === "category" || def.name === "subCategory" || def.name === "group") return <HierSelectField def={def} />;
     if (def.creatable || def.name === "preferredSupplier") return <CreatableSelectField def={def} />;
+    if (def.name === "inventoryCategory") {
+      const isInventoryItem = getField("productType") === "Inventory Item";
+      return (
+        <Select
+          {...common}
+          leadingIcon={lead}
+          placeholder={isInventoryItem ? "Select…" : "Only applies to Inventory items"}
+          options={def.options ?? []}
+          value={isInventoryItem ? getField(def.name) : ""}
+          disabled={!isInventoryItem}
+          onChange={(e) => setField(def.name, e.target.value)}
+        />
+      );
+    }
     return (
       <Select
         {...common}

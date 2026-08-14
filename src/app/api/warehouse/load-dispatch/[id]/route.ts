@@ -23,16 +23,17 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const doc = await prisma.loadDispatch.findFirst({ where: { ...sw, id: Number(params.id), deletedAt: null }, include: { items: { orderBy: { id: "asc" } } } });
   if (!doc) return NextResponse.json({ ok: false, message: "Load & Dispatch not found." }, { status: 404 });
 
-  const [vehicle, sale] = await Promise.all([
+  const [vehicle, sale, area] = await Promise.all([
     doc.vehicleId ? prisma.vehicleMaster.findFirst({ where: { id: doc.vehicleId }, select: { vehicleNo: true } }) : Promise.resolve(null),
     doc.saleId ? prisma.sale.findFirst({ where: { id: doc.saleId, tenantId: user.tenantId }, select: { invoiceNo: true, paymentMode: true, total: true, amountPaid: true } }) : Promise.resolve(null),
+    doc.areaId ? prisma.area.findFirst({ where: { id: doc.areaId, tenantId: user.tenantId }, select: { name: true } }) : Promise.resolve(null),
   ]);
 
   const data: LoadDispatchDetail = {
     id: doc.id, dispatchNo: doc.dispatchNo, dispatchDate: doc.dispatchDate, docType: doc.docType as LoadDispatchDetail["docType"],
     sourceRefType: doc.sourceRefType, sourceRefId: doc.sourceRefId, sourceRefNo: doc.sourceRefNo,
     partyType: doc.partyType, partyId: doc.partyId, partyName: doc.partyName,
-    deliveryAddress: doc.deliveryAddress, warehouse: doc.warehouse, destinationWarehouse: doc.destinationWarehouse,
+    deliveryAddress: doc.deliveryAddress, warehouse: doc.warehouse, areaId: doc.areaId, areaName: area?.name ?? null, destinationWarehouse: doc.destinationWarehouse,
     vehicleGateEntryId: doc.vehicleGateEntryId,
     transportCompanyId: doc.transportCompanyId, vehicleId: doc.vehicleId, vehicleNo: vehicle?.vehicleNo ?? null, vehicleType: doc.vehicleType,
     driverName: doc.driverName, driverMobile: doc.driverMobile, driverLicenseNo: doc.driverLicenseNo,

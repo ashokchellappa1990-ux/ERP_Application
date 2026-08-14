@@ -138,7 +138,7 @@ export async function POST(req: Request) {
             productId: line.productId, sku: line.sku, docNo: grnNo, qty: Number(line.qty), mode: !qrRequired ? "none" : isSerial ? "unique" : (line.qrMode === "unique" ? "unique" : "shared"),
             txnType: "PURCHASE", refType: "GRN", refNo: grnNo, txnDate: header.grnDate,
             rate: line.rate != null ? Number(line.rate) : null, sellingRate: line.sellingPrice != null ? Number(line.sellingPrice) : null,
-            warehouse: header.warehouse, batchNo: line.batchNo, mfgDate: line.mfgDate,
+            warehouse: header.warehouse, areaId: header.areaId, batchNo: line.batchNo, mfgDate: line.mfgDate,
             expiryDate: line.expiryDate, purchaseDate: header.supplierInvoiceDate ?? header.grnDate, grnId: grn.id, createdBy: user.id,
             serials: isSerial ? (built.lineSerials[li] ?? []) : null,
           }, seq);

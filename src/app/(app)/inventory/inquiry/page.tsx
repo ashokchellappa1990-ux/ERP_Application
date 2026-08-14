@@ -10,6 +10,7 @@ import { useGeneralConfig } from "@/components/settings/GeneralConfigProvider";
 import { MONTHS, currentYM, monthRange, yearOptions } from "@/lib/inventory/period";
 import { cn } from "@/lib/cn";
 import { UomConvert } from "@/components/uom/UomConvert";
+import { StockPositionDrillIn, type DrillTarget } from "@/components/inventory/StockPositionDrillIn";
 import type { LedgerBalance as Balance, StockPositionRow as PosRow } from "@/lib/contracts/openingStock";
 
 export default function StockInquiryPage() {
@@ -25,14 +26,33 @@ export default function StockInquiryPage() {
   const [year, setYear] = useState(cur.year);
   const [month, setMonth] = useState(cur.month);
 
+  // Area / Brand / Inventory Category filters, same convention as the Inventory Ledger page.
+  const [areas, setAreas] = useState<{ id: number; name: string; code: string }[]>([]);
+  const [areaId, setAreaId] = useState<number | "">("");
+  const [brand, setBrand] = useState("");
+  const [invCategory, setInvCategory] = useState("All");
   useEffect(() => {
     (async () => {
+      const j = await fetch("/api/system/areas", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+      if (j.ok) setAreas(j.rows.map((a: { id: number; name: string; code: string }) => ({ id: a.id, name: a.name, code: a.code })));
+    })();
+  }, []);
+  const brandOptions = useMemo(() => Array.from(new Set(balances.map((b) => b.brand).filter(Boolean))).sort(), [balances]);
+  const [drill, setDrill] = useState<DrillTarget | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
       try {
-        const b = await fetch("/api/inventory/ledger", { cache: "no-store" }).then((r) => r.json());
+        const params = new URLSearchParams();
+        if (areaId) params.set("areaId", String(areaId));
+        if (brand) params.set("brand", brand);
+        if (invCategory !== "All") params.set("inventoryCategory", invCategory);
+        const b = await fetch(`/api/inventory/ledger?${params}`, { cache: "no-store" }).then((r) => r.json());
         if (b.ok) setBalances(b.balances);
       } catch { /* ignore */ } finally { setLoading(false); }
     })();
-  }, []);
+  }, [areaId, brand, invCategory]);
 
   const fq = (n: number) => formatNumberWith(cfg, n, Number(cfg.fields.qtyDecimals) || 0);
   const fm = (n: number) => formatMoneyWith(cfg, n);
@@ -50,12 +70,14 @@ export default function StockInquiryPage() {
     (async () => {
       try {
         const { from, to } = monthRange(year, month);
-        const j = await fetch(`/api/inventory/stock-position?productId=${sel.productId}&from=${from}&to=${to}`, { cache: "no-store" }).then((r) => r.json());
+        const params = new URLSearchParams({ productId: String(sel.productId), from, to });
+        if (areaId) params.set("areaId", String(areaId));
+        const j = await fetch(`/api/inventory/stock-position?${params}`, { cache: "no-store" }).then((r) => r.json());
         if (active && j.ok) { setPosRows(j.rows); setOpeningBal(j.openingBalance ?? 0); }
       } catch { /* ignore */ } finally { if (active) setPosLoading(false); }
     })();
     return () => { active = false; };
-  }, [sel, year, month]);
+  }, [sel, year, month, areaId]);
 
   return (
     <div className="space-y-6">
@@ -65,9 +87,24 @@ export default function StockInquiryPage() {
         <p className="mt-0.5 text-sm text-muted">Look up live on-hand stock by product, SKU or brand — and drill into the day-wise position.</p>
       </div>
 
-      <div className="relative max-w-xl">
-        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search product, SKU or brand…" className="h-11 w-full rounded-xl border border-border-strong bg-card pl-11 pr-3 text-sm shadow-sm focus:border-primary focus:outline-none focus:shadow-focus" />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative max-w-xl flex-1">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search product, SKU or brand…" className="h-11 w-full rounded-xl border border-border-strong bg-card pl-11 pr-3 text-sm shadow-sm focus:border-primary focus:outline-none focus:shadow-focus" />
+        </div>
+        <select value={areaId} onChange={(e) => setAreaId(e.target.value ? Number(e.target.value) : "")} className="h-9 rounded-md border border-border bg-surface px-2.5 text-xs font-medium text-foreground focus:border-primary focus:outline-none">
+          <option value="">All areas</option>
+          {areas.map((a) => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
+        </select>
+        <select value={brand} onChange={(e) => setBrand(e.target.value)} className="h-9 rounded-md border border-border bg-surface px-2.5 text-xs font-medium text-foreground focus:border-primary focus:outline-none">
+          <option value="">All brands</option>
+          {brandOptions.map((b) => <option key={b} value={b}>{b}</option>)}
+        </select>
+        <div className="inline-flex overflow-hidden rounded-md border border-border">
+          {(["All", "Raw Material", "Finished Product"] as const).map((c) => (
+            <button key={c} onClick={() => setInvCategory(c)} className={cn("px-2.5 py-1.5 text-xs font-semibold transition", invCategory === c ? "bg-primary text-white" : "bg-surface text-muted hover:text-foreground")}>{c}</button>
+          ))}
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
@@ -79,7 +116,7 @@ export default function StockInquiryPage() {
               <tbody>
                 {rows.map((b, i) => (
                   <tr key={i} className={cn("cursor-pointer border-b border-border last:border-0 transition", sel?.productId === b.productId ? "bg-primary-subtle/40" : "hover:bg-primary-subtle/15")} onClick={() => setSel(b)}>
-                    <td className="px-4 py-3"><div className="font-medium text-foreground">{b.productName}</div><div className="font-mono text-2xs text-subtle">{b.sku}{b.brand ? ` · ${b.brand}` : ""}</div></td>
+                    <td className="px-4 py-3"><div className="font-medium text-foreground">{b.productName}</div><div className="font-mono text-2xs text-subtle">{b.sku}{b.brand ? ` · ${b.brand}` : ""}</div>{b.wipQty > 0 && <div className="mt-0.5 text-2xs font-semibold text-warning">WIP: {fq(b.wipQty)} {b.uom}</div>}</td>
                     <td className="px-4 py-3 text-right font-bold text-foreground"><span className="inline-flex items-center gap-1.5">{fq(b.qtyOnHand)} <span className="text-2xs font-normal text-subtle">{b.uom}</span><UomConvert qty={b.qtyOnHand} uom={b.uom} /></span></td>
                     <td className="px-4 py-3 text-right text-2xs font-semibold text-primary">View →</td>
                   </tr>
@@ -112,8 +149,8 @@ export default function StockInquiryPage() {
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <colgroup><col className="w-32" /><col /><col /><col /><col /><col /><col /><col /></colgroup>
-                  <thead><tr className="border-b border-border bg-surface-2 text-2xs font-semibold uppercase tracking-wider text-subtle"><th className="px-4 py-2.5 text-left">Date</th><th className="px-3 py-2.5 text-right">OB</th>{cfg.flags.rptShowReceipt && <th className="px-3 py-2.5 text-right text-success">Receipt</th>}{cfg.flags.rptShowSales && <th className="px-3 py-2.5 text-right text-danger">Sales</th>}{cfg.flags.rptShowReturn && <th className="px-3 py-2.5 text-right text-info">Return</th>}<th className="px-3 py-2.5 text-right text-primary">Transfer Out</th>{cfg.flags.rptShowDamage && <th className="px-3 py-2.5 text-right text-warning">Damage</th>}<th className="px-4 py-2.5 text-right font-bold">CB</th></tr></thead>
+                  <colgroup><col className="w-32" /><col /><col /><col /><col /><col /><col /><col /><col /></colgroup>
+                  <thead><tr className="border-b border-border bg-surface-2 text-2xs font-semibold uppercase tracking-wider text-subtle"><th className="px-4 py-2.5 text-left">Date</th><th className="px-3 py-2.5 text-right">OB</th>{cfg.flags.rptShowReceipt && <th className="px-3 py-2.5 text-right text-success">Receipt</th>}{cfg.flags.rptShowSales && <th className="px-3 py-2.5 text-right text-danger">Sales</th>}{cfg.flags.rptShowReturn && <th className="px-3 py-2.5 text-right text-info">Return</th>}<th className="px-3 py-2.5 text-right text-warning">In-Transit</th><th className="px-3 py-2.5 text-right text-primary">Transfer Out</th><th className="px-3 py-2.5 text-right text-warning">Wastage</th><th className="px-4 py-2.5 text-right font-bold">CB</th></tr></thead>
                   <tbody>
                     {!posLoading && (
                       <tr className="border-b border-border bg-info-subtle/30">
@@ -123,7 +160,8 @@ export default function StockInquiryPage() {
                         {cfg.flags.rptShowSales && <td className="px-3 py-2 text-right">—</td>}
                         {cfg.flags.rptShowReturn && <td className="px-3 py-2 text-right">—</td>}
                         <td className="px-3 py-2 text-right">—</td>
-                        {cfg.flags.rptShowDamage && <td className="px-3 py-2 text-right">—</td>}
+                        <td className="px-3 py-2 text-right">—</td>
+                        <td className="px-3 py-2 text-right">—</td>
                         <td className="px-4 py-2 text-right font-bold text-foreground">{fq(openingBal)}</td>
                       </tr>
                     )}
@@ -131,16 +169,17 @@ export default function StockInquiryPage() {
                       <tr key={i} className="border-b border-border last:border-0 hover:bg-primary-subtle/10">
                         <td className="px-4 py-2 text-left font-medium text-foreground">{r.date}</td>
                         <td className="px-3 py-2 text-right text-muted">{fq(r.ob)}</td>
-                        {cfg.flags.rptShowReceipt && <td className="px-3 py-2 text-right text-success">{r.receipt ? fq(r.receipt) : "—"}</td>}
-                        {cfg.flags.rptShowSales && <td className="px-3 py-2 text-right text-danger">{r.sales ? fq(r.sales) : "—"}</td>}
-                        {cfg.flags.rptShowReturn && <td className="px-3 py-2 text-right text-info">{r.ret ? fq(r.ret) : "—"}</td>}
-                        <td className="px-3 py-2 text-right text-primary">{r.transfer ? fq(r.transfer) : "—"}</td>
-                        {cfg.flags.rptShowDamage && <td className="px-3 py-2 text-right text-warning">{r.damage ? fq(r.damage) : "—"}</td>}
+                        {cfg.flags.rptShowReceipt && <DrillCell value={r.receipt} tone="text-success" onClick={() => setDrill({ productId: sel!.productId, date: r.date, bucket: "receipt" })} fq={fq} />}
+                        {cfg.flags.rptShowSales && <DrillCell value={r.sales} tone="text-danger" onClick={() => setDrill({ productId: sel!.productId, date: r.date, bucket: "sales" })} fq={fq} />}
+                        {cfg.flags.rptShowReturn && <DrillCell value={r.ret} tone="text-info" onClick={() => setDrill({ productId: sel!.productId, date: r.date, bucket: "ret" })} fq={fq} />}
+                        <DrillCell value={r.inTransit} tone="text-warning" onClick={() => setDrill({ productId: sel!.productId, date: r.date, bucket: "inTransit" })} fq={fq} />
+                        <DrillCell value={r.transfer} tone="text-primary" onClick={() => setDrill({ productId: sel!.productId, date: r.date, bucket: "transfer" })} fq={fq} />
+                        <DrillCell value={r.wastage} tone="text-warning" onClick={() => setDrill({ productId: sel!.productId, date: r.date, bucket: "wastage" })} fq={fq} />
                         <td className="px-4 py-2 text-right font-bold text-foreground">{fq(r.cb)}</td>
                       </tr>
                     ))}
-                    {posLoading && <tr><td colSpan={8} className="px-3 py-6"><AppLoader label="Loading…" size="sm" /></td></tr>}
-                    {!posLoading && posRows.length === 0 && <tr><td colSpan={8} className="px-3 py-8 text-center text-sm text-muted">No movements in {MONTHS[month]} {year}. Closing stock stays at the opening balance.</td></tr>}
+                    {posLoading && <tr><td colSpan={9} className="px-3 py-6"><AppLoader label="Loading…" size="sm" /></td></tr>}
+                    {!posLoading && posRows.length === 0 && <tr><td colSpan={9} className="px-3 py-8 text-center text-sm text-muted">No movements in {MONTHS[month]} {year}. Closing stock stays at the opening balance.</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -149,7 +188,17 @@ export default function StockInquiryPage() {
           )}
         </div>
       </div>
+      {drill && <StockPositionDrillIn target={drill} onClose={() => setDrill(null)} fq={fq} fm={fm} />}
     </div>
+  );
+}
+
+function DrillCell({ value, tone, onClick, fq }: { value: number; tone: string; onClick: () => void; fq: (n: number) => string }) {
+  if (!value) return <td className="px-3 py-2 text-right text-subtle">—</td>;
+  return (
+    <td className="px-3 py-2 text-right">
+      <button onClick={onClick} className={cn("font-semibold underline decoration-dotted underline-offset-2 hover:decoration-solid", tone)}>{fq(value)}</button>
+    </td>
   );
 }
 

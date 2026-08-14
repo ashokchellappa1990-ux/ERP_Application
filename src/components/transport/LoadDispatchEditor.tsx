@@ -432,6 +432,7 @@ export function LoadDispatchEditor({ id }: { id: number }) {
           <KV k="Dispatch Type" v="" custom={<Badge tone="neutral">{DOC_TYPE_LABEL[x.docType] ?? x.docType}</Badge>} />
           <KV k="Reference Number" v={x.sourceRefNo ?? "—"} />
           <KV k="Warehouse" v={x.warehouse ?? "—"} />
+          {x.areaName && <KV k="Storage Area" v={x.areaName} />}
           <KV k="Status" v="" custom={<Badge tone={STATUS_TONE[x.status] ?? "neutral"}>{x.status}</Badge>} />
           {x.saleId && (
             <>

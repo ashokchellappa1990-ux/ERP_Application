@@ -9,7 +9,7 @@ export const PRODUCT_STRING_FIELDS = [
   // General
   "code", "name", "shortName", "altName", "status", "keywords", "description",
   // Classification
-  "industry", "productType", "category", "subCategory", "group", "brand", "manufacturer", "family", "segment",
+  "industry", "productType", "inventoryCategory", "category", "subCategory", "group", "brand", "manufacturer", "family", "segment",
   // UOM / packaging
   "baseUom", "purchaseUom", "salesUom", "packageType", "weightUnit",
   // Codes

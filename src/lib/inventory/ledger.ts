@@ -20,6 +20,7 @@ export interface MovementInput {
   qty: number;
   rate?: number | null;
   warehouse?: string | null;
+  areaId?: number | null; // additive Area Config link — only GRN/Load & Dispatch set this
   batchNo?: string | null;
   mfgDate?: string | null;
   expiryDate?: string | null;
@@ -39,6 +40,7 @@ export interface LotInput {
   branchId?: number | null;
   productId: number;
   warehouse?: string | null;
+  areaId?: number | null; // additive Area Config link — only GRN sets this
   batchNo?: string | null;
   grnId?: number | null;
   refType?: string | null;
@@ -114,6 +116,7 @@ export async function postMovement(tx: Prisma.TransactionClient, m: MovementInpu
       sellingValue: lineSellingValue,
       balanceQty: newQty,
       warehouse,
+      areaId: m.areaId ?? null,
       batchNo: m.batchNo ?? null,
       mfgDate: m.mfgDate ?? null,
       expiryDate: m.expiryDate ?? null,
@@ -220,6 +223,7 @@ export async function addLot(tx: Prisma.TransactionClient, l: LotInput) {
       branchId: l.branchId ?? undefined,
       productId: l.productId,
       warehouse,
+      areaId: l.areaId ?? null,
       batchNo: l.batchNo ?? null,
       grnId: l.grnId ?? null,
       refType: l.refType ?? null,

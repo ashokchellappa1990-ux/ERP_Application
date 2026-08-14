@@ -16,11 +16,10 @@ interface Data {
   driverName: string | null; driverMobile: string | null; transportCompanyName: string | null; transportMode: string | null;
   supplierName: string | null; supplierGstin: string | null; arrivalTime: string | null; grnId: number | null;
   grossWeight: number | null; tareWeight: number | null; netWeight: number | null; weightSlipRefNo: string | null;
-  inventoryMovement: string | null;
+  areaId: number | null; areaName: string | null;
   items: { productId: number; productName: string; sku: string | null; uom: string | null }[];
 }
 
-const INVENTORY_MOVEMENTS = ["Move to Raw Material Main Stock", "Move to Production Plant Stock"];
 const inp = "h-10 w-full rounded-md border border-border-strong bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:shadow-focus";
 
 export function UpdateWeightScreen() {
@@ -43,7 +42,8 @@ export function UpdateWeightScreen() {
   // (GRN view page's "Update Tare Weight"), which is also where the calculated
   // Net Weight (Gross − Tare) becomes meaningful — not shown here.
   const [netWeightSlip, setNetWeightSlip] = useState("");
-  const [inventoryMovement, setInventoryMovement] = useState("");
+  const [areaId, setAreaId] = useState<number | "">("");
+  const [areas, setAreas] = useState<{ id: number; name: string; code: string }[]>([]);
   const [weightSlipRefNo, setWeightSlipRefNo] = useState("");
 
   useEffect(() => {
@@ -55,13 +55,20 @@ export function UpdateWeightScreen() {
         setData(d);
         setGrossWeight(d.grossWeight != null ? String(d.grossWeight) : "");
         setNetWeightSlip(d.netWeight != null ? String(d.netWeight) : "");
-        setInventoryMovement(d.inventoryMovement ?? "");
+        setAreaId(d.areaId ?? "");
         setWeightSlipRefNo(d.weightSlipRefNo ?? "");
         const it = d.items[0];
         if (it) setProduct({ productId: it.productId, productName: it.productName, sku: it.sku ?? "", uom: it.uom ?? "" });
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    (async () => {
+      const j = await fetch("/api/system/areas", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+      if (j.ok) setAreas(j.rows.map((a: { id: number; name: string; code: string }) => ({ id: a.id, name: a.name, code: a.code })));
+    })();
+  }, []);
 
   const prodTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchProducts = async (q: string) => {
@@ -90,7 +97,7 @@ export function UpdateWeightScreen() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           grossWeight: grossWeight || null, netWeight: netWeightSlip || null,
-          inventoryMovement: inventoryMovement || null, weightSlipRefNo: weightSlipRefNo || null,
+          areaId: areaId || null, weightSlipRefNo: weightSlipRefNo || null,
           items: product ? [{ productId: product.productId, productName: product.productName, sku: product.sku, uom: product.uom }] : [],
         }),
       }).then((r) => r.json()).catch(() => ({}));
@@ -165,10 +172,10 @@ export function UpdateWeightScreen() {
           <Field label="Gross Weight (Kg)"><input type="number" min={0} value={grossWeight} onChange={(e) => setGrossWeight(e.target.value)} placeholder="0" className={inp} /></Field>
           <Field label="Net Weight as per Slip (Kg)"><input type="number" min={0} value={netWeightSlip} onChange={(e) => setNetWeightSlip(e.target.value)} placeholder="Optional" className={inp} /></Field>
           <Field label="Weight Slip Ref Number"><input value={weightSlipRefNo} onChange={(e) => setWeightSlipRefNo(e.target.value)} placeholder="Optional" className={inp} /></Field>
-          <Field label="Inventory Movement">
-            <select value={inventoryMovement} onChange={(e) => setInventoryMovement(e.target.value)} className={inp}>
+          <Field label="Inventory Movement Area">
+            <select value={areaId} onChange={(e) => setAreaId(e.target.value ? Number(e.target.value) : "")} className={inp}>
               <option value="">— Select —</option>
-              {INVENTORY_MOVEMENTS.map((m) => <option key={m} value={m}>{m}</option>)}
+              {areas.map((a) => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
             </select>
           </Field>
         </div>

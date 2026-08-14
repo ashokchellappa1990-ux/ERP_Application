@@ -12,6 +12,7 @@ import { useGeneralConfig } from "@/components/settings/GeneralConfigProvider";
 import { MONTHS, currentYM, monthRange, yearOptions } from "@/lib/inventory/period";
 import { cn } from "@/lib/cn";
 import { UomConvert } from "@/components/uom/UomConvert";
+import { StockPositionDrillIn, type DrillTarget } from "@/components/inventory/StockPositionDrillIn";
 import type {
   LedgerRow,
   LedgerBalance as Balance,
@@ -54,6 +55,22 @@ export default function InventoryLedgerPage() {
   const [loading, setLoading] = useState(true);
   const [notAuthed, setNotAuthed] = useState(false);
 
+  // Area / Brand / Inventory Category filters — narrow both the movement log
+  // and the current-balance view (Area only tags GRN + Load & Dispatch
+  // movements today, so it filters the movement/lots views; Brand and
+  // Inventory Category apply everywhere via the Product relation).
+  const [areas, setAreas] = useState<{ id: number; name: string; code: string }[]>([]);
+  const [areaId, setAreaId] = useState<number | "">("");
+  const [brand, setBrand] = useState("");
+  const [invCategory, setInvCategory] = useState("All");
+  useEffect(() => {
+    (async () => {
+      const j = await fetch("/api/system/areas", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+      if (j.ok) setAreas(j.rows.map((a: { id: number; name: string; code: string }) => ({ id: a.id, name: a.name, code: a.code })));
+    })();
+  }, []);
+  const brandOptions = useMemo(() => Array.from(new Set(balances.map((b) => b.brand).filter(Boolean))).sort(), [balances]);
+
   // General settings (value formatting + report column visibility)
   const cfg = useGeneralConfig();
   const fq = (n: number) => formatNumberWith(cfg, n, Number(cfg.fields.qtyDecimals) || 0);
@@ -68,6 +85,7 @@ export default function InventoryLedgerPage() {
   const [year, setYear] = useState(cur.year);
   const [month, setMonth] = useState(cur.month);
   const openPosition = (b: Balance) => { setPosProduct(b); setTab("position"); };
+  const [drill, setDrill] = useState<DrillTarget | null>(null);
   useEffect(() => {
     if (!posProduct) return;
     let active = true;
@@ -75,12 +93,14 @@ export default function InventoryLedgerPage() {
     (async () => {
       try {
         const { from, to } = monthRange(year, month);
-        const j = await fetch(`/api/inventory/stock-position?productId=${posProduct.productId}&from=${from}&to=${to}`, { cache: "no-store" }).then((r) => r.json());
+        const params = new URLSearchParams({ productId: String(posProduct.productId), from, to });
+        if (areaId) params.set("areaId", String(areaId));
+        const j = await fetch(`/api/inventory/stock-position?${params}`, { cache: "no-store" }).then((r) => r.json());
         if (active && j.ok) { setPosRows(j.rows); setOpeningBal(j.openingBalance ?? 0); }
       } catch { /* ignore */ } finally { if (active) setPosLoading(false); }
     })();
     return () => { active = false; };
-  }, [posProduct, year, month]);
+  }, [posProduct, year, month, areaId]);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -88,6 +108,9 @@ export default function InventoryLedgerPage() {
     const t = setTimeout(async () => {
       try {
         const params = new URLSearchParams({ q: query, type, from: dateFrom, to: dateTo });
+        if (areaId) params.set("areaId", String(areaId));
+        if (brand) params.set("brand", brand);
+        if (invCategory !== "All") params.set("inventoryCategory", invCategory);
         const res = await fetch(`/api/inventory/ledger?${params}`, { cache: "no-store", signal: ctrl.signal });
         if (res.status === 401) { setNotAuthed(true); return; }
         const j = await res.json().catch(() => ({}));
@@ -95,7 +118,7 @@ export default function InventoryLedgerPage() {
       } catch { /* ignore */ } finally { setLoading(false); }
     }, 220);
     return () => { clearTimeout(t); ctrl.abort(); };
-  }, [query, type, dateFrom, dateTo]);
+  }, [query, type, dateFrom, dateTo, areaId, brand, invCategory]);
 
   // Non-QR (summary) view collapses the per-QR-code rows into one row per movement
   // (same day · product · type · direction · ref · batch) — summing qty/value and
@@ -159,6 +182,19 @@ export default function InventoryLedgerPage() {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Product, SKU or QR code…" className="h-9 w-full rounded-md border border-border bg-surface-2 pl-9 pr-3 text-sm text-foreground placeholder:text-subtle focus:border-primary focus:bg-surface focus:outline-none focus:shadow-focus" />
             </div>
+            <select value={areaId} onChange={(e) => setAreaId(e.target.value ? Number(e.target.value) : "")} className="h-9 rounded-md border border-border bg-surface px-2.5 text-xs font-medium text-foreground focus:border-primary focus:outline-none">
+              <option value="">All areas</option>
+              {areas.map((a) => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
+            </select>
+            <select value={brand} onChange={(e) => setBrand(e.target.value)} className="h-9 rounded-md border border-border bg-surface px-2.5 text-xs font-medium text-foreground focus:border-primary focus:outline-none">
+              <option value="">All brands</option>
+              {brandOptions.map((b) => <option key={b} value={b}>{b}</option>)}
+            </select>
+            <div className="inline-flex overflow-hidden rounded-md border border-border">
+              {(["All", "Raw Material", "Finished Product"] as const).map((c) => (
+                <button key={c} onClick={() => setInvCategory(c)} className={cn("px-2.5 py-1.5 text-xs font-semibold transition", invCategory === c ? "bg-primary text-white" : "bg-surface text-muted hover:text-foreground")}>{c}</button>
+              ))}
+            </div>
             {tab === "movements" && (
               <>
                 {/* Movement date range — defaults to the current month (1st → today). */}
@@ -214,7 +250,7 @@ export default function InventoryLedgerPage() {
               <thead>
                 <tr className="border-b border-border bg-surface-2 text-left text-2xs font-semibold uppercase tracking-wider text-subtle">
                   <th className="px-4 py-3">Product</th><th className="px-4 py-3">Brand</th>
-                  <th className="px-4 py-3 text-right">On Hand</th><th className="px-4 py-3 text-right">Purchase Rate</th><th className="px-4 py-3 text-right">Selling Price</th><th className="px-4 py-3 text-right">Purchase Value</th><th className="px-4 py-3 text-right">Selling Value</th><th className="px-4 py-3 text-center">Position</th>
+                  <th className="px-4 py-3 text-right">On Hand</th><th className="px-4 py-3 text-right">WIP / In-Process</th><th className="px-4 py-3 text-right">Purchase Rate</th><th className="px-4 py-3 text-right">Selling Price</th><th className="px-4 py-3 text-right">Purchase Value</th><th className="px-4 py-3 text-right">Selling Value</th><th className="px-4 py-3 text-center">Position</th>
                 </tr>
               </thead>
               <tbody>
@@ -223,6 +259,7 @@ export default function InventoryLedgerPage() {
                     <td className="px-4 py-3"><div className="flex items-center gap-2.5"><span className="grid h-8 w-8 place-items-center rounded-lg bg-primary-subtle text-primary"><Package className="h-4 w-4" /></span><div><div className="font-medium text-foreground">{b.productName}</div><div className="font-mono text-2xs text-subtle">{b.sku}</div></div></div></td>
                     <td className="px-4 py-3 text-muted">{b.brand || "—"}</td>
                     <td className="px-4 py-3 text-right font-bold text-foreground"><span className="inline-flex items-center gap-1.5">{fq(b.qtyOnHand)} <span className="text-2xs font-normal text-subtle">{b.uom}</span><UomConvert qty={b.qtyOnHand} uom={b.uom} /></span></td>
+                    <td className="px-4 py-3 text-right font-semibold text-warning">{b.wipQty > 0 ? `${fq(b.wipQty)} ${b.uom}` : "—"}</td>
                     <td className="px-4 py-3 text-right text-muted">{b.purchaseRate != null ? fm(b.purchaseRate) : "—"}</td>
                     <td className="px-4 py-3 text-right font-semibold text-success">{b.sellingRate != null ? fm(b.sellingRate) : "—"}</td>
                     <td className="px-4 py-3 text-right font-semibold text-foreground">{fm(b.value)}</td>
@@ -230,8 +267,8 @@ export default function InventoryLedgerPage() {
                     <td className="px-4 py-3 text-center"><button onClick={() => openPosition(b)} className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-2.5 py-1 text-2xs font-semibold text-muted transition hover:border-primary hover:text-primary"><Eye className="h-3.5 w-3.5" /> View</button></td>
                   </tr>
                 ))}
-                {loading && balances.length === 0 && <tr><td colSpan={8} className="px-4 py-8"><AppLoader label="Loading…" size="sm" /></td></tr>}
-                {!loading && balances.length === 0 && <tr><td colSpan={8} className="px-4 py-10 text-center text-sm text-muted">No stock on hand yet.</td></tr>}
+                {loading && balances.length === 0 && <tr><td colSpan={9} className="px-4 py-8"><AppLoader label="Loading…" size="sm" /></td></tr>}
+                {!loading && balances.length === 0 && <tr><td colSpan={9} className="px-4 py-10 text-center text-sm text-muted">No stock on hand yet.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -257,7 +294,7 @@ export default function InventoryLedgerPage() {
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <colgroup><col className="w-36" /><col /><col /><col /><col /><col /><col /><col /></colgroup>
+                    <colgroup><col className="w-36" /><col /><col /><col /><col /><col /><col /><col /><col /></colgroup>
                     <thead>
                       <tr className="border-b border-border bg-surface-2 text-2xs font-semibold uppercase tracking-wider text-subtle">
                         <th className="px-4 py-3 text-left">Date</th>
@@ -266,8 +303,9 @@ export default function InventoryLedgerPage() {
                         {cfg.flags.rptShowSales && <th className="px-4 py-3 text-right text-danger">Sales</th>}
                         {cfg.flags.rptShowReturn && <th className="px-4 py-3 text-right text-info">Sales Return</th>}
                         <th className="px-4 py-3 text-right text-primary">Purch. Return</th>
+                        <th className="px-4 py-3 text-right text-warning">In-Transit</th>
                         <th className="px-4 py-3 text-right text-primary">Transfer Out</th>
-                        {cfg.flags.rptShowDamage && <th className="px-4 py-3 text-right text-warning">Damage</th>}
+                        <th className="px-4 py-3 text-right text-warning">Wastage</th>
                         <th className="px-4 py-3 text-right font-bold">CB</th>
                       </tr>
                     </thead>
@@ -281,7 +319,8 @@ export default function InventoryLedgerPage() {
                           {cfg.flags.rptShowReturn && <td className="px-4 py-2.5 text-right">—</td>}
                           <td className="px-4 py-2.5 text-right">—</td>
                           <td className="px-4 py-2.5 text-right">—</td>
-                          {cfg.flags.rptShowDamage && <td className="px-4 py-2.5 text-right">—</td>}
+                          <td className="px-4 py-2.5 text-right">—</td>
+                          <td className="px-4 py-2.5 text-right">—</td>
                           <td className="px-4 py-2.5 text-right font-bold text-foreground">{fq(openingBal)}</td>
                         </tr>
                       )}
@@ -289,17 +328,18 @@ export default function InventoryLedgerPage() {
                         <tr key={i} className="border-b border-border last:border-0 hover:bg-primary-subtle/20">
                           <td className="px-4 py-2.5 text-left font-medium text-foreground">{r.date}</td>
                           <td className="px-4 py-2.5 text-right text-muted">{fq(r.ob)}</td>
-                          {cfg.flags.rptShowReceipt && <td className="px-4 py-2.5 text-right text-success">{r.receipt ? `+${fq(r.receipt)}` : "—"}</td>}
-                          {cfg.flags.rptShowSales && <td className="px-4 py-2.5 text-right text-danger">{r.sales ? `-${fq(r.sales)}` : "—"}</td>}
-                          {cfg.flags.rptShowReturn && <td className="px-4 py-2.5 text-right text-info">{r.ret ? `+${fq(r.ret)}` : "—"}</td>}
-                          <td className="px-4 py-2.5 text-right text-primary">{r.purchaseRet ? `-${fq(r.purchaseRet)}` : "—"}</td>
-                          <td className="px-4 py-2.5 text-right text-primary">{r.transfer ? `-${fq(r.transfer)}` : "—"}</td>
-                          {cfg.flags.rptShowDamage && <td className="px-4 py-2.5 text-right text-warning">{r.damage ? `-${fq(r.damage)}` : "—"}</td>}
+                          {cfg.flags.rptShowReceipt && <DrillCell value={r.receipt} sign="+" tone="text-success" onClick={() => setDrill({ productId: posProduct!.productId, date: r.date, bucket: "receipt", areaId })} fq={fq} />}
+                          {cfg.flags.rptShowSales && <DrillCell value={r.sales} sign="-" tone="text-danger" onClick={() => setDrill({ productId: posProduct!.productId, date: r.date, bucket: "sales", areaId })} fq={fq} />}
+                          {cfg.flags.rptShowReturn && <DrillCell value={r.ret} sign="+" tone="text-info" onClick={() => setDrill({ productId: posProduct!.productId, date: r.date, bucket: "ret", areaId })} fq={fq} />}
+                          <DrillCell value={r.purchaseRet} sign="-" tone="text-primary" onClick={() => setDrill({ productId: posProduct!.productId, date: r.date, bucket: "purchaseRet", areaId })} fq={fq} />
+                          <DrillCell value={r.inTransit} sign="-" tone="text-warning" onClick={() => setDrill({ productId: posProduct!.productId, date: r.date, bucket: "inTransit", areaId })} fq={fq} />
+                          <DrillCell value={r.transfer} sign="-" tone="text-primary" onClick={() => setDrill({ productId: posProduct!.productId, date: r.date, bucket: "transfer", areaId })} fq={fq} />
+                          <DrillCell value={r.wastage} sign="-" tone="text-warning" onClick={() => setDrill({ productId: posProduct!.productId, date: r.date, bucket: "wastage", areaId })} fq={fq} />
                           <td className="px-4 py-2.5 text-right font-bold text-foreground">{fq(r.cb)}</td>
                         </tr>
                       ))}
-                      {posLoading && <tr><td colSpan={9} className="px-4 py-8"><AppLoader label="Loading position…" size="sm" /></td></tr>}
-                      {!posLoading && posRows.length === 0 && <tr><td colSpan={9} className="px-4 py-10 text-center text-sm text-muted">No movements in {MONTHS[month]} {year} — closing stays at the opening balance.</td></tr>}
+                      {posLoading && <tr><td colSpan={10} className="px-4 py-8"><AppLoader label="Loading position…" size="sm" /></td></tr>}
+                      {!posLoading && posRows.length === 0 && <tr><td colSpan={10} className="px-4 py-10 text-center text-sm text-muted">No movements in {MONTHS[month]} {year} — closing stays at the opening balance.</td></tr>}
                     </tbody>
                   </table>
                 </div>
@@ -344,7 +384,17 @@ export default function InventoryLedgerPage() {
           </div>
         )}
       </div>
+      {drill && <StockPositionDrillIn target={drill} onClose={() => setDrill(null)} fq={fq} fm={fm} />}
     </div>
+  );
+}
+
+function DrillCell({ value, sign, tone, onClick, fq }: { value: number; sign: "+" | "-"; tone: string; onClick: () => void; fq: (n: number) => string }) {
+  if (!value) return <td className="px-4 py-2.5 text-right text-subtle">—</td>;
+  return (
+    <td className="px-4 py-2.5 text-right">
+      <button onClick={onClick} className={cn("font-semibold underline decoration-dotted underline-offset-2 hover:decoration-solid", tone)}>{sign}{fq(value)}</button>
+    </td>
   );
 }
 

@@ -197,7 +197,7 @@ export default function GrnViewPage() {
             <KV k={`Gross Weight (${grn.weightUom})`} v={fmtWt(grn.grossWeight)} />
             {hasVal(grn.billNetWeight) && <KV k={`Net Weight as per Bill (${grn.weightUom})`} v={fmtWt(grn.billNetWeight)} tone="info" />}
             {grn.weightSlipRefNo && <KV k="Weight Slip Ref Number" v={grn.weightSlipRefNo} />}
-            {grn.inventoryMovement && <KV k="Inventory Movement" v={grn.inventoryMovement} tone="info" />}
+            {grn.areaName && <KV k="Inventory Movement Area" v={grn.areaName} tone="info" />}
             <div className="my-1 h-px bg-border" />
             {grn.gateEntryId ? (
               hasVal(grn.tareWeight) ? (

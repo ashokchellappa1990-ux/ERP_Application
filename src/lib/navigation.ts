@@ -1,5 +1,6 @@
 import {
   LayoutDashboard,
+  LayoutGrid,
   Network,
   Monitor,
   Package,
@@ -66,6 +67,7 @@ import {
   Rocket,
   Brain,
   Car,
+  Factory,
   Contact,
   Route,
   LogIn,
@@ -151,6 +153,7 @@ export const NAV_SECTIONS: NavSection[] = [
           { label: "Account & Tenant", href: "/system/account", icon: Network },
           { label: "Business Setup", href: "/setup", icon: Building2 },
           { label: "Business Hierarchy", href: "/system/branches", icon: Network },
+          { label: "Area Config", href: "/system/areas", icon: LayoutGrid },
           { label: "Warehouse Configuration", href: "/warehouse/settings/configuration", icon: Warehouse },
         ],
       },
@@ -168,6 +171,7 @@ export const NAV_SECTIONS: NavSection[] = [
           { label: "QR Code Settings", href: "/settings/qr-code", icon: QrCode },
           { label: "Application Theme", href: "/settings/theme", icon: Palette },
           { label: "Subscription & Billing", href: "/settings/subscription", icon: Rocket },
+          { label: "Manufacturing Process", href: "/manufacturing/processing-set", icon: Factory },
         ],
       },
       {
@@ -255,6 +259,13 @@ export const NAV_SECTIONS: NavSection[] = [
           // { label: "Inventory Forecasting", href: "/inventory/forecasting", icon: TrendingUp },
           // { label: "Inventory Analytics", href: "/inventory/analytics", icon: BarChart3 },
           { label: "Inventory Reports", href: "/inventory/reports", icon: FileBarChart },
+        ],
+      },
+      {
+        label: "Manufacturing",
+        icon: Factory,
+        children: [
+          { label: "Material Processing", href: "/manufacturing/material-processing", icon: Factory },
         ],
       },
       {
