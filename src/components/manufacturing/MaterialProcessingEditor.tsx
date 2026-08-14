@@ -229,7 +229,7 @@ export function MaterialProcessingEditor() {
       </div>
 
       <SectionCard icon={Factory} title="Processing Location">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Branch *">
             <select value={branchId} onChange={(e) => { setBranchId(e.target.value ? Number(e.target.value) : ""); setProcessingAreaId(""); }} className={inp}>
               <option value="">— Select —</option>
@@ -242,7 +242,6 @@ export function MaterialProcessingEditor() {
               {processingAreas.map((a) => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
             </select>
           </Field>
-          <Field label="Processing Unit"><input value={processingUnit} onChange={(e) => setProcessingUnit(e.target.value)} placeholder="e.g. Crusher Unit 01 (optional)" className={inp} /></Field>
         </div>
       </SectionCard>
 
