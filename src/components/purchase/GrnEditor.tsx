@@ -186,8 +186,12 @@ export function GrnEditor() {
   useEffect(() => { loadSuppliers(); }, []);
   useEffect(() => {
     (async () => {
-      const j = await fetch("/api/system/areas", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
-      if (j.ok) setAreas(j.rows.map((a: { id: number; name: string; code: string }) => ({ id: a.id, name: a.name, code: a.code })));
+      const j = await fetch(`/api/system/areas?inventoryStorageType=${encodeURIComponent("Purchase of Material")}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+      if (j.ok) {
+        const rows = j.rows.map((a: { id: number; name: string; code: string }) => ({ id: a.id, name: a.name, code: a.code }));
+        setAreas(rows);
+        if (rows.length === 1) setAreaId((cur) => (cur === "" ? rows[0].id : cur));
+      }
     })();
   }, []);
   // Resolve supplierId once the supplier list arrives, for GRNs/POs loaded before it did.

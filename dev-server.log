@@ -1,0 +1,47 @@
+
+> one-erp-pos@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+  - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 5.5s
+ ○ Compiling /system/areas ...
+ ✓ Compiled /system/areas in 4.5s (992 modules)
+ GET /system/areas 200 in 5846ms
+ ○ Compiling /api/system/areas/[id] ...
+ ✓ Compiled /api/system/areas/[id] in 974ms (713 modules)
+ PUT /api/system/areas/999999 401 in 1834ms
+ GET /api/system/areas/3 200 in 758ms
+ GET /api/system/areas/3 200 in 757ms
+ PUT /api/system/areas/3 200 in 801ms
+ ✓ Compiled /api/system/areas in 189ms (231 modules)
+ GET /api/system/areas? 200 in 1443ms
+ ○ Compiling /warehouse/transfer/load-dispatch ...
+ ✓ Compiled /warehouse/transfer/load-dispatch in 14.3s (1206 modules)
+ ○ Compiling /api/warehouse/load-dispatch ...
+ ✓ Compiled /api/warehouse/load-dispatch in 703ms (749 modules)
+ GET /api/warehouse/load-dispatch? 200 in 2138ms
+ ○ Compiling /warehouse/transfer/load-dispatch/new ...
+ ✓ Compiled /warehouse/transfer/load-dispatch/new in 891ms (1257 modules)
+ ✓ Compiled /api/system/areas in 216ms (758 modules)
+ GET /api/system/areas 200 in 1665ms
+ GET /api/system/areas 200 in 1668ms
+ ○ Compiling /warehouse/transfer/load-dispatch/new/direct ...
+ ✓ Compiled /warehouse/transfer/load-dispatch/new/direct in 587ms (1277 modules)
+ ✓ Compiled /api/settings/dispatch-config in 163ms (778 modules)
+ ✓ Compiled (787 modules)
+ GET /api/system/scope 200 in 1054ms
+ GET /api/settings/dispatch-config 200 in 1108ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1164ms
+ GET /api/settings/accounting-config 200 in 1169ms
+ GET /api/system/areas?inventoryStorageType=Finished%20Goods%20Inventory 200 in 1216ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1227ms
+ GET /api/settings/accounting-config 200 in 232ms
+ GET /api/system/areas?inventoryStorageType=Finished%20Goods%20Inventory 200 in 230ms
+ GET /api/system/scope 200 in 205ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 265ms
+ GET /api/settings/dispatch-config 200 in 258ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 346ms

@@ -17,6 +17,7 @@ async function toDto(r: NonNullable<Awaited<ReturnType<typeof prisma.area.findFi
     id: r.id, businessId: r.businessId, branchId: r.branchId, branchName: allowed.branches.find((b) => b.id === r.branchId)?.name ?? null,
     code: r.code, name: r.name, type: r.type, parentAreaId: r.parentAreaId, parentAreaName: parent?.name ?? null,
     description: r.description, status: r.status as AreaDto["status"],
+    isInventoryStorage: r.isInventoryStorage, inventoryStorageType: r.inventoryStorageType,
   };
 }
 
@@ -64,7 +65,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
   await prisma.area.update({
     where: { id: cur.id },
-    data: { branchId: b.branchId, code: b.code, name: b.name, type: b.type, parentAreaId: b.parentAreaId ?? null, description: b.description ?? null, status: b.status, updatedBy: user.id },
+    data: {
+      branchId: b.branchId, code: b.code, name: b.name, type: b.type, parentAreaId: b.parentAreaId ?? null, description: b.description ?? null, status: b.status, updatedBy: user.id,
+      isInventoryStorage: b.isInventoryStorage, inventoryStorageType: b.isInventoryStorage ? (b.inventoryStorageType ?? null) : null,
+    },
   });
   await writeAudit(prisma, user, { action: "area.update", entity: "Area", entityId: cur.id, summary: `Area ${cur.code} updated`, meta: { before: { name: cur.name, type: cur.type, status: cur.status, branchId: cur.branchId }, after: { name: b.name, type: b.type, status: b.status, branchId: b.branchId } }, businessId: cur.businessId ?? null, branchId: b.branchId, ip: requestMeta(req).ip });
   return NextResponse.json({ ok: true, message: "Area updated." });

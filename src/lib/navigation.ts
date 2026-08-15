@@ -172,6 +172,7 @@ export const NAV_SECTIONS: NavSection[] = [
           { label: "Application Theme", href: "/settings/theme", icon: Palette },
           { label: "Subscription & Billing", href: "/settings/subscription", icon: Rocket },
           { label: "Manufacturing Process", href: "/manufacturing/processing-set", icon: Factory },
+          { label: "Weighbridge Setting", href: "/settings/weighbridge", icon: Scale },
         ],
       },
       {

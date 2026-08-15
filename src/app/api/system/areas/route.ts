@@ -23,6 +23,10 @@ export async function GET(req: Request) {
   const type = url.searchParams.get("type");
   const status = url.searchParams.get("status");
   const q = (url.searchParams.get("q") ?? "").trim();
+  // Filter to Areas configured as inventory storage for a specific purpose —
+  // used by GRN (Purchase of Material) and Sales/Dispatch (Finished Goods
+  // Inventory) to only offer relevant Areas instead of every Area.
+  const inventoryStorageType = url.searchParams.get("inventoryStorageType");
 
   const scope = await getActiveScope(user);
   const allowed = await getAllowedScope(user);
@@ -32,6 +36,7 @@ export async function GET(req: Request) {
   if (branchId) where.branchId = Number(branchId);
   if (type) where.type = type;
   if (status) where.status = status;
+  if (inventoryStorageType) { where.isInventoryStorage = true; where.inventoryStorageType = inventoryStorageType; }
   if (q) where.OR = [{ code: { contains: q } }, { name: { contains: q } }];
 
   const [rows, childCounts] = await Promise.all([
@@ -44,6 +49,7 @@ export async function GET(req: Request) {
     id: r.id, code: r.code, name: r.name, branchId: r.branchId, branchName: branchName(r.branchId),
     type: r.type, parentAreaId: r.parentAreaId, parentAreaName: r.parentAreaId ? (parentNames.get(r.parentAreaId) ?? null) : null,
     childCount: cc.get(r.id) ?? 0, status: r.status as AreaRow["status"], createdAt: r.createdAt.toISOString(),
+    isInventoryStorage: r.isInventoryStorage, inventoryStorageType: r.inventoryStorageType,
   }));
   const branches = allowed.branches.filter((b) => b.businessId === scope.businessId).map((b) => ({ id: b.id, name: b.name }));
   return NextResponse.json({ ok: true, rows: list, branches });
@@ -84,6 +90,7 @@ export async function POST(req: Request) {
       tenantId: user.tenantId, businessId: scope.businessId ?? null, branchId: b.branchId,
       code: b.code, name: b.name, type: b.type, parentAreaId: b.parentAreaId ?? null,
       description: b.description ?? null, status: b.status, createdBy: user.id,
+      isInventoryStorage: b.isInventoryStorage, inventoryStorageType: b.isInventoryStorage ? (b.inventoryStorageType ?? null) : null,
     },
   });
   await writeAudit(prisma, user, { action: "area.create", entity: "Area", entityId: created.id, summary: `Area ${created.code} — ${b.name}`, meta: { code: b.code, name: b.name, type: b.type, branchId: b.branchId }, businessId: scope.businessId ?? null, branchId: b.branchId, ip: requestMeta(req).ip });

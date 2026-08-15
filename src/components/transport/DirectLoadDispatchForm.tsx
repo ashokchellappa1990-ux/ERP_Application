@@ -139,8 +139,12 @@ export function DirectLoadDispatchForm() {
 
   useEffect(() => {
     (async () => {
-      const j = await fetch("/api/system/areas", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
-      if (j.ok) setAreas(j.rows.map((a: { id: number; name: string; code: string }) => ({ id: a.id, name: a.name, code: a.code })));
+      const j = await fetch(`/api/system/areas?inventoryStorageType=${encodeURIComponent("Finished Goods Inventory")}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+      if (j.ok) {
+        const rows = j.rows.map((a: { id: number; name: string; code: string }) => ({ id: a.id, name: a.name, code: a.code }));
+        setAreas(rows);
+        if (rows.length === 1) setAreaId((cur) => (cur === "" ? rows[0].id : cur));
+      }
     })();
   }, []);
 

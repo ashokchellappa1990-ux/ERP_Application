@@ -1765,6 +1765,14 @@ model Area {
   description String? @db.Text
   status      String  @default("Active") @db.VarChar(20) // Active | Inactive
 
+  // Inventory storage classification — "Is this Area a real inventory storage
+  // space?" (as opposed to a purely operational Area like Packing/Dispatch/
+  // Rejection). When yes, `inventoryStorageType` says what it stores, so GRN
+  // (Purchase) and Sales/Dispatch (Finished Goods) area pickers can filter to
+  // only the Areas relevant to that flow instead of showing every Area.
+  isInventoryStorage   Boolean @default(false)
+  inventoryStorageType String? @db.VarChar(30) // "Purchase of Material" | "Finished Goods Inventory" — only meaningful when isInventoryStorage is true
+
   createdBy Int?
   updatedBy Int?
   createdAt DateTime @default(now())

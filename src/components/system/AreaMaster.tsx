@@ -7,11 +7,11 @@ import { Badge } from "@/components/ui/Badge";
 import { AppLoader } from "@/components/ui/AppLoader";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
-import { AREA_TYPE_OPTS, type AreaRow, type AreaDto } from "@/lib/contracts/area";
+import { AREA_TYPE_OPTS, INVENTORY_STORAGE_TYPE_OPTS, type AreaRow, type AreaDto } from "@/lib/contracts/area";
 
 interface Branch { id: number; name: string }
 type Form = Omit<AreaDto, "id" | "branchName" | "parentAreaName" | "businessId">;
-const BLANK: Form = { branchId: 0, code: "", name: "", type: AREA_TYPE_OPTS[0], parentAreaId: null, description: "", status: "Active" };
+const BLANK: Form = { branchId: 0, code: "", name: "", type: AREA_TYPE_OPTS[0], parentAreaId: null, description: "", status: "Active", isInventoryStorage: false, inventoryStorageType: null };
 
 export function AreaMaster() {
   const toast = useToast();
@@ -101,7 +101,7 @@ export function AreaMaster() {
           <table className="w-full min-w-[900px] text-sm">
             <thead><tr className="border-b border-border bg-surface-2/40 text-2xs uppercase tracking-wide text-muted">
               <th className="px-3 py-2.5 text-left">Area Code</th><th className="px-3 py-2.5 text-left">Area Name</th><th className="px-3 py-2.5 text-left">Branch</th>
-              <th className="px-3 py-2.5 text-left">Type</th><th className="px-3 py-2.5 text-left">Parent Area</th><th className="px-3 py-2.5 text-center">Status</th>
+              <th className="px-3 py-2.5 text-left">Type</th><th className="px-3 py-2.5 text-left">Inventory Storage</th><th className="px-3 py-2.5 text-left">Parent Area</th><th className="px-3 py-2.5 text-center">Status</th>
               <th className="px-3 py-2.5 text-left">Created On</th><th className="px-3 py-2.5 text-right">Actions</th>
             </tr></thead>
             <tbody>
@@ -111,6 +111,7 @@ export function AreaMaster() {
                   <td className="px-3 py-2"><div className="flex items-center gap-1.5" style={{ paddingLeft: depth * 18 }}>{depth > 0 && <CornerDownRight className="h-3.5 w-3.5 text-subtle" />}<span className="font-medium text-foreground">{r.name}</span>{r.childCount > 0 && <span className="text-2xs text-subtle">({r.childCount})</span>}</div></td>
                   <td className="px-3 py-2 text-2xs text-muted">{r.branchName ?? "—"}</td>
                   <td className="px-3 py-2 text-2xs text-muted">{r.type}</td>
+                  <td className="px-3 py-2 text-2xs">{r.isInventoryStorage ? <Badge tone="info">{r.inventoryStorageType}</Badge> : <span className="text-muted">—</span>}</td>
                   <td className="px-3 py-2 text-2xs text-muted">{r.parentAreaName ?? "—"}</td>
                   <td className="px-3 py-2 text-center"><Badge tone={r.status === "Active" ? "success" : "neutral"}>{r.status}</Badge></td>
                   <td className="px-3 py-2 text-2xs text-muted">{new Date(r.createdAt).toLocaleDateString()}</td>
@@ -146,7 +147,7 @@ function AreaModal({ mode, id, branches, parents, onClose, onSaved }: { mode: "a
     fetch(`/api/system/areas/${id}`, { cache: "no-store" }).then((r) => r.json()).then((j) => {
       if (j.ok) {
         const a: AreaDto = j.area;
-        setF({ branchId: a.branchId, code: a.code, name: a.name, type: a.type as Form["type"], parentAreaId: a.parentAreaId, description: a.description ?? "", status: a.status });
+        setF({ branchId: a.branchId, code: a.code, name: a.name, type: a.type as Form["type"], parentAreaId: a.parentAreaId, description: a.description ?? "", status: a.status, isInventoryStorage: a.isInventoryStorage, inventoryStorageType: a.inventoryStorageType });
         setCode(a.code);
       }
       setLoading(false);
@@ -187,6 +188,34 @@ function AreaModal({ mode, id, branches, parents, onClose, onSaved }: { mode: "a
               <div><label className={lbl}>Area Type *</label><select value={f.type} onChange={(e) => set("type", e.target.value as Form["type"])} className={inp}>{AREA_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
               <div><label className={lbl}>Parent Area</label><select value={f.parentAreaId ?? ""} onChange={(e) => set("parentAreaId", Number(e.target.value) || null)} className={inp} disabled={readOnly || !f.branchId}><option value="">— None (top level) —</option>{parentChoices.map((p) => <option key={p.id} value={p.id}>{p.code} · {p.name}</option>)}</select></div>
               <div><label className={lbl}>Status</label><select value={f.status} onChange={(e) => set("status", e.target.value as Form["status"])} className={inp}><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div>
+              <div>
+                <label className={lbl}>Inventory Storage Space?</label>
+                <select
+                  value={f.isInventoryStorage ? "yes" : "no"}
+                  onChange={(e) => {
+                    const yes = e.target.value === "yes";
+                    set("isInventoryStorage", yes);
+                    if (!yes) set("inventoryStorageType", null);
+                  }}
+                  className={inp}
+                >
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
+                </select>
+              </div>
+              {f.isInventoryStorage && (
+                <div>
+                  <label className={lbl}>Storage Holds *</label>
+                  <select
+                    value={f.inventoryStorageType ?? ""}
+                    onChange={(e) => set("inventoryStorageType", (e.target.value || null) as Form["inventoryStorageType"])}
+                    className={inp}
+                  >
+                    <option value="">— Select —</option>
+                    {INVENTORY_STORAGE_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+              )}
               <div className="sm:col-span-2"><label className={lbl}>Description</label><textarea value={f.description ?? ""} onChange={(e) => set("description", e.target.value)} rows={3} className={cn(inp, "h-auto py-2")} /></div>
             </fieldset>
           )}
