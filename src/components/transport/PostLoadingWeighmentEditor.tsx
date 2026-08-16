@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/Button";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
+import { FetchWeightButton } from "@/components/shared/FetchWeightButton";
+import { WeighbridgeReadout } from "@/components/shared/WeighbridgeReadout";
+import { useWeighbridge } from "@/lib/hooks/useWeighbridge";
 
 interface GateRow { id: number; gateEntryNo: string; vehicleNo: string; status: string }
 interface PreRow { id: number; gateEntryId: number; tareWeight: number }
@@ -27,6 +30,15 @@ export function PostLoadingWeighmentEditor() {
   const [grossWeight, setGrossWeight] = useState("");
   const [operator, setOperator] = useState("");
   const [remarks, setRemarks] = useState("");
+  const [enableWeighbridgeFetch, setEnableWeighbridgeFetch] = useState(false);
+  const wb = useWeighbridge(9600, enableWeighbridgeFetch);
+
+  useEffect(() => {
+    (async () => {
+      const j = await fetch("/api/settings/purchase", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+      if (j.ok && j.config) setEnableWeighbridgeFetch(!!j.config.flags?.enableWeighbridgeFetch);
+    })();
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -101,11 +113,14 @@ export function PostLoadingWeighmentEditor() {
             </div>
           </SectionCard>
 
-          <SectionCard icon={Weight} title="Weighment Details" allowOverflow>
+          <SectionCard icon={Weight} title="Weighment Details" allowOverflow action={enableWeighbridgeFetch ? <WeighbridgeReadout state={wb.state} liveWeight={wb.liveWeight} /> : undefined}>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <div>
                 <label className="mb-1 block text-2xs font-semibold text-muted">Gross Weight (In Kgs) *</label>
-                <input type="number" min={0} step="0.001" value={grossWeight} onChange={(e) => setGrossWeight(e.target.value)} className={inp} />
+                <div className="flex gap-1.5">
+                  <input type="number" min={0} step="0.001" value={grossWeight} onChange={(e) => setGrossWeight(e.target.value)} className={inp} />
+                  {enableWeighbridgeFetch && <FetchWeightButton connected={wb.state === "connected"} liveWeight={wb.liveWeight} onFetch={(kg) => setGrossWeight(String(kg))} />}
+                </div>
               </div>
               <Fld label="Operator"><input value={operator} onChange={(e) => setOperator(e.target.value)} className={inp} /></Fld>
             </div>

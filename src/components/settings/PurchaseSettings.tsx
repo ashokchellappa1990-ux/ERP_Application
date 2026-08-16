@@ -125,6 +125,10 @@ export function PurchaseSettings() {
             <Select label="Weight UOM" options={[{ value: "Kg", label: "Kg" }, { value: "Ton", label: "Ton" }]} value={field("truckWeightUom") || "Kg"} onChange={(e) => setField("truckWeightUom", e.target.value)} />
           </Grid>
         )}
+        <label className="mt-3 flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-surface p-3.5">
+          <span><span className="block text-sm font-medium text-foreground">Enable Weighbridge Fetch</span><span className="text-2xs text-muted">Show a "Fetch Weight" button next to Gross/Tare Weight fields (Gate Entry weighment, GRN) to pull the live reading from a serial-connected weighbridge indicator.</span></span>
+          <Switch checked={flag("enableWeighbridgeFetch")} onChange={(v) => setFlag("enableWeighbridgeFetch", v)} aria-label="Enable weighbridge fetch" />
+        </label>
       </Section>
     </div>
   );

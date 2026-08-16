@@ -25,6 +25,7 @@ export const DEFAULT_PURCHASE_INVOICE_CONFIG: PurchaseConfigData = {
     // General
     enablePurchaseInvoice: true,
     enableTruckWeightGrn: false,
+    enableWeighbridgeFetch: false,
     autoCreatePiDuringGrn: false,
     allowPiAfterGrn: true,
     // Mandatory fields

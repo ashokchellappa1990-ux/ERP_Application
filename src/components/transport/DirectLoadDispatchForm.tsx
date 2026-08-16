@@ -18,6 +18,9 @@ import { buildTaxInvoiceHtml, type TaxInvoiceData } from "@/lib/print/taxInvoice
 import { DEFAULT_RECEIPT } from "@/lib/settings/receiptTemplate";
 import { roundTonQty } from "@/lib/settings/transportConfigDefaults";
 import { AccountingPostingDetails } from "@/components/transport/AccountingPostingDetails";
+import { FetchWeightButton } from "@/components/shared/FetchWeightButton";
+import { WeighbridgeReadout } from "@/components/shared/WeighbridgeReadout";
+import { useWeighbridge } from "@/lib/hooks/useWeighbridge";
 
 const SCREEN = "load_dispatch";
 const req = (key: string) => (fieldMust(SCREEN, key) ? " *" : "");
@@ -134,6 +137,13 @@ export function DirectLoadDispatchForm() {
   // before this dispatch can be created (mirrors the same check the
   // completeLoadDispatch engine enforces server-side — see loadDispatch.ts).
   const [requireWeighment, setRequireWeighment] = useState(false);
+  const [enableWeighbridgeFetch, setEnableWeighbridgeFetch] = useState(false);
+  const wb = useWeighbridge(9600, enableWeighbridgeFetch);
+  useEffect(() => {
+    fetch("/api/settings/purchase", { cache: "no-store" }).then((r) => r.json()).then((j) => {
+      if (j.ok && j.config) setEnableWeighbridgeFetch(!!j.config.flags?.enableWeighbridgeFetch);
+    }).catch(() => {});
+  }, []);
   const tareWeight = preWeighment && preWeighment.length ? preWeighment[0].tareWeight : null;
   const postNetWeight = tareWeight != null ? r2(n(postGrossWeight) - tareWeight) : null;
 
@@ -689,7 +699,7 @@ export function DirectLoadDispatchForm() {
         </SectionCard>
 
         {fieldOn(SCREEN, "weighmentManagement") && (
-        <SectionCard icon={Scale} title="Weighment Management" allowOverflow>
+        <SectionCard icon={Scale} title="Weighment Management" allowOverflow action={enableWeighbridgeFetch ? <WeighbridgeReadout state={wb.state} liveWeight={wb.liveWeight} /> : undefined}>
           {!vehicleGateEntryId ? (
             <p className="text-2xs text-subtle">No Vehicle Gate Entry matched for this customer yet — weighment capture becomes available once one is linked.</p>
           ) : (
@@ -721,7 +731,12 @@ export function DirectLoadDispatchForm() {
               )}
               {postWeightTiming === "now" && (
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <Fld label="Post-Loading Gross Weight (In Kgs) *"><input type="number" min={0} step="0.001" value={postGrossWeight} onChange={(e) => setPostGrossWeight(e.target.value)} className={inp} /></Fld>
+                  <Fld label="Post-Loading Gross Weight (In Kgs) *">
+                    <div className="flex gap-1.5">
+                      <input type="number" min={0} step="0.001" value={postGrossWeight} onChange={(e) => setPostGrossWeight(e.target.value)} className={inp} />
+                      {enableWeighbridgeFetch && <FetchWeightButton connected={wb.state === "connected"} liveWeight={wb.liveWeight} onFetch={(kg) => setPostGrossWeight(String(kg))} />}
+                    </div>
+                  </Fld>
                   <Fld label="Operator"><input value={postOperator} onChange={(e) => setPostOperator(e.target.value)} className={inp} /></Fld>
                   <div className="sm:col-span-2 flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-xs">
                     <span className="text-muted">Net Weight (In Kgs)</span>

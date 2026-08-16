@@ -11,6 +11,9 @@ import { formatMoneyWith, formatQtyWith } from "@/lib/settings/generalConfig";
 import { useGeneralConfig } from "@/components/settings/GeneralConfigProvider";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
+import { FetchWeightButton } from "@/components/shared/FetchWeightButton";
+import { WeighbridgeReadout } from "@/components/shared/WeighbridgeReadout";
+import { useWeighbridge } from "@/lib/hooks/useWeighbridge";
 
 interface Candidate { productId: number; productName: string; sku: string; uom: string; category: string; mrp: number; gst: number; invBatch: boolean; invMfg: boolean; invExpiry: boolean; invSerial: boolean; qrRequired: boolean }
 interface Line extends Candidate {
@@ -140,6 +143,8 @@ export function GrnEditor() {
   const [enablePurchaseInvoice, setEnablePurchaseInvoice] = useState(true);
   const [enableTruckWeightGrn, setEnableTruckWeightGrn] = useState(false);
   const [truckWeightUom, setTruckWeightUom] = useState("Kg");
+  const [enableWeighbridgeFetch, setEnableWeighbridgeFetch] = useState(false);
+  const wb = useWeighbridge(9600, enableWeighbridgeFetch);
   useEffect(() => {
     (async () => {
       try {
@@ -148,6 +153,7 @@ export function GrnEditor() {
           setEnablePurchaseInvoice(j.config.flags?.enablePurchaseInvoice !== false);
           setEnableTruckWeightGrn(!!j.config.flags?.enableTruckWeightGrn);
           setTruckWeightUom(j.config.fields?.truckWeightUom || "Kg");
+          setEnableWeighbridgeFetch(!!j.config.flags?.enableWeighbridgeFetch);
         }
       } catch { /* keep defaults */ }
     })();
@@ -654,9 +660,14 @@ export function GrnEditor() {
       </div>
 
       {enableTruckWeightGrn && (
-        <SectionCard icon={Truck} title="Vehicle Weighment">
+        <SectionCard icon={Truck} title="Vehicle Weighment" action={enableWeighbridgeFetch ? <WeighbridgeReadout state={wb.state} liveWeight={wb.liveWeight} /> : undefined}>
           <div className="grid gap-3 sm:grid-cols-4">
-            <Field label={`Tare Weight (${truckWeightUom})`}><input type="number" min={0} value={tareWeight} onChange={(e) => setTareWeight(e.target.value)} placeholder="0" className={inp} /></Field>
+            <Field label={`Tare Weight (${truckWeightUom})`}>
+              <div className="flex items-center gap-2">
+                <input type="number" min={0} value={tareWeight} onChange={(e) => setTareWeight(e.target.value)} placeholder="0" className={inp} />
+                {enableWeighbridgeFetch && <FetchWeightButton connected={wb.state === "connected"} liveWeight={wb.liveWeight} onFetch={(kg) => setTareWeight(String(kg))} />}
+              </div>
+            </Field>
             <Field label={`Gross Weight (${truckWeightUom})`}><input readOnly value={grossWeight} placeholder="0" className={cn(inp, "bg-surface-2 text-subtle")} /></Field>
             <Field label={`Net Weight (${truckWeightUom})`}><input readOnly value={n(tareWeight) > 0 && netWeight != null ? String(netWeight) : ""} placeholder="Enter Tare Weight to calculate" className={cn(inp, "bg-surface-2 font-semibold text-primary placeholder:text-2xs placeholder:text-subtle")} /></Field>
             <Field label={`Net Weight as per Bill (${truckWeightUom})`}><input readOnly value={billNetWeight} placeholder="—" className={cn(inp, "bg-surface-2 text-subtle")} /></Field>

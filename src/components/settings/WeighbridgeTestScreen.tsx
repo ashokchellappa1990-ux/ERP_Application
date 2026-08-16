@@ -1,137 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Scale, Plug, PlugZap, Unplug, Download, CheckCircle2, AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { Badge } from "@/components/ui/Badge";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
+import { useWeighbridge, type WeighbridgeConnState } from "@/lib/hooks/useWeighbridge";
 
 const BAUD_RATES = [1200, 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200];
 
-// Pulls the first signed decimal number out of a weighing indicator's raw
-// line (e.g. "ST,GS,+  12.340 kg" / "US,NT,-0004.5" / "12340") — lenient on
-// purpose since every indicator brand formats this slightly differently;
-// the raw line is always shown alongside so the format can be eyeballed
-// during testing.
-function parseWeight(line: string): number | null {
-  const m = line.match(/[+-]?\d+(\.\d+)?/);
-  if (!m) return null;
-  const n = Number(m[0]);
-  return Number.isFinite(n) ? n : null;
-}
-
-type ConnState = "unsupported" | "idle" | "connecting" | "connected" | "error";
-
 export function WeighbridgeTestScreen() {
   const toast = useToast();
-  const [supported, setSupported] = useState(true);
-  const [state, setState] = useState<ConnState>("idle");
-  const [baudRate, setBaudRate] = useState(9600);
-  const [autoPorts, setAutoPorts] = useState<SerialPort[]>([]);
-  const [portInfo, setPortInfo] = useState<string>("");
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const [liveWeight, setLiveWeight] = useState<number | null>(null);
-  const [liveRaw, setLiveRaw] = useState<string>("");
-  const [log, setLog] = useState<string[]>([]);
+  const { supported, state, baudRate, setBaudRate, autoPorts, portInfo, errorMsg, liveWeight, liveRaw, log, setLog, connect, disconnect } = useWeighbridge();
   const [fetchedWeight, setFetchedWeight] = useState<number | null>(null);
-
-  const portRef = useRef<SerialPort | null>(null);
-  const readerRef = useRef<ReadableStreamDefaultReader<string> | null>(null);
-  const readingActiveRef = useRef(false);
-
-  useEffect(() => {
-    if (!("serial" in navigator) || !navigator.serial) { setSupported(false); setState("unsupported"); return; }
-    // Auto-reconnect: ports the user already granted permission for on this
-    // browser/device show up here with no new prompt required.
-    navigator.serial.getPorts().then((ports) => {
-      setAutoPorts(ports);
-      if (ports.length === 1) openPort(ports[0]);
-    }).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function appendLog(line: string) {
-    setLog((prev) => [line, ...prev].slice(0, 30));
-  }
-
-  function handleLine(line: string) {
-    setLiveRaw(line);
-    appendLog(line);
-    const w = parseWeight(line);
-    if (w != null) setLiveWeight(w);
-  }
-
-  async function readLoop(port: SerialPort) {
-    if (!port.readable) return;
-    const decoder = new TextDecoderStream();
-    const closedPromise = port.readable.pipeTo(decoder.writable).catch(() => {});
-    const reader = decoder.readable.getReader();
-    readerRef.current = reader;
-    readingActiveRef.current = true;
-    let buffer = "";
-    try {
-      while (readingActiveRef.current) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        if (value) {
-          buffer += value;
-          let idx: number;
-          while ((idx = buffer.indexOf("\n")) >= 0) {
-            const line = buffer.slice(0, idx).replace(/\r$/, "");
-            buffer = buffer.slice(idx + 1);
-            if (line.trim()) handleLine(line.trim());
-          }
-        }
-      }
-    } catch {
-      // port likely unplugged mid-read — surfaced via the disconnect event below
-    } finally {
-      try { reader.releaseLock(); } catch { /* already released */ }
-      await closedPromise;
-    }
-  }
-
-  async function openPort(port: SerialPort) {
-    setState("connecting");
-    setErrorMsg(null);
-    try {
-      await port.open({ baudRate });
-      portRef.current = port;
-      const info = port.getInfo();
-      setPortInfo(info.usbVendorId ? `USB VID:PID ${info.usbVendorId.toString(16)}:${info.usbProductId?.toString(16) ?? "?"}` : "Serial port");
-      setState("connected");
-      readLoop(port);
-    } catch (e) {
-      setState("error");
-      setErrorMsg(e instanceof Error ? e.message : "Could not open the port.");
-    }
-  }
-
-  async function connect() {
-    if (!navigator.serial) return;
-    try {
-      const port = await navigator.serial.requestPort();
-      await openPort(port);
-    } catch (e) {
-      // User cancelled the picker, or no port available — not a real error.
-      if (e instanceof Error && e.name !== "NotFoundError") { setErrorMsg(e.message); setState("error"); }
-    }
-  }
-
-  async function disconnect() {
-    readingActiveRef.current = false;
-    try { await readerRef.current?.cancel(); } catch { /* ignore */ }
-    try { await portRef.current?.close(); } catch { /* ignore */ }
-    portRef.current = null;
-    readerRef.current = null;
-    setState("idle");
-    setPortInfo("");
-    setLiveWeight(null);
-    setLiveRaw("");
-  }
 
   function fetchWeight() {
     if (liveWeight == null) { toast.error("No weight reading yet — check the connection and indicator output."); return; }
@@ -139,7 +22,7 @@ export function WeighbridgeTestScreen() {
     toast.success(`Fetched ${liveWeight} from the weighbridge.`);
   }
 
-  const STATE_BADGE: Record<ConnState, { tone: "neutral" | "warning" | "success" | "danger"; label: string }> = {
+  const STATE_BADGE: Record<WeighbridgeConnState, { tone: "neutral" | "warning" | "success" | "danger"; label: string }> = {
     unsupported: { tone: "danger", label: "Not Supported" },
     idle: { tone: "neutral", label: "Not Connected" },
     connecting: { tone: "warning", label: "Connecting…" },
@@ -194,7 +77,7 @@ export function WeighbridgeTestScreen() {
             <SectionCard icon={Scale} title="Live Reading">
               <div className="flex items-center justify-center rounded-xl border border-border bg-surface-2 py-8">
                 <div className="text-center">
-                  <p className="text-4xl font-bold tabular-nums text-foreground">{liveWeight != null ? liveWeight.toFixed(3) : "—"}</p>
+                  <p className="text-4xl font-bold tabular-nums text-foreground">{liveWeight != null ? liveWeight.toFixed(3) : "—"}<span className="ml-1 text-base font-semibold text-subtle">Kg</span></p>
                   <p className="mt-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Live from indicator</p>
                 </div>
               </div>
@@ -207,11 +90,11 @@ export function WeighbridgeTestScreen() {
             <SectionCard icon={CheckCircle2} title="Fetched Value (simulated weight field)">
               <div className="flex items-center justify-center rounded-xl border-2 border-dashed border-primary/40 bg-primary-subtle/20 py-8">
                 <div className="text-center">
-                  <p className="text-4xl font-bold tabular-nums text-primary">{fetchedWeight != null ? fetchedWeight.toFixed(3) : "—"}</p>
+                  <p className="text-4xl font-bold tabular-nums text-primary">{fetchedWeight != null ? fetchedWeight.toFixed(3) : "—"}<span className="ml-1 text-base font-semibold text-primary/70">Kg</span></p>
                   <p className="mt-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Confirmed weight</p>
                 </div>
               </div>
-              <p className="mt-3 text-2xs text-subtle">This is exactly what would populate a Gross/Tare Weight field in GRN or Pre/Post Loading Weighment once this is wired into those screens — confirm it matches the indicator's own display before trusting it.</p>
+              <p className="mt-3 text-2xs text-subtle">This is exactly what would populate the Gross/Tare Weight field in GRN or Pre/Post Loading Weighment once this is wired into those screens — confirm it matches the indicator's own display before trusting it.</p>
             </SectionCard>
           </div>
 

@@ -12,6 +12,9 @@ import { useFmt } from "@/components/settings/GeneralConfigProvider";
 import { GrnFlowStepper } from "@/components/purchase/GrnFlowStepper";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
+import { FetchWeightButton } from "@/components/shared/FetchWeightButton";
+import { WeighbridgeReadout } from "@/components/shared/WeighbridgeReadout";
+import { useWeighbridge } from "@/lib/hooks/useWeighbridge";
 
 // Shared API contract — one source of truth for the GRN detail shapes.
 import type { GrnDetail as Grn } from "@/lib/contracts/grn";
@@ -356,6 +359,14 @@ function TareWeightModal({ id, weightUom, grossWeight, billNetWeight, onClose, o
   const [tareWeight, setTareWeight] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [enableWeighbridgeFetch, setEnableWeighbridgeFetch] = useState(false);
+  const wb = useWeighbridge(9600, enableWeighbridgeFetch);
+  useEffect(() => {
+    (async () => {
+      const j = await fetch("/api/settings/purchase", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+      if (j.ok && j.config) setEnableWeighbridgeFetch(!!j.config.flags?.enableWeighbridgeFetch);
+    })();
+  }, []);
   const netCalc = tareWeight.trim() !== "" && Number.isFinite(Number(tareWeight)) ? +(Number(grossWeight || 0) - Number(tareWeight)).toFixed(3) : null;
   async function submit() {
     setError("");
@@ -372,7 +383,10 @@ function TareWeightModal({ id, weightUom, grossWeight, billNetWeight, onClose, o
       <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-border bg-surface-2 px-5 py-3.5">
           <div className="flex items-center gap-2.5"><span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-gradient text-white"><Scale className="h-4 w-4" /></span><div><h2 className="text-sm font-bold text-foreground">Update Tare Weight</h2><p className="text-2xs text-muted">After the vehicle is unloaded and weighed empty</p></div></div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-surface hover:text-foreground"><X className="h-4 w-4" /></button>
+          <div className="flex items-center gap-2">
+            {enableWeighbridgeFetch && <WeighbridgeReadout state={wb.state} liveWeight={wb.liveWeight} />}
+            <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-surface hover:text-foreground"><X className="h-4 w-4" /></button>
+          </div>
         </div>
         <div className="space-y-3 p-5">
           <div className="grid grid-cols-2 gap-3 rounded-lg bg-surface-2 p-3 text-sm">
@@ -381,7 +395,10 @@ function TareWeightModal({ id, weightUom, grossWeight, billNetWeight, onClose, o
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-foreground">{`Tare Weight (${weightUom})`}</label>
-            <input type="number" min={0} autoFocus value={tareWeight} onChange={(e) => setTareWeight(e.target.value)} placeholder="0" className="h-10 w-full rounded-md border border-border-strong bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:shadow-focus" />
+            <div className="flex items-center gap-2">
+              <input type="number" min={0} autoFocus value={tareWeight} onChange={(e) => setTareWeight(e.target.value)} placeholder="0" className="h-10 w-full rounded-md border border-border-strong bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:shadow-focus" />
+              {enableWeighbridgeFetch && <FetchWeightButton connected={wb.state === "connected"} liveWeight={wb.liveWeight} onFetch={(kg) => setTareWeight(String(kg))} />}
+            </div>
           </div>
           {netCalc != null && <p className="text-2xs text-muted">Net Weight (calculated): <span className="font-semibold text-primary">{netCalc} {weightUom}</span></p>}
           {error && <p className="text-2xs font-medium text-danger">{error}</p>}

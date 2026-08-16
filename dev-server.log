@@ -45,3 +45,1077 @@
  GET /api/transport/masters/transport-company?status=Active 200 in 265ms
  GET /api/settings/dispatch-config 200 in 258ms
  GET /api/transport/masters/vehicle?status=Active 200 in 346ms
+ ○ Compiling / ...
+ ✓ Compiled / in 1489ms (1096 modules)
+ GET / 200 in 2711ms
+ GET / 200 in 2404ms
+ ○ Compiling /api/website/config ...
+ ✓ Compiled /api/website/config in 1961ms (599 modules)
+ ✓ Compiled (601 modules)
+ GET /api/settings/theme 401 in 3145ms
+ GET /api/settings/theme 401 in 3156ms
+ GET /api/website/config 200 in 3297ms
+ GET /api/website/config 200 in 3358ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 5.1s (1216 modules)
+ ✓ Compiled in 1272ms (589 modules)
+ GET /api/website/config 200 in 342ms
+ GET /api/website/config 200 in 375ms
+ ○ Compiling /api/auth/login ...
+ ✓ Compiled /api/auth/login in 513ms (712 modules)
+ POST /api/auth/login 200 in 2808ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 2.7s (1405 modules)
+ ✓ Compiled /api/dashboard/[section] in 360ms (808 modules)
+ ✓ Compiled (819 modules)
+ GET /api/settings/document-fields 200 in 2171ms
+ GET /api/settings/general 200 in 2228ms
+ GET /api/company-setup 200 in 2631ms
+ GET /api/dashboard/pending 200 in 7824ms
+ GET /api/dashboard/health 200 in 8426ms
+ GET /api/dashboard/header 200 in 10688ms
+ GET /api/dashboard/notifications 200 in 8149ms
+ GET /api/dashboard/charts 200 in 10812ms
+ GET /api/dashboard/insights 200 in 866ms
+ GET /api/dashboard/activity 200 in 720ms
+ ○ Compiling /api/auth/me ...
+ ✓ Compiled /api/auth/me in 879ms (821 modules)
+ GET /api/dashboard/kpis 200 in 11694ms
+ ✓ Compiled in 1ms (823 modules)
+ ✓ Compiled in 0ms (823 modules)
+ ✓ Compiled in 0ms (823 modules)
+ GET /api/system/scope 200 in 2876ms
+ GET /api/settings/general 200 in 2819ms
+ GET /api/settings/document-fields 200 in 2808ms
+ GET /api/auth/me 200 in 3222ms
+ GET /api/company-setup 200 in 2915ms
+ GET /api/dashboard/pending 200 in 1113ms
+ GET /api/dashboard/header 200 in 3626ms
+ GET /api/dashboard/health 200 in 1624ms
+ GET /api/dashboard/charts 200 in 1821ms
+ GET /api/system/scope 200 in 356ms
+ GET /api/dashboard/notifications 200 in 1610ms
+ GET /api/dashboard/activity 200 in 527ms
+ GET /api/auth/me 200 in 324ms
+ GET /api/dashboard/insights 200 in 845ms
+ GET /api/dashboard/kpis 200 in 2475ms
+ GET /api/company-setup 200 in 612ms
+ GET /api/company-setup 200 in 578ms
+ ○ Compiling /settings/sales ...
+ ✓ Compiled /settings/sales in 10.4s (1478 modules)
+ ○ Compiling /api/settings/sales ...
+ ✓ Compiled /api/settings/sales in 1705ms (856 modules)
+ GET /api/settings/sales 200 in 2509ms
+ GET /api/settings/sales 200 in 2573ms
+ ○ Compiling /settings/purchase ...
+ ✓ Compiled /settings/purchase in 1075ms (1485 modules)
+ ✓ Compiled /api/settings/purchase in 203ms (859 modules)
+ GET /api/settings/purchase 200 in 723ms
+ GET /api/settings/purchase 200 in 729ms
+ GET /api/dashboard/pending 200 in 935ms
+ GET /api/company-setup 200 in 1097ms
+ GET /api/dashboard/health 200 in 1154ms
+ GET /api/dashboard/header 200 in 1213ms
+ GET /api/dashboard/charts 200 in 1329ms
+ GET /api/dashboard/activity 200 in 310ms
+ GET /api/dashboard/insights 200 in 480ms
+ GET /api/dashboard/notifications 200 in 613ms
+ GET /api/dashboard/kpis 200 in 1666ms
+ GET /api/company-setup 200 in 561ms
+ GET /api/dashboard/header 200 in 689ms
+ GET /api/dashboard/pending 200 in 482ms
+ GET /api/dashboard/health 200 in 668ms
+ GET /api/dashboard/charts 200 in 854ms
+ GET /api/dashboard/activity 200 in 250ms
+ GET /api/dashboard/notifications 200 in 752ms
+ GET /api/dashboard/insights 200 in 531ms
+ GET /api/dashboard/kpis 200 in 1166ms
+ GET /dashboard 200 in 3027ms
+ ✓ Compiled /api/settings/document-fields in 290ms (758 modules)
+ ✓ Compiled (764 modules)
+ GET /api/website/config 200 in 872ms
+ GET /api/website/config 200 in 899ms
+ ✓ Compiled /api/auth/me in 161ms (766 modules)
+ GET /api/settings/theme 200 in 1152ms
+ GET /api/settings/general 200 in 1132ms
+ GET /api/settings/theme 200 in 1158ms
+ GET /api/settings/document-fields 200 in 1166ms
+ ✓ Compiled in 1ms (769 modules)
+ ✓ Compiled in 0ms (769 modules)
+ ✓ Compiled in 0ms (769 modules)
+ GET /api/system/scope 200 in 1034ms
+ GET /api/system/scope 200 in 1319ms
+ GET /api/settings/general 200 in 1105ms
+ GET /api/settings/document-fields 200 in 1405ms
+ GET /api/auth/me 200 in 1690ms
+ GET /api/auth/me 200 in 1324ms
+ ○ Compiling /api/dashboard/[section] ...
+ ✓ Compiled /api/dashboard/[section] in 543ms (852 modules)
+ ✓ Compiled (857 modules)
+ GET /api/dashboard/pending 200 in 1213ms
+ GET /api/company-setup 200 in 1659ms
+ GET /api/dashboard/health 200 in 1471ms
+ GET /api/dashboard/header 200 in 1915ms
+ GET /api/dashboard/charts 200 in 1687ms
+ GET /api/dashboard/insights 200 in 583ms
+ GET /api/dashboard/activity 200 in 391ms
+ GET /api/dashboard/notifications 200 in 694ms
+ GET /api/dashboard/kpis 200 in 2382ms
+ GET /api/company-setup 200 in 659ms
+ GET /api/dashboard/header 200 in 707ms
+ GET /api/dashboard/pending 200 in 500ms
+ GET /api/dashboard/health 200 in 836ms
+ GET /api/dashboard/charts 200 in 968ms
+ GET /api/dashboard/activity 200 in 368ms
+ GET /api/dashboard/insights 200 in 629ms
+ GET /api/dashboard/notifications 200 in 843ms
+ GET /api/dashboard/kpis 200 in 1322ms
+ GET /api/company-setup 200 in 481ms
+ GET /api/company-setup 200 in 462ms
+ GET / 200 in 846ms
+ GET /api/website/config 200 in 268ms
+ GET /api/website/config 200 in 253ms
+ GET /api/settings/theme 200 in 352ms
+ GET /api/settings/theme 200 in 341ms
+ ○ Compiling /platform ...
+ ✓ Compiled /platform in 1984ms (1618 modules)
+ GET /platform 200 in 2504ms
+ ✓ Compiled /api/platform/auth/me in 294ms (969 modules)
+ GET /api/website/config 200 in 781ms
+ GET /api/website/config 200 in 806ms
+ GET /api/platform/auth/me 200 in 941ms
+ GET /api/platform/auth/me 200 in 941ms
+ GET /api/settings/theme 200 in 1015ms
+ GET /api/settings/theme 200 in 1010ms
+ ✓ Compiled /api/platform/[section] in 283ms (974 modules)
+ GET /api/platform/dashboard 200 in 1566ms
+ GET /api/platform/dashboard 200 in 1590ms
+ ✓ Compiled /api/platform/website in 259ms (976 modules)
+ GET /api/platform/website 200 in 786ms
+ GET /api/platform/website 200 in 799ms
+ POST /api/platform/website 200 in 923ms
+ GET /dashboard 200 in 324ms
+ ○ Compiling /api/settings/general ...
+ ✓ Compiled /api/settings/general in 512ms (996 modules)
+ ✓ Compiled (998 modules)
+ GET /icon.svg?7f33ccf9ef44f536 200 in 936ms
+ GET /api/website/config 200 in 1099ms
+ ✓ Compiled /api/settings/document-fields in 209ms (1000 modules)
+ GET /api/website/config 200 in 1203ms
+ ✓ Compiled /api/auth/me in 232ms (1002 modules)
+ GET /api/settings/theme 200 in 1470ms
+ GET /api/settings/theme 200 in 1488ms
+ GET /api/settings/general 200 in 1450ms
+ ✓ Compiled in 0ms (1005 modules)
+ ✓ Compiled in 0ms (1005 modules)
+ GET /api/settings/document-fields 200 in 1222ms
+ ✓ Compiled in 0ms (1005 modules)
+ GET /api/system/scope 200 in 1405ms
+ GET /api/system/scope 200 in 1038ms
+ GET /api/settings/document-fields 200 in 1152ms
+ GET /api/settings/general 200 in 1355ms
+ GET /api/auth/me 200 in 1728ms
+ GET /api/auth/me 200 in 793ms
+ GET /api/dashboard/pending 200 in 526ms
+ GET /api/company-setup 200 in 1102ms
+ GET /api/dashboard/header 200 in 1158ms
+ GET /api/dashboard/health 200 in 780ms
+ GET /api/dashboard/charts 200 in 1004ms
+ GET /api/dashboard/activity 200 in 296ms
+ GET /api/dashboard/notifications 200 in 606ms
+ GET /api/dashboard/insights 200 in 495ms
+ GET /api/dashboard/kpis 200 in 1506ms
+ GET /api/company-setup 200 in 555ms
+ GET /api/dashboard/header 200 in 651ms
+ GET /api/dashboard/pending 200 in 419ms
+ GET /api/dashboard/health 200 in 665ms
+ GET /api/dashboard/activity 200 in 310ms
+ GET /api/dashboard/charts 200 in 879ms
+ GET /api/dashboard/insights 200 in 546ms
+ GET /api/dashboard/notifications 200 in 756ms
+ GET /api/dashboard/kpis 200 in 1157ms
+ GET /api/company-setup 200 in 452ms
+ GET /api/company-setup 200 in 428ms
+ ✓ Compiled /api/auth/logout in 272ms (914 modules)
+ POST /api/auth/logout 200 in 978ms
+ GET /api/website/config 200 in 229ms
+ GET /api/website/config 200 in 243ms
+ ✓ Compiled /api/auth/login in 427ms (781 modules)
+ POST /api/auth/login 200 in 4920ms
+ ✓ Compiled /api/system/scope in 269ms (859 modules)
+ ✓ Compiled (869 modules)
+ GET /api/system/scope 200 in 1431ms
+ GET /api/settings/general 200 in 1574ms
+ GET /api/settings/general 200 in 1655ms
+ GET /api/settings/document-fields 200 in 1343ms
+ GET /api/settings/document-fields 200 in 1663ms
+ GET /api/system/scope 200 in 300ms
+ GET /api/auth/me 200 in 1734ms
+ GET /api/auth/me 200 in 310ms
+ ✓ Compiled /api/dashboard/[section] in 402ms (873 modules)
+ ✓ Compiled (878 modules)
+ GET /api/dashboard/pending 200 in 1936ms
+ GET /api/company-setup 200 in 2310ms
+ GET /api/dashboard/health 200 in 2334ms
+ GET /api/dashboard/header 200 in 2463ms
+ GET /api/dashboard/charts 200 in 2518ms
+ GET /api/dashboard/activity 200 in 349ms
+ GET /api/dashboard/insights 200 in 541ms
+ GET /api/dashboard/notifications 200 in 666ms
+ GET /api/dashboard/kpis 200 in 3004ms
+ GET /api/company-setup 200 in 645ms
+ GET /api/dashboard/header 200 in 749ms
+ GET /api/dashboard/pending 200 in 453ms
+ GET /api/dashboard/health 200 in 712ms
+ GET /api/dashboard/charts 200 in 920ms
+ GET /api/dashboard/activity 200 in 304ms
+ GET /api/dashboard/notifications 200 in 739ms
+ GET /api/dashboard/insights 200 in 537ms
+ GET /api/dashboard/kpis 200 in 1264ms
+ GET /api/company-setup 200 in 460ms
+ GET /api/company-setup 200 in 435ms
+ ✓ Compiled in 633ms (653 modules)
+ ✓ Compiled in 317ms (653 modules)
+ ✓ Compiled in 285ms (653 modules)
+ ✓ Compiled in 293ms (653 modules)
+ ✓ Compiled in 333ms (653 modules)
+ ✓ Compiled in 1405ms (1316 modules)
+ ✓ Compiled in 1559ms (1316 modules)
+ ✓ Compiled / in 471ms (791 modules)
+ GET / 200 in 2026ms
+ ✓ Compiled /api/website/config in 351ms (866 modules)
+ ✓ Compiled (868 modules)
+ GET /api/website/config 200 in 972ms
+ GET /api/website/config 200 in 965ms
+ GET /api/settings/theme 200 in 1424ms
+ GET /api/settings/theme 200 in 1427ms
+ GET /platform 200 in 376ms
+ GET /api/website/config 200 in 388ms
+ ✓ Compiled /api/platform/auth/me in 329ms (872 modules)
+ GET /api/settings/theme 200 in 506ms
+ GET /api/website/config 200 in 491ms
+ GET /api/settings/theme 200 in 523ms
+ GET /api/platform/auth/me 200 in 657ms
+ GET /api/platform/auth/me 200 in 658ms
+ ✓ Compiled /api/platform/[section] in 423ms (956 modules)
+ GET /api/platform/dashboard 200 in 1722ms
+ GET /api/platform/dashboard 200 in 1732ms
+ ✓ Compiled in 545ms (653 modules)
+ ✓ Compiled /api/platform/website in 194ms (958 modules)
+ GET /api/platform/website 200 in 662ms
+ GET /api/platform/website 200 in 664ms
+ ✓ Compiled in 437ms (653 modules)
+ ✓ Compiled in 384ms (653 modules)
+ ✓ Compiled /api/platform/website/upload in 235ms (961 modules)
+ POST /api/platform/website/upload 201 in 728ms
+ ✓ Compiled in 446ms (653 modules)
+ ✓ Compiled in 357ms (653 modules)
+ POST /api/platform/website/upload 201 in 391ms
+ ✓ Compiled in 282ms (653 modules)
+ POST /api/platform/website 200 in 780ms
+ GET /dashboard 200 in 406ms
+ GET /api/website/config 200 in 351ms
+ GET /api/website/config 200 in 362ms
+ ✓ Compiled /api/system/scope in 389ms (963 modules)
+ GET /api/settings/theme 200 in 760ms
+ GET /api/settings/theme 200 in 752ms
+ ✓ Compiled /api/auth/me in 1ms (967 modules)
+ ✓ Compiled in 1ms (970 modules)
+ ✓ Compiled in 0ms (970 modules)
+ ✓ Compiled in 0ms (970 modules)
+ GET /api/settings/document-fields 200 in 1219ms
+ GET /api/settings/document-fields 200 in 1931ms
+ GET /api/system/scope 200 in 1750ms
+ GET /api/settings/general 200 in 2128ms
+ GET /api/settings/general 200 in 1430ms
+ GET /api/system/scope 200 in 409ms
+ GET /api/auth/me 200 in 2066ms
+ ✓ Compiled /api/dashboard/[section] in 351ms (999 modules)
+ GET /api/auth/me 200 in 596ms
+ ✓ Compiled in 970ms (653 modules)
+ GET /icon.svg?7f33ccf9ef44f536 200 in 1665ms
+ GET /api/dashboard/pending 200 in 813ms
+ GET /api/company-setup 200 in 2844ms
+ GET /api/dashboard/health 200 in 2544ms
+ GET /api/dashboard/header 200 in 2957ms
+ GET /api/dashboard/charts 200 in 2859ms
+ GET /api/dashboard/activity 200 in 343ms
+ GET /api/dashboard/insights 200 in 465ms
+ GET /api/dashboard/notifications 200 in 678ms
+ GET /api/dashboard/kpis 200 in 3189ms
+ GET /api/company-setup 200 in 572ms
+ GET /api/dashboard/header 200 in 604ms
+ GET /api/dashboard/pending 200 in 415ms
+ GET /api/dashboard/health 200 in 684ms
+ GET /api/dashboard/activity 200 in 338ms
+ GET /api/dashboard/charts 200 in 929ms
+ GET /api/dashboard/insights 200 in 552ms
+ GET /api/dashboard/notifications 200 in 734ms
+ GET /api/dashboard/kpis 200 in 1281ms
+ GET /api/company-setup 200 in 552ms
+ GET /api/company-setup 200 in 497ms
+ ✓ Compiled in 563ms (653 modules)
+ ✓ Compiled /api/auth/logout in 281ms (923 modules)
+ POST /api/auth/logout 200 in 956ms
+ GET /api/website/config 200 in 282ms
+ GET /api/website/config 200 in 316ms
+ ✓ Compiled in 375ms (653 modules)
+ POST /api/platform/website/upload 201 in 432ms
+ POST /api/platform/website 200 in 818ms
+ GET /settings/purchase 200 in 279ms
+ ○ Compiling /settings/weighbridge ...
+ ✓ Compiled /settings/weighbridge in 915ms (1586 modules)
+ GET /settings/weighbridge 200 in 1305ms
+ ✓ Compiled /api/settings/purchase in 275ms (930 modules)
+ GET /api/settings/purchase 401 in 383ms
+ GET /login 200 in 295ms
+ GET /api/settings/theme 401 in 91ms
+ GET /api/settings/theme 401 in 182ms
+ GET /icon.svg?7f33ccf9ef44f536 200 in 127ms
+ GET /api/website/config 200 in 334ms
+ GET /api/website/config 200 in 314ms
+ GET /api/website/config 200 in 345ms
+ GET /api/website/config 200 in 377ms
+ ✓ Compiled /api/auth/login in 322ms (781 modules)
+ POST /api/auth/login 200 in 1771ms
+ ✓ Compiled /api/system/scope in 228ms (863 modules)
+ ✓ Compiled (869 modules)
+ GET /api/system/scope 200 in 960ms
+ GET /api/settings/general 200 in 1058ms
+ GET /api/settings/general 200 in 1071ms
+ GET /api/settings/document-fields 200 in 1071ms
+ GET /api/settings/document-fields 200 in 783ms
+ GET /api/auth/me 200 in 1091ms
+ GET /api/system/scope 200 in 181ms
+ GET /api/auth/me 200 in 296ms
+ ✓ Compiled /api/company-setup in 248ms (873 modules)
+ ✓ Compiled /api/dashboard/[section] in 385ms (878 modules)
+ GET /api/company-setup 200 in 1742ms
+ GET /api/company-setup 200 in 1657ms
+ GET /api/dashboard/health 200 in 1872ms
+ GET /api/dashboard/header 200 in 2098ms
+ GET /api/dashboard/pending 200 in 542ms
+ GET /api/dashboard/charts 200 in 2263ms
+ GET /api/dashboard/activity 200 in 287ms
+ GET /api/dashboard/notifications 200 in 921ms
+ GET /api/dashboard/insights 200 in 497ms
+ GET /api/dashboard/kpis 200 in 2605ms
+ GET /api/company-setup 200 in 579ms
+ GET /api/dashboard/header 200 in 635ms
+ GET /api/dashboard/pending 200 in 430ms
+ GET /api/dashboard/health 200 in 673ms
+ GET /api/dashboard/activity 200 in 310ms
+ GET /api/dashboard/charts 200 in 857ms
+ GET /api/dashboard/insights 200 in 528ms
+ GET /api/dashboard/notifications 200 in 711ms
+ GET /api/dashboard/kpis 200 in 1142ms
+ GET /api/company-setup 200 in 416ms
+ ○ Compiling /transport/gate-entry ...
+ ✓ Compiled /transport/gate-entry in 1230ms (1537 modules)
+ ✓ Compiled /api/transport/gate-entry in 410ms (892 modules)
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 1332ms
+ GET /api/transport/gate-entry?entryType=RawMaterial 200 in 760ms
+ ○ Compiling /api/transport/gate-entry/[id]/hover-detail ...
+ ✓ Compiled /api/transport/gate-entry/[id]/hover-detail in 946ms (1556 modules)
+ ✓ Compiled /api/transport/masters/vehicle in 266ms (904 modules)
+ ✓ Compiled (910 modules)
+ GET /api/transport/gate-entry/72/hover-detail 200 in 2505ms
+ GET /api/transport/gate-entry/72/hover-detail 200 in 2530ms
+ GET /api/settings/dispatch-config 200 in 1029ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1104ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1221ms
+ GET /api/transport/gate-entry/next-number 200 in 1259ms
+ ✓ Compiled /api/transport/masters/loading-bay in 320ms (912 modules)
+ ✓ Compiled in 1ms (912 modules)
+ ✓ Compiled in 0ms (912 modules)
+ ✓ Compiled in 0ms (912 modules)
+ GET /api/system/scope 200 in 1642ms
+ GET /api/settings/dispatch-config 200 in 1562ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1809ms
+ GET /api/transport/gate-entry/next-number 200 in 1741ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1547ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1629ms
+ GET /api/system/scope 200 in 242ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 356ms
+ ✓ Compiled /api/masters/suppliers in 246ms (916 modules)
+ GET /api/masters/suppliers?q=p 200 in 746ms
+ GET /api/masters/suppliers?q=pkv 200 in 272ms
+ POST /api/transport/gate-entry 201 in 1457ms
+ ○ Compiling /transport/gate-entry/[id]/weighment ...
+ ✓ Compiled /transport/gate-entry/[id]/weighment in 904ms (1585 modules)
+ ✓ Compiled /api/transport/gate-entry/[id]/weighment in 415ms (929 modules)
+ ✓ Compiled (934 modules)
+ GET /api/settings/purchase 200 in 1811ms
+ GET /api/settings/purchase 200 in 1832ms
+ GET /api/system/areas 200 in 1887ms
+ GET /api/system/areas 200 in 1879ms
+ GET /api/transport/gate-entry/74/weighment 200 in 2263ms
+ GET /api/transport/gate-entry/74/weighment 200 in 2270ms
+ GET /settings/purchase 200 in 355ms
+ GET /api/settings/purchase 200 in 391ms
+ GET /api/settings/purchase 200 in 409ms
+ PUT /api/settings/purchase 200 in 912ms
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 499ms
+ GET /api/transport/gate-entry/73/hover-detail 200 in 478ms
+ GET /api/transport/gate-entry/73/hover-detail 200 in 480ms
+ GET /api/transport/gate-entry?entryType=RawMaterial 200 in 637ms
+ GET /api/transport/gate-entry/74/hover-detail 200 in 383ms
+ GET /api/transport/gate-entry/74/hover-detail 200 in 418ms
+ GET /api/settings/purchase 200 in 335ms
+ GET /api/system/areas 200 in 338ms
+ GET /api/system/areas 200 in 338ms
+ GET /api/settings/purchase 200 in 363ms
+ GET /api/transport/gate-entry/74/weighment 200 in 446ms
+ GET /api/transport/gate-entry/74/weighment 200 in 504ms
+ GET /api/dashboard/pending 200 in 799ms
+ GET /api/company-setup 200 in 1019ms
+ GET /api/dashboard/health 200 in 1087ms
+ GET /api/dashboard/header 200 in 1187ms
+ GET /api/dashboard/charts 200 in 1312ms
+ GET /api/dashboard/activity 200 in 319ms
+ GET /api/dashboard/notifications 200 in 632ms
+ GET /api/dashboard/insights 200 in 520ms
+ GET /api/dashboard/kpis 200 in 1630ms
+ GET /api/company-setup 200 in 486ms
+ GET /api/dashboard/header 200 in 698ms
+ GET /api/dashboard/pending 200 in 441ms
+ GET /api/dashboard/health 200 in 651ms
+ GET /api/dashboard/charts 200 in 867ms
+ GET /api/dashboard/activity 200 in 276ms
+ GET /api/dashboard/notifications 200 in 686ms
+ GET /api/dashboard/insights 200 in 455ms
+ GET /api/dashboard/kpis 200 in 1114ms
+ ✓ Compiled in 918ms (1269 modules)
+ ✓ Compiled /api/transport/gate-entry in 302ms (792 modules)
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 1601ms
+ GET /api/transport/gate-entry?entryType=RawMaterial 200 in 521ms
+ ✓ Compiled /api/transport/gate-entry/[id]/hover-detail in 145ms (794 modules)
+ GET /api/transport/gate-entry/74/hover-detail 200 in 1144ms
+ GET /api/transport/gate-entry/74/hover-detail 200 in 1145ms
+ ✓ Compiled /api/transport/gate-entry/[id]/weighment in 168ms (797 modules)
+ ✓ Compiled (802 modules)
+ GET /api/settings/purchase 200 in 2047ms
+ GET /api/settings/purchase 200 in 2098ms
+ GET /api/system/areas 200 in 2158ms
+ GET /api/system/areas 200 in 2151ms
+ GET /api/transport/gate-entry/74/weighment 200 in 2196ms
+ GET /api/transport/gate-entry/74/weighment 200 in 2254ms
+ GET /transport/gate-entry/74/weighment 200 in 391ms
+ ✓ Compiled /api/settings/document-fields in 405ms (804 modules)
+ ✓ Compiled (810 modules)
+ GET /api/website/config 200 in 1146ms
+ GET /api/website/config 200 in 1161ms
+ GET /api/settings/theme 200 in 1330ms
+ GET /api/settings/general 200 in 1359ms
+ GET /api/settings/theme 200 in 1477ms
+ GET /api/settings/document-fields 200 in 1430ms
+ ○ Compiling /api/auth/me ...
+ ✓ Compiled /api/auth/me in 534ms (812 modules)
+ ✓ Compiled (815 modules)
+ GET /api/system/scope 200 in 1317ms
+ GET /api/system/scope 200 in 1711ms
+ GET /api/settings/general 200 in 1578ms
+ GET /api/settings/document-fields 200 in 1451ms
+ GET /api/auth/me 200 in 1976ms
+ GET /api/auth/me 200 in 1662ms
+ ✓ Compiled /icon.svg in 348ms (844 modules)
+ ✓ Compiled in 0ms (844 modules)
+ ✓ Compiled in 1ms (844 modules)
+ GET /icon.svg?7f33ccf9ef44f536 200 in 1348ms
+ GET /api/settings/purchase 200 in 1661ms
+ GET /api/settings/purchase 200 in 1354ms
+ GET /api/system/areas 200 in 454ms
+ GET /api/system/areas 200 in 1712ms
+ GET /api/transport/gate-entry/74/weighment 200 in 1725ms
+ GET /api/transport/gate-entry/74/weighment 200 in 1489ms
+ ✓ Compiled /api/company-setup in 432ms (848 modules)
+ GET /api/company-setup 200 in 1207ms
+ GET /api/company-setup 200 in 1184ms
+ ✓ Compiled in 952ms (1270 modules)
+ ✓ Compiled /settings/weighbridge in 343ms (604 modules)
+ GET /settings/weighbridge 200 in 694ms
+ ✓ Compiled /settings/purchase in 402ms (620 modules)
+ GET /settings/purchase 200 in 795ms
+ ○ Compiling /purchase/grn/new ...
+ ✓ Compiled /purchase/grn/new in 1337ms (1310 modules)
+ GET /purchase/grn/new 200 in 1836ms
+ GET /transport/gate-entry/74/weighment 200 in 332ms
+ ○ Compiling /api/settings/document-fields ...
+ ✓ Compiled /api/settings/document-fields in 598ms (744 modules)
+ ✓ Compiled (750 modules)
+ GET /api/website/config 200 in 1282ms
+ GET /api/website/config 200 in 1319ms
+ ✓ Compiled /api/auth/me in 177ms (752 modules)
+ GET /api/settings/theme 200 in 1532ms
+ GET /api/settings/theme 200 in 1563ms
+ GET /api/settings/document-fields 200 in 1551ms
+ GET /api/settings/general 200 in 1566ms
+ ✓ Compiled in 0ms (755 modules)
+ ✓ Compiled in 1ms (755 modules)
+ ✓ Compiled in 0ms (755 modules)
+ GET /api/system/scope 200 in 1015ms
+ GET /api/system/scope 200 in 1347ms
+ GET /api/settings/document-fields 200 in 1143ms
+ GET /api/settings/general 200 in 1218ms
+ ✓ Compiled /api/settings/purchase in 161ms (784 modules)
+ GET /api/auth/me 200 in 1524ms
+ GET /api/auth/me 200 in 1245ms
+ ✓ Compiled /api/system/areas in 0ms (787 modules)
+ ✓ Compiled in 1ms (871 modules)
+ ✓ Compiled in 0ms (871 modules)
+ GET /icon.svg?7f33ccf9ef44f536 200 in 1431ms
+ ✓ Compiled in 0ms (871 modules)
+ GET /api/settings/purchase 200 in 2265ms
+ GET /api/settings/purchase 200 in 2041ms
+ ✓ Compiled /api/company-setup in 382ms (875 modules)
+ GET /api/system/areas 200 in 1458ms
+ GET /api/system/areas 200 in 2734ms
+ GET /api/transport/gate-entry/74/weighment 200 in 2833ms
+ GET /api/transport/gate-entry/74/weighment 200 in 2798ms
+ GET /api/company-setup 200 in 1140ms
+ GET /api/company-setup 200 in 1140ms
+ ✓ Compiled in 1020ms (1276 modules)
+ ✓ Compiled in 436ms (1276 modules)
+ GET /transport/gate-entry/74/weighment 200 in 282ms
+ ✓ Compiled /api/settings/document-fields in 187ms (710 modules)
+ ✓ Compiled (716 modules)
+ GET /api/website/config 200 in 656ms
+ GET /api/website/config 200 in 717ms
+ GET /api/settings/theme 200 in 924ms
+ GET /api/settings/general 200 in 997ms
+ GET /api/settings/theme 200 in 1029ms
+ GET /api/settings/document-fields 200 in 1000ms
+ ○ Compiling /api/auth/me ...
+ ✓ Compiled /api/auth/me in 509ms (718 modules)
+ ✓ Compiled in 0ms (721 modules)
+ ✓ Compiled in 0ms (721 modules)
+ ✓ Compiled in 0ms (721 modules)
+ GET /api/settings/general 200 in 1337ms
+ GET /api/system/scope 200 in 1134ms
+ GET /api/system/scope 200 in 1617ms
+ GET /api/settings/document-fields 200 in 1399ms
+ GET /api/auth/me 200 in 1879ms
+ GET /api/auth/me 200 in 1470ms
+ ✓ Compiled /api/transport/gate-entry/[id]/weighment in 324ms (750 modules)
+ ✓ Compiled /api/system/areas in 1ms (755 modules)
+ ✓ Compiled in 1ms (837 modules)
+ ✓ Compiled in 1ms (837 modules)
+ GET /icon.svg?7f33ccf9ef44f536 200 in 1599ms
+ ✓ Compiled in 0ms (837 modules)
+ GET /api/settings/purchase 200 in 2577ms
+ GET /api/settings/purchase 200 in 2203ms
+ GET /api/transport/gate-entry/74/weighment 200 in 2707ms
+ GET /api/transport/gate-entry/74/weighment 200 in 2526ms
+ ✓ Compiled /api/company-setup in 329ms (841 modules)
+ GET /api/system/areas 200 in 2799ms
+ GET /api/system/areas 200 in 1540ms
+ GET /api/company-setup 200 in 1093ms
+ GET /api/company-setup 200 in 1095ms
+ ✓ Compiled in 564ms (1522 modules)
+ ✓ Compiled in 312ms (681 modules)
+ ✓ Compiled in 771ms (1519 modules)
+ ✓ Compiled in 820ms (1519 modules)
+ ✓ Compiled in 437ms (1520 modules)
+ GET /api/settings/purchase 200 in 640ms
+ GET /api/settings/purchase 200 in 926ms
+ GET /api/transport/gate-entry/74/weighment 200 in 985ms
+ GET /api/transport/gate-entry/74/weighment 200 in 1041ms
+ GET /api/system/areas 200 in 1211ms
+ GET /api/system/areas 200 in 936ms
+ ✓ Compiled in 515ms (1524 modules)
+ ✓ Compiled in 570ms (682 modules)
+ ✓ Compiled in 288ms (682 modules)
+ ✓ Compiled in 594ms (682 modules)
+ ✓ Compiled in 277ms (682 modules)
+ ✓ Compiled in 417ms (682 modules)
+ ✓ Compiled in 214ms (682 modules)
+ ✓ Compiled in 197ms (682 modules)
+ ○ Compiling /settings/weighbridge ...
+ ✓ Compiled /settings/weighbridge in 602ms (605 modules)
+ GET /settings/weighbridge 200 in 1068ms
+ ✓ Compiled /settings/purchase in 279ms (621 modules)
+ GET /settings/purchase 200 in 687ms
+ ✓ Compiled /purchase/grn/new in 362ms (630 modules)
+ GET /purchase/grn/new 200 in 684ms
+ GET /transport/gate-entry 200 in 295ms
+ GET /transport/gate-entry/74/weighment 200 in 341ms
+ ✓ Compiled /api/settings/general in 184ms (662 modules)
+ ✓ Compiled (778 modules)
+ GET /icon.svg?7f33ccf9ef44f536 200 in 793ms
+ ✓ Compiled /api/settings/document-fields in 180ms (780 modules)
+ GET /api/website/config 200 in 1034ms
+ GET /api/website/config 200 in 1039ms
+ GET /api/settings/theme 200 in 1319ms
+ GET /api/settings/theme 200 in 1336ms
+ GET /api/settings/general 200 in 1298ms
+ ✓ Compiled /api/auth/me in 220ms (782 modules)
+ GET /api/settings/document-fields 200 in 666ms
+ ✓ Compiled in 0ms (785 modules)
+ ✓ Compiled in 0ms (785 modules)
+ ✓ Compiled in 1ms (785 modules)
+ GET /api/system/scope 200 in 1425ms
+ GET /api/system/scope 200 in 1090ms
+ GET /api/settings/document-fields 200 in 1291ms
+ GET /api/settings/general 200 in 1415ms
+ ✓ Compiled /api/system/areas in 312ms (788 modules)
+ GET /api/auth/me 200 in 1826ms
+ GET /api/auth/me 200 in 1412ms
+ ✓ Compiled (872 modules)
+ GET /api/settings/purchase 200 in 1278ms
+ GET /api/settings/purchase 200 in 1641ms
+ GET /api/system/areas 200 in 1501ms
+ GET /api/system/areas 200 in 1463ms
+ GET /api/transport/gate-entry/74/weighment 200 in 1891ms
+ ✓ Compiled /api/company-setup in 346ms (876 modules)
+ GET /api/transport/gate-entry/74/weighment 200 in 1451ms
+ GET /api/company-setup 200 in 940ms
+ GET /api/company-setup 200 in 979ms
+ ✓ Compiled /api/pos/products in 248ms (879 modules)
+ GET /api/pos/products?q=r 200 in 1058ms
+ GET /api/pos/products?q=ro 200 in 452ms
+ GET /api/pos/products?q=rou 200 in 534ms
+ POST /api/transport/gate-entry/74/weighment 200 in 1292ms
+ ✓ Compiled /api/transport/gate-entry/[id] in 246ms (857 modules)
+ GET /api/settings/purchase 200 in 406ms
+ ✓ Compiled (863 modules)
+ GET /api/settings/purchase 200 in 1103ms
+ GET /api/masters/suppliers 200 in 735ms
+ GET /api/settings/pos 200 in 1148ms
+ GET /api/masters/suppliers 200 in 1190ms
+ GET /api/system/areas?inventoryStorageType=Purchase%20of%20Material 200 in 1211ms
+ GET /api/settings/pos 200 in 227ms
+ GET /api/system/areas?inventoryStorageType=Purchase%20of%20Material 200 in 267ms
+ GET /api/transport/gate-entry/74 200 in 1608ms
+ ✓ Compiled /api/products in 269ms (869 modules)
+ GET /api/products?q=PURSTON001&pageSize=20 200 in 849ms
+ ✓ Compiled /api/masters/purchase/supplier-product-price in 238ms (872 modules)
+ GET /api/masters/purchase/supplier-product-price?supplierId=19&productId=65 200 in 1015ms
+ ✓ Compiled /api/purchase/grn in 313ms (817 modules)
+ POST /api/purchase/grn 201 in 3276ms
+ ✓ Compiled /api/transport/gate-entry in 193ms (822 modules)
+ GET /api/transport/gate-entry?entryType=RawMaterial 200 in 1280ms
+ ✓ Compiled /api/transport/gate-entry/[id]/hover-detail in 207ms (821 modules)
+ GET /api/transport/gate-entry/74/hover-detail 200 in 990ms
+ GET /api/transport/gate-entry/74/hover-detail 200 in 1018ms
+ GET /api/transport/gate-entry/72/hover-detail 200 in 471ms
+ GET /api/transport/gate-entry/72/hover-detail 200 in 495ms
+ GET /api/transport/gate-entry/71/hover-detail 200 in 345ms
+ GET /api/transport/gate-entry/71/hover-detail 200 in 353ms
+ ○ Compiling /purchase/grn/[id] ...
+ ✓ Compiled /purchase/grn/[id] in 806ms (1497 modules)
+ ✓ Compiled /api/purchase/grn/[id] in 260ms (829 modules)
+ GET /api/transport/gate-entry/69/hover-detail 200 in 998ms
+ GET /api/transport/gate-entry/70/hover-detail 200 in 1064ms
+ GET /api/transport/gate-entry/70/hover-detail 200 in 1064ms
+ GET /api/transport/gate-entry/69/hover-detail 200 in 1004ms
+ GET /api/settings/pos 200 in 844ms
+ GET /api/settings/pos 200 in 223ms
+ GET /api/purchase/grn/58 200 in 1080ms
+ GET /api/purchase/grn/58 200 in 1720ms
+ GET /api/settings/purchase 200 in 276ms
+ GET /api/settings/purchase 200 in 302ms
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 504ms
+ GET /api/transport/gate-entry/73/hover-detail 200 in 462ms
+ GET /api/transport/gate-entry/73/hover-detail 200 in 493ms
+ GET /api/transport/gate-entry/50/hover-detail 200 in 437ms
+ GET /api/transport/gate-entry/49/hover-detail 200 in 446ms
+ GET /api/transport/gate-entry/50/hover-detail 200 in 553ms
+ GET /api/transport/gate-entry/49/hover-detail 200 in 466ms
+ ✓ Compiled /api/system/scope in 218ms (811 modules)
+ ✓ Compiled (821 modules)
+ GET /api/system/scope 200 in 1018ms
+ GET /api/settings/dispatch-config 200 in 1155ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1233ms
+ GET /api/transport/gate-entry/next-number 200 in 1260ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1219ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1296ms
+ GET /api/transport/gate-entry/next-number 200 in 285ms
+ GET /api/settings/dispatch-config 200 in 233ms
+ GET /api/system/scope 200 in 192ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 271ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 302ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 279ms
+ ✓ Compiled /api/masters/customers in 219ms (825 modules)
+ GET /api/masters/customers?q=c 200 in 718ms
+ GET /api/masters/customers?q=cu 200 in 273ms
+ GET /api/masters/customers?q=cus 200 in 284ms
+ ✓ Compiled /api/pos/products in 173ms (822 modules)
+ GET /api/pos/products?q=m 200 in 797ms
+ GET /api/pos/products?q=msa 200 in 414ms
+ GET /api/pos/products?q=msan 200 in 427ms
+ GET /api/pos/products?q=msand 200 in 440ms
+ POST /api/transport/gate-entry 201 in 1509ms
+ ○ Compiling /transport/pre-weighment/new ...
+ ✓ Compiled /transport/pre-weighment/new in 784ms (1504 modules)
+ ✓ Compiled /api/transport/masters/weighbridge in 248ms (832 modules)
+ ✓ Compiled (834 modules)
+ GET /api/transport/pre-weighment 200 in 1173ms
+ GET /api/transport/pre-weighment 200 in 1183ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1333ms
+ GET /api/transport/masters/weighbridge?status=Active 200 in 1398ms
+ GET /api/transport/masters/weighbridge?status=Active 200 in 317ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 299ms
+ GET /api/transport/gate-entry 200 in 1599ms
+ GET /api/transport/gate-entry 200 in 1632ms
+ ✓ Compiled in 1311ms (1248 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 729ms (1248 modules)
+ GET /transport/pre-weighment/new?gateEntryId=75 200 in 581ms
+ ○ Compiling /api/settings/general ...
+ ✓ Compiled /api/settings/general in 569ms (591 modules)
+ ✓ Compiled (707 modules)
+ GET /icon.svg?7f33ccf9ef44f536 200 in 1038ms
+ ✓ Compiled /api/settings/document-fields in 167ms (709 modules)
+ GET /api/website/config 200 in 1298ms
+ GET /api/website/config 200 in 1318ms
+ GET /api/settings/general 200 in 1651ms
+ GET /api/settings/theme 200 in 1767ms
+ GET /api/settings/theme 200 in 1800ms
+ ○ Compiling /api/auth/me ...
+ ✓ Compiled /api/auth/me in 512ms (711 modules)
+ GET /api/settings/document-fields 200 in 899ms
+ ✓ Compiled in 1ms (714 modules)
+ ✓ Compiled in 1ms (714 modules)
+ ✓ Compiled in 0ms (714 modules)
+ GET /api/settings/document-fields 200 in 1385ms
+ GET /api/system/scope 200 in 1374ms
+ GET /api/system/scope 200 in 1869ms
+ GET /api/settings/general 200 in 1592ms
+ ✓ Compiled /api/transport/masters/transport-company in 391ms (796 modules)
+ GET /api/auth/me 200 in 1641ms
+ GET /api/auth/me 200 in 2269ms
+ ✓ Compiled (804 modules)
+ GET /api/transport/pre-weighment 200 in 1830ms
+ GET /api/transport/pre-weighment 200 in 1388ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1783ms
+ GET /api/transport/masters/weighbridge?status=Active 200 in 1970ms
+ GET /api/transport/masters/weighbridge?status=Active 200 in 417ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 418ms
+ ✓ Compiled /api/company-setup in 271ms (808 modules)
+ GET /api/transport/gate-entry 200 in 2625ms
+ GET /api/transport/gate-entry 200 in 2234ms
+ GET /api/company-setup 200 in 1043ms
+ GET /api/company-setup 200 in 1035ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 979ms (1497 modules)
+ GET /transport/pre-weighment/new?gateEntryId=75 200 in 1720ms
+ GET /api/website/config 200 in 392ms
+ GET /api/website/config 200 in 389ms
+ GET /api/system/scope 200 in 241ms
+ GET /api/settings/theme 200 in 638ms
+ GET /api/settings/general 200 in 639ms
+ GET /api/settings/document-fields 200 in 653ms
+ GET /api/settings/theme 200 in 684ms
+ GET /icon.svg?7f33ccf9ef44f536 200 in 101ms
+ GET /api/system/scope 200 in 414ms
+ GET /api/auth/me 200 in 697ms
+ GET /api/settings/general 200 in 456ms
+ GET /api/settings/document-fields 200 in 457ms
+ GET /api/auth/me 200 in 472ms
+ ✓ Compiled /api/settings/purchase in 364ms (811 modules)
+ GET /api/settings/purchase 200 in 943ms
+ GET /api/settings/purchase 200 in 761ms
+ GET /api/transport/pre-weighment 200 in 832ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 906ms
+ GET /api/transport/masters/weighbridge?status=Active 200 in 907ms
+ GET /api/transport/pre-weighment 200 in 365ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 362ms
+ GET /api/transport/masters/weighbridge?status=Active 200 in 471ms
+ GET /api/transport/gate-entry 200 in 1443ms
+ GET /api/transport/gate-entry 200 in 802ms
+ GET /api/company-setup 200 in 718ms
+ GET /api/company-setup 200 in 678ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 1245ms (1500 modules)
+ GET /transport/pre-weighment/new?gateEntryId=75 200 in 1258ms
+ GET /api/website/config 200 in 446ms
+ GET /api/website/config 200 in 484ms
+ GET /api/system/scope 200 in 207ms
+ GET /api/settings/theme 200 in 733ms
+ GET /api/settings/theme 200 in 774ms
+ GET /api/settings/general 200 in 763ms
+ GET /api/settings/document-fields 200 in 765ms
+ GET /api/settings/general 200 in 277ms
+ GET /api/system/scope 200 in 240ms
+ GET /api/auth/me 200 in 541ms
+ GET /api/settings/document-fields 200 in 289ms
+ GET /api/auth/me 200 in 369ms
+ GET /api/settings/purchase 200 in 399ms
+ GET /api/transport/pre-weighment 200 in 339ms
+ GET /api/transport/masters/weighbridge?status=Active 200 in 560ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 694ms
+ GET /api/settings/purchase 200 in 572ms
+ GET /api/transport/pre-weighment 200 in 647ms
+ GET /icon.svg?7f33ccf9ef44f536 200 in 162ms
+ GET /api/transport/masters/weighbridge?status=Active 200 in 610ms
+ GET /api/transport/gate-entry 200 in 1275ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 603ms
+ GET /api/transport/gate-entry 200 in 1470ms
+ GET /api/company-setup 200 in 1004ms
+ GET /api/company-setup 200 in 908ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 772ms (1500 modules)
+ GET /transport/pre-weighment/new?gateEntryId=75 200 in 1154ms
+ GET /icon.svg?7f33ccf9ef44f536 200 in 66ms
+ GET /api/website/config 200 in 278ms
+ GET /api/website/config 200 in 270ms
+ GET /api/settings/theme 200 in 516ms
+ GET /api/system/scope 200 in 235ms
+ GET /api/settings/theme 200 in 542ms
+ GET /api/settings/document-fields 200 in 487ms
+ GET /api/settings/general 200 in 489ms
+ GET /api/auth/me 200 in 525ms
+ GET /api/settings/general 200 in 298ms
+ GET /api/settings/document-fields 200 in 366ms
+ GET /api/system/scope 200 in 361ms
+ GET /api/auth/me 200 in 320ms
+ GET /api/settings/purchase 200 in 335ms
+ GET /api/transport/pre-weighment 200 in 279ms
+ GET /api/transport/masters/weighbridge?status=Active 200 in 380ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 470ms
+ GET /api/settings/purchase 200 in 498ms
+ GET /api/transport/pre-weighment 200 in 503ms
+ GET /api/transport/masters/weighbridge?status=Active 200 in 487ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 472ms
+ GET /api/transport/gate-entry 200 in 1175ms
+ GET /api/company-setup 200 in 847ms
+ GET /api/transport/gate-entry 200 in 1186ms
+ GET /api/company-setup 200 in 834ms
+ ✓ Compiled in 260ms (689 modules)
+ ✓ Compiled in 280ms (689 modules)
+ ✓ Compiled in 496ms (689 modules)
+ ✓ Compiled in 327ms (689 modules)
+ GET /transport/pre-weighment/new 200 in 310ms
+ ○ Compiling /transport/post-weighment/new ...
+ ✓ Compiled /transport/post-weighment/new in 1355ms (1496 modules)
+ GET /transport/post-weighment/new 200 in 1771ms
+ GET /purchase/grn/new 200 in 293ms
+ ○ Compiling /settings/purchase ...
+ ✓ Compiled /settings/purchase in 645ms (834 modules)
+ GET /settings/purchase 200 in 993ms
+ ○ Compiling /api/transport/gate-entry/[id] ...
+ ✓ Compiled /api/transport/gate-entry/[id] in 522ms (775 modules)
+ PUT /api/transport/gate-entry/75 200 in 3090ms
+ ✓ Compiled /api/transport/pre-weighment in 261ms (778 modules)
+ POST /api/transport/pre-weighment 201 in 3717ms
+ ○ Compiling /transport/pre-weighment/token ...
+ ✓ Compiled /transport/pre-weighment/token in 1061ms (1468 modules)
+ ✓ Compiled /api/settings/invoice-template in 347ms (788 modules)
+ ✓ Compiled (790 modules)
+ GET /api/settings/invoice-template?type=TOKEN 200 in 1423ms
+ GET /api/settings/invoice-template?type=TOKEN 200 in 1421ms
+ GET /api/transport/pre-weighment/print-data?id=29 200 in 2292ms
+ GET /api/transport/pre-weighment/print-data?id=29 200 in 2298ms
+ ✓ Compiled /api/transport/gate-entry in 453ms (763 modules)
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 1418ms
+ ○ Compiling /api/transport/gate-entry/[id]/hover-detail ...
+ ✓ Compiled /api/transport/gate-entry/[id]/hover-detail in 710ms (765 modules)
+ GET /api/transport/gate-entry/49/hover-detail 200 in 1524ms
+ GET /api/transport/gate-entry/49/hover-detail 200 in 1561ms
+ GET /api/transport/gate-entry/50/hover-detail 200 in 1670ms
+ GET /api/transport/gate-entry/73/hover-detail 200 in 1239ms
+ GET /api/transport/gate-entry/50/hover-detail 200 in 1722ms
+ GET /api/transport/gate-entry/73/hover-detail 200 in 1313ms
+ GET /api/transport/gate-entry/75/hover-detail 200 in 519ms
+ ✓ Compiled /warehouse/transfer/load-dispatch/new/direct in 342ms (781 modules)
+ GET /api/transport/gate-entry/75/hover-detail 200 in 623ms
+ ✓ Compiled /api/settings/dispatch-config in 419ms (784 modules)
+ ✓ Compiled (792 modules)
+ GET /api/system/scope 200 in 1625ms
+ GET /api/settings/dispatch-config 200 in 1743ms
+ GET /api/system/areas?inventoryStorageType=Finished%20Goods%20Inventory 200 in 1826ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1827ms
+ GET /api/transport/gate-entry/75 200 in 1870ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 2010ms
+ GET /api/system/areas?inventoryStorageType=Finished%20Goods%20Inventory 200 in 381ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 339ms
+ GET /api/system/scope 200 in 291ms
+ GET /api/settings/dispatch-config 200 in 320ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 419ms
+ GET /api/transport/gate-entry/75 200 in 392ms
+ GET /api/transport/gate-entry/75 200 in 476ms
+ GET /api/transport/pre-weighment?gateEntryId=75 200 in 223ms
+ GET /api/transport/gate-entry/75 200 in 368ms
+ ✓ Compiled /api/pos/products in 330ms (795 modules)
+ GET /api/transport/pre-weighment?gateEntryId=75 200 in 1253ms
+ GET /api/pos/products?q=PRD001 200 in 1376ms
+ GET /api/pos/products?q=PRD001 200 in 468ms
+ ✓ Compiled /api/settings/accounting-config in 343ms (798 modules)
+ GET /api/settings/accounting-config 200 in 869ms
+ GET /api/settings/accounting-config 200 in 886ms
+ ✓ Compiled in 2.3s (1263 modules)
+ ✓ Compiled /api/settings/dispatch-config in 1619ms (1263 modules)
+ ✓ Compiled (1471 modules)
+ GET /api/system/scope 200 in 2299ms
+ GET /api/settings/dispatch-config 200 in 2438ms
+ GET /api/settings/purchase 200 in 2497ms
+ GET /api/system/areas?inventoryStorageType=Finished%20Goods%20Inventory 200 in 2636ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 2701ms
+ ✓ Compiled /api/transport/gate-entry/[id] in 377ms (776 modules)
+ GET /api/transport/masters/vehicle?status=Active 200 in 2803ms
+ GET /api/settings/purchase 200 in 1049ms
+ GET /api/system/scope 200 in 815ms
+ GET /api/transport/gate-entry/75 200 in 1418ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1071ms
+ GET /api/system/areas?inventoryStorageType=Finished%20Goods%20Inventory 200 in 1293ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1092ms
+ GET /api/settings/dispatch-config 200 in 393ms
+ GET /api/transport/gate-entry/75 200 in 448ms
+ GET /api/transport/gate-entry/75 200 in 479ms
+ ○ Compiling /api/transport/pre-weighment ...
+ ✓ Compiled /api/transport/pre-weighment in 517ms (778 modules)
+ GET /api/transport/gate-entry/75 200 in 738ms
+ GET /api/transport/pre-weighment?gateEntryId=75 200 in 1066ms
+ GET /api/transport/pre-weighment?gateEntryId=75 200 in 490ms
+ ○ Compiling /api/pos/products ...
+ ✓ Compiled /api/pos/products in 1832ms (1478 modules)
+ GET /api/pos/products?q=PRD001 200 in 2695ms
+ GET /api/pos/products?q=PRD001 200 in 2665ms
+ ✓ Compiled /api/settings/accounting-config in 342ms (784 modules)
+ GET /api/settings/accounting-config 200 in 959ms
+ GET /api/settings/accounting-config 200 in 962ms
+ ✓ Compiled in 2.6s (1481 modules)
+ GET /warehouse/transfer/load-dispatch/new/direct 200 in 453ms
+ ✓ Compiled in 1900ms (1263 modules)
+ ○ Compiling /settings/purchase ...
+ ✓ Compiled /settings/purchase in 1036ms (582 modules)
+ GET /settings/purchase 200 in 1651ms
+ GET /transport/pre-weighment/new 200 in 408ms
+ GET /warehouse/transfer/load-dispatch/new/direct 200 in 372ms
+ GET /warehouse/transfer/load-dispatch/new/direct?gateEntryId=75 200 in 313ms
+ ✓ Compiled /api/settings/document-fields in 454ms (697 modules)
+ ✓ Compiled (703 modules)
+ GET /api/website/config 200 in 1564ms
+ GET /api/website/config 200 in 1633ms
+ ○ Compiling /api/auth/me ...
+ GET /api/settings/theme 200 in 2134ms
+ ✓ Compiled /api/auth/me in 615ms (705 modules)
+ GET /api/settings/document-fields 200 in 2267ms
+ GET /api/settings/general 200 in 2306ms
+ GET /api/settings/theme 200 in 2345ms
+ ✓ Compiled in 0ms (708 modules)
+ ✓ Compiled in 1ms (708 modules)
+ ✓ Compiled in 1ms (708 modules)
+ GET /api/system/scope 200 in 2547ms
+ GET /api/system/scope 200 in 1702ms
+ GET /api/settings/general 200 in 2377ms
+ ✓ Compiled /api/settings/purchase in 415ms (737 modules)
+ GET /api/settings/document-fields 200 in 2299ms
+ GET /api/auth/me 200 in 3017ms
+ GET /api/auth/me 200 in 2268ms
+ ✓ Compiled /api/transport/masters/vehicle in 1ms (740 modules)
+ ✓ Compiled in 1ms (827 modules)
+ ✓ Compiled in 0ms (827 modules)
+ GET /icon.svg?7f33ccf9ef44f536 200 in 1692ms
+ ✓ Compiled /api/settings/dispatch-config in 1ms (827 modules)
+ ✓ Compiled (830 modules)
+ GET /api/system/scope 200 in 1926ms
+ GET /api/settings/purchase 200 in 2551ms
+ ✓ Compiled /api/transport/gate-entry/[id] in 294ms (832 modules)
+ GET /api/settings/dispatch-config 200 in 1130ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 2318ms
+ GET /api/system/areas?inventoryStorageType=Finished%20Goods%20Inventory 200 in 2414ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 2339ms
+ ✓ Compiled in 0ms (832 modules)
+ ✓ Compiled in 1ms (832 modules)
+ ✓ Compiled in 0ms (832 modules)
+ GET /api/system/scope 200 in 1031ms
+ GET /api/settings/purchase 200 in 1525ms
+ GET /api/transport/gate-entry/75 200 in 1725ms
+ ✓ Compiled /api/company-setup in 190ms (836 modules)
+ GET /api/settings/dispatch-config 200 in 533ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1732ms
+ GET /api/system/areas?inventoryStorageType=Finished%20Goods%20Inventory 200 in 1775ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1850ms
+ GET /api/transport/gate-entry/75 200 in 673ms
+ GET /api/transport/gate-entry/75 200 in 710ms
+ GET /api/transport/gate-entry/75 200 in 607ms
+ GET /api/company-setup 200 in 1235ms
+ GET /api/company-setup 200 in 1030ms
+ ✓ Compiled /api/transport/pre-weighment in 380ms (838 modules)
+ GET /api/transport/pre-weighment?gateEntryId=75 200 in 1008ms
+ GET /api/transport/pre-weighment?gateEntryId=75 200 in 909ms
+ ✓ Compiled /api/pos/products in 246ms (841 modules)
+ GET /api/pos/products?q=PRD001 200 in 975ms
+ GET /api/pos/products?q=PRD001 200 in 989ms
+ ✓ Compiled /api/settings/accounting-config in 257ms (844 modules)
+ GET /api/settings/accounting-config 200 in 823ms
+ GET /api/settings/accounting-config 200 in 826ms
+ ✓ Compiled in 1292ms (1525 modules)
+ GET /warehouse/transfer/load-dispatch/new/direct?gateEntryId=75 200 in 322ms
+ GET /api/website/config 200 in 455ms
+ GET /api/website/config 200 in 545ms
+ GET /api/system/scope 200 in 537ms
+ GET /api/settings/theme 200 in 1103ms
+ GET /api/settings/document-fields 200 in 1098ms
+ GET /api/settings/theme 200 in 1132ms
+ GET /api/settings/general 200 in 1143ms
+ GET /icon.svg?7f33ccf9ef44f536 200 in 51ms
+ GET /api/settings/general 200 in 270ms
+ GET /api/settings/document-fields 200 in 256ms
+ GET /api/system/scope 200 in 232ms
+ GET /api/auth/me 200 in 934ms
+ GET /api/auth/me 200 in 385ms
+ GET /api/settings/purchase 200 in 403ms
+ GET /api/system/areas?inventoryStorageType=Finished%20Goods%20Inventory 200 in 545ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 564ms
+ GET /api/system/scope 200 in 524ms
+ GET /api/settings/dispatch-config 200 in 765ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1132ms
+ GET /api/settings/purchase 200 in 839ms
+ GET /api/transport/gate-entry/75 200 in 1220ms
+ GET /api/system/areas?inventoryStorageType=Finished%20Goods%20Inventory 200 in 966ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 933ms
+ GET /api/system/scope 200 in 503ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 833ms
+ GET /api/settings/dispatch-config 200 in 497ms
+ GET /api/transport/gate-entry/75 200 in 631ms
+ GET /api/transport/gate-entry/75 200 in 695ms
+ GET /api/company-setup 200 in 1048ms
+ GET /api/transport/gate-entry/75 200 in 512ms
+ GET /api/company-setup 200 in 1048ms
+ GET /api/transport/pre-weighment?gateEntryId=75 200 in 299ms
+ GET /api/transport/pre-weighment?gateEntryId=75 200 in 255ms
+ GET /api/pos/products?q=PRD001 200 in 370ms
+ GET /api/pos/products?q=PRD001 200 in 363ms
+ GET /api/settings/accounting-config 200 in 322ms
+ GET /api/settings/accounting-config 200 in 325ms
+ ○ Compiling /api/auth/logout ...
+ ✓ Compiled /api/auth/logout in 758ms (602 modules)
+ POST /api/auth/logout 200 in 4128ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 992ms (675 modules)
+ ✓ Compiled /api/website/config in 313ms (677 modules)
+ GET /api/website/config 200 in 698ms
+ GET /api/website/config 200 in 718ms
+ ○ Compiling /platform ...
+ ✓ Compiled /platform in 1175ms (696 modules)
+ GET /platform 200 in 1622ms
+ ✓ Compiled /api/platform/auth/me in 491ms (778 modules)
+ ✓ Compiled (782 modules)
+ GET /api/settings/theme 401 in 963ms
+ GET /api/settings/theme 401 in 991ms
+ GET /api/website/config 200 in 1236ms
+ GET /api/website/config 200 in 1208ms
+ GET /api/platform/auth/me 200 in 1274ms
+ GET /api/platform/auth/me 200 in 1273ms
+ ✓ Compiled /api/platform/[section] in 325ms (866 modules)
+ GET /api/platform/dashboard 200 in 1605ms
+ GET /api/platform/dashboard 200 in 1607ms
+ ✓ Compiled /api/platform/website in 422ms (860 modules)
+ GET /api/platform/website 200 in 1021ms
+ GET /api/platform/website 200 in 1025ms
+ ✓ Compiled /api/platform/website/upload in 386ms (863 modules)
+ POST /api/platform/website/upload 201 in 765ms
+ POST /api/platform/website 200 in 819ms
+ GET /login 200 in 447ms
+ GET /api/settings/theme 401 in 207ms
+ GET /api/settings/theme 401 in 364ms
+ GET /api/website/config 200 in 697ms
+ GET /api/website/config 200 in 695ms
+ GET /api/website/config 200 in 673ms
+ GET /api/website/config 200 in 682ms
+ ○ Compiling /icon.svg ...
+ ✓ Compiled /icon.svg in 951ms (892 modules)
+ GET /icon.svg?7f33ccf9ef44f536 200 in 1242ms

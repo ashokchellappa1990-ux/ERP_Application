@@ -3,12 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Scale, ArrowLeft, Truck, Users, Save, Loader2, RadioTower, Plus, X, CheckCircle2, Printer } from "lucide-react";
+import { Scale, ArrowLeft, Truck, Users, Save, Loader2, Plus, X, CheckCircle2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { AppLoader } from "@/components/ui/AppLoader";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
+import { FetchWeightButton } from "@/components/shared/FetchWeightButton";
+import { WeighbridgeReadout } from "@/components/shared/WeighbridgeReadout";
+import { useWeighbridge } from "@/lib/hooks/useWeighbridge";
 
 interface GateRow {
   id: number; gateEntryNo: string; vehicleId: number; vehicleNo: string; status: string;
@@ -54,6 +57,15 @@ export function PreLoadingWeighmentEditor() {
   const [operator, setOperator] = useState("");
   const [weighbridgeId, setWeighbridgeId] = useState<number | "">("");
   const [remarks, setRemarks] = useState("");
+  const [enableWeighbridgeFetch, setEnableWeighbridgeFetch] = useState(false);
+  const wb2 = useWeighbridge(9600, enableWeighbridgeFetch);
+
+  useEffect(() => {
+    (async () => {
+      const j = await fetch("/api/settings/purchase", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+      if (j.ok && j.config) setEnableWeighbridgeFetch(!!j.config.flags?.enableWeighbridgeFetch);
+    })();
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -108,13 +120,6 @@ export function PreLoadingWeighmentEditor() {
     custTimer.current = setTimeout(() => searchCustomers(v), 250);
   };
   const pickCustomer = (hit: CustomerHit) => { setCustomerName(hit.name); setCustomerQuery(hit.name); setCustomerHits(null); };
-
-  function fetchFromWeighbridge() {
-    if (!weighbridgeId) { toast.error("Select a weighbridge first."); return; }
-    // No hardware/serial integration is wired up yet — this button is a
-    // placeholder for a future weighbridge feed. Never fabricate a reading.
-    toast.warning("This weighbridge isn't connected yet — enter the reading manually for now.");
-  }
 
   async function save() {
     if (!gateEntryId) { toast.error("Select a vehicle."); return; }
@@ -225,14 +230,14 @@ export function PreLoadingWeighmentEditor() {
             </div>
           </SectionCard>
 
-          <SectionCard icon={Scale} title="Weighment Details" allowOverflow>
+          <SectionCard icon={Scale} title="Weighment Details" allowOverflow action={enableWeighbridgeFetch ? <WeighbridgeReadout state={wb2.state} liveWeight={wb2.liveWeight} /> : undefined}>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <Fld label="Weighbridge"><select value={weighbridgeId} onChange={(e) => setWeighbridgeId(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">—</option>{weighbridges.map((w) => <option key={w.id} value={w.id}>{w.label}</option>)}</select></Fld>
               <div>
                 <label className="mb-1 block text-2xs font-semibold text-muted">Tare Weight (Empty Vehicle, In Kgs) *</label>
                 <div className="flex gap-1.5">
                   <input type="number" min={0} step="0.001" value={tareWeight} onChange={(e) => setTareWeight(e.target.value)} className={inp} />
-                  <button type="button" title="Fetch from weighbridge" onClick={fetchFromWeighbridge} className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-border-strong bg-surface px-3 text-2xs font-semibold text-muted hover:border-primary hover:text-primary"><RadioTower className="h-3.5 w-3.5" /> Fetch</button>
+                  {enableWeighbridgeFetch && <FetchWeightButton connected={wb2.state === "connected"} liveWeight={wb2.liveWeight} onFetch={(kg) => setTareWeight(String(kg))} />}
                 </div>
               </div>
               <Fld label="Operator"><input value={operator} onChange={(e) => setOperator(e.target.value)} className={inp} /></Fld>

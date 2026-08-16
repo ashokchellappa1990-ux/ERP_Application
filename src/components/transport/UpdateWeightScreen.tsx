@@ -9,6 +9,9 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import { AppLoader } from "@/components/ui/AppLoader";
 import { useToast } from "@/components/ui/Toast";
 import { Field } from "@/components/transport/VehicleGateEntryScreen";
+import { FetchWeightButton } from "@/components/shared/FetchWeightButton";
+import { WeighbridgeReadout } from "@/components/shared/WeighbridgeReadout";
+import { useWeighbridge } from "@/lib/hooks/useWeighbridge";
 
 interface ProductHit { id: number; name: string; sku?: string; uom?: string }
 interface Data {
@@ -45,6 +48,15 @@ export function UpdateWeightScreen() {
   const [areaId, setAreaId] = useState<number | "">("");
   const [areas, setAreas] = useState<{ id: number; name: string; code: string }[]>([]);
   const [weightSlipRefNo, setWeightSlipRefNo] = useState("");
+  const [enableWeighbridgeFetch, setEnableWeighbridgeFetch] = useState(false);
+  const wb = useWeighbridge(9600, enableWeighbridgeFetch);
+
+  useEffect(() => {
+    (async () => {
+      const j = await fetch("/api/settings/purchase", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+      if (j.ok && j.config) setEnableWeighbridgeFetch(!!j.config.flags?.enableWeighbridgeFetch);
+    })();
+  }, []);
 
   useEffect(() => {
     fetch(`/api/transport/gate-entry/${id}/weighment`, { cache: "no-store" })
@@ -167,9 +179,14 @@ export function UpdateWeightScreen() {
         )}
       </SectionCard>
 
-      <SectionCard icon={Scale} title="Weighment Details">
+      <SectionCard icon={Scale} title="Weighment Details" action={enableWeighbridgeFetch ? <WeighbridgeReadout state={wb.state} liveWeight={wb.liveWeight} /> : undefined}>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label="Gross Weight (Kg)"><input type="number" min={0} value={grossWeight} onChange={(e) => setGrossWeight(e.target.value)} placeholder="0" className={inp} /></Field>
+          <Field label="Gross Weight (Kg)">
+            <div className="flex items-center gap-2">
+              <input type="number" min={0} value={grossWeight} onChange={(e) => setGrossWeight(e.target.value)} placeholder="0" className={inp} />
+              {enableWeighbridgeFetch && <FetchWeightButton connected={wb.state === "connected"} liveWeight={wb.liveWeight} onFetch={(kg) => setGrossWeight(String(kg))} />}
+            </div>
+          </Field>
           <Field label="Net Weight as per Slip (Kg)"><input type="number" min={0} value={netWeightSlip} onChange={(e) => setNetWeightSlip(e.target.value)} placeholder="Optional" className={inp} /></Field>
           <Field label="Weight Slip Ref Number"><input value={weightSlipRefNo} onChange={(e) => setWeightSlipRefNo(e.target.value)} placeholder="Optional" className={inp} /></Field>
           <Field label="Inventory Movement Area">
