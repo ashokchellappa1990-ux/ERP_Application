@@ -36,11 +36,21 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 
   const sw = scopeWhere(await getActiveScope(user), { branch: true });
-  const entry = await prisma.vehicleGateEntry.findFirst({ where: { ...sw, id: Number(params.id), deletedAt: null }, select: { id: true, gateEntryNo: true, status: true, businessId: true, branchId: true } });
+  const entry = await prisma.vehicleGateEntry.findFirst({ where: { ...sw, id: Number(params.id), deletedAt: null }, select: { id: true, gateEntryNo: true, status: true, entryType: true, businessId: true, branchId: true } });
   if (!entry) return NextResponse.json({ ok: false, message: "Gate entry not found." }, { status: 404 });
 
   const to = NEXT[action]?.[entry.status];
   if (!to) return NextResponse.json({ ok: false, message: `Cannot ${action.replace("-", " ")} a gate entry that is ${entry.status}.` }, { status: 422 });
+
+  // A Dispatch vehicle can't move inside without its Pre-Loading (tare) weight
+  // on record — that weighment is what normally moves it inside as a side
+  // effect (see /api/transport/pre-weighment); this manual action is a
+  // fallback for entries that skipped straight to it, so it needs the same
+  // precondition, not an unconditional bypass.
+  if (action === "move-inside" && entry.entryType === "Dispatch") {
+    const weighed = await prisma.preLoadingWeighment.findFirst({ where: { tenantId: user.tenantId, gateEntryId: entry.id }, select: { id: true } });
+    if (!weighed) return NextResponse.json({ ok: false, message: "Complete the Pre-Loading Weighment (Update Weight) before moving this vehicle inside." }, { status: 422 });
+  }
 
   await prisma.vehicleGateEntry.update({ where: { id: entry.id }, data: { status: to, updatedBy: user.id } });
   await writeAudit(prisma, user, { action: `vehicle_gate_entry.${action}`, entity: "VehicleGateEntry", entityId: entry.id, summary: `Gate entry ${entry.gateEntryNo} ${entry.status} → ${to}`, meta: { remarks }, businessId: entry.businessId ?? null, branchId: entry.branchId ?? null, ip: requestMeta(req).ip });

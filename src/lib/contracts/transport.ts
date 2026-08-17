@@ -26,6 +26,14 @@ export type WeighmentApprovalStatus = "NotRequired" | "Pending" | "Approved";
  * (Gate Entry, Load & Dispatch) once a Vehicle Number is picked. */
 export const VEHICLE_TYPE_OPTS = ["Truck 10W", "Truck 12W", "Truck 16W", "Tipper 407", "Tipper 3U", "Tractor", "Tata ACE", "Ashok Leyland Dost"] as const;
 
+/** Vehicle ownership — "Own"/"Hired"/"Transporter"/"Supplier" were already
+ * live on vehicle rows; "Contract" and "Customer" are additive, not a
+ * replacement, so existing data never needs remapping. */
+export const VEHICLE_OWNER_TYPE_OPTS = ["Own", "Hired", "Transporter", "Supplier", "Contract", "Customer"] as const;
+
+export const VEHICLE_BODY_TYPE_OPTS = ["Open", "Closed/Container", "Flatbed", "Tipper", "Tanker", "Trailer", "Other"] as const;
+export const VEHICLE_FUEL_TYPE_OPTS = ["Diesel", "Petrol", "CNG", "Electric", "LNG", "Other"] as const;
+
 /* ------------------------------------------------------------- masters */
 const masterBase = {
   status: z.enum(["Active", "Inactive"]).default("Active"),
@@ -38,7 +46,39 @@ export const vehicleInput = z.object({
   capacity: z.coerce.number().min(0).default(0),
   capacityUnit: z.string().trim().max(20).optional().nullable(),
   transportCompanyId: z.coerce.number().int().positive().optional().nullable(),
-  ownerType: z.enum(["Own", "Hired", "Transporter", "Supplier"]).default("Own"),
+  ownerType: z.enum(VEHICLE_OWNER_TYPE_OPTS).default("Own"),
+  // Basic Information
+  vehicleCategory: z.string().trim().max(60).optional().nullable(),
+  make: z.string().trim().max(60).optional().nullable(),
+  model: z.string().trim().max(60).optional().nullable(),
+  manufacturingYear: z.coerce.number().int().min(1950).max(2100).optional().nullable(),
+  registrationDate: z.string().trim().max(20).optional().nullable(),
+  // Capacity & Technical Details
+  numberOfAxles: z.coerce.number().int().min(0).optional().nullable(),
+  bodyType: z.string().trim().max(60).optional().nullable(),
+  fuelType: z.string().trim().max(30).optional().nullable(),
+  engineNo: z.string().trim().max(60).optional().nullable(),
+  chassisNo: z.string().trim().max(60).optional().nullable(),
+  colour: z.string().trim().max(30).optional().nullable(),
+  // Transporter Relationship
+  contractRef: z.string().trim().max(60).optional().nullable(),
+  transporterEffectiveFrom: z.string().trim().max(20).optional().nullable(),
+  transporterEffectiveTo: z.string().trim().max(20).optional().nullable(),
+  // Tracking
+  rfidTagNo: z.string().trim().max(60).optional().nullable(),
+  gpsDeviceId: z.string().trim().max(60).optional().nullable(),
+  fastagId: z.string().trim().max(60).optional().nullable(),
+  // Compliance — document number + valid-upto per item
+  registrationCertNo: z.string().trim().max(60).optional().nullable(),
+  registrationValidUpto: z.string().trim().max(20).optional().nullable(),
+  insuranceNo: z.string().trim().max(60).optional().nullable(),
+  insuranceValidUpto: z.string().trim().max(20).optional().nullable(),
+  fitnessNo: z.string().trim().max(60).optional().nullable(),
+  fitnessValidUpto: z.string().trim().max(20).optional().nullable(),
+  pollutionNo: z.string().trim().max(60).optional().nullable(),
+  pollutionValidUpto: z.string().trim().max(20).optional().nullable(),
+  permitNo: z.string().trim().max(60).optional().nullable(),
+  permitValidUpto: z.string().trim().max(20).optional().nullable(),
   ...masterBase,
 });
 export type VehicleInput = z.infer<typeof vehicleInput>;

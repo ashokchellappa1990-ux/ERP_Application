@@ -1119,3 +1119,12 @@
  ○ Compiling /icon.svg ...
  ✓ Compiled /icon.svg in 951ms (892 modules)
  GET /icon.svg?7f33ccf9ef44f536 200 in 1242ms
+ ○ Compiling / ...
+ ✓ Compiled / in 634ms (778 modules)
+ GET / 200 in 1461ms
+ ✓ Compiled /api/website/config in 154ms (853 modules)
+ ✓ Compiled (855 modules)
+ GET /api/settings/theme 401 in 509ms
+ GET /api/settings/theme 401 in 521ms
+ GET /api/website/config 200 in 685ms
+ GET /api/website/config 200 in 672ms

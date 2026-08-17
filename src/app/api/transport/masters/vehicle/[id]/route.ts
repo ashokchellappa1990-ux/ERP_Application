@@ -8,15 +8,33 @@ import { vehicleInput } from "@/lib/contracts/transport";
 
 const PERM = "masters.transport";
 
-function toRow(r: {
-  id: number; vehicleNo: string; vehicleType: string | null; capacity: Prisma.Decimal;
-  capacityUnit: string | null; transportCompanyId: number | null; ownerType: string;
-  status: string; remarks: string | null;
-}) {
+/** "YYYY-MM-DD" (from a date input) <-> DateTime column. */
+function toDate(s: string | null | undefined): Date | null {
+  if (!s || !s.trim()) return null;
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+function toDateStr(d: Date | null | undefined): string | null {
+  return d ? d.toISOString().slice(0, 10) : null;
+}
+
+type VehicleRow = Awaited<ReturnType<typeof prisma.vehicleMaster.findFirstOrThrow>>;
+
+function toRow(r: VehicleRow) {
   return {
     id: r.id, vehicleNo: r.vehicleNo, vehicleType: r.vehicleType, capacity: Number(r.capacity),
     capacityUnit: r.capacityUnit, transportCompanyId: r.transportCompanyId, ownerType: r.ownerType,
     status: r.status, remarks: r.remarks,
+    vehicleCategory: r.vehicleCategory, make: r.make, model: r.model, manufacturingYear: r.manufacturingYear,
+    registrationDate: toDateStr(r.registrationDate),
+    numberOfAxles: r.numberOfAxles, bodyType: r.bodyType, fuelType: r.fuelType, engineNo: r.engineNo, chassisNo: r.chassisNo, colour: r.colour,
+    contractRef: r.contractRef, transporterEffectiveFrom: toDateStr(r.transporterEffectiveFrom), transporterEffectiveTo: toDateStr(r.transporterEffectiveTo),
+    rfidTagNo: r.rfidTagNo, gpsDeviceId: r.gpsDeviceId, fastagId: r.fastagId,
+    registrationCertNo: r.registrationCertNo, registrationValidUpto: toDateStr(r.registrationValidUpto),
+    insuranceNo: r.insuranceNo, insuranceValidUpto: toDateStr(r.insuranceValidUpto),
+    fitnessNo: r.fitnessNo, fitnessValidUpto: toDateStr(r.fitnessValidUpto),
+    pollutionNo: r.pollutionNo, pollutionValidUpto: toDateStr(r.pollutionValidUpto),
+    permitNo: r.permitNo, permitValidUpto: toDateStr(r.permitValidUpto),
   };
 }
 
@@ -54,6 +72,17 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       data: {
         vehicleNo: b.vehicleNo, vehicleType: b.vehicleType ?? null, capacity: b.capacity, capacityUnit: b.capacityUnit ?? null,
         transportCompanyId: b.transportCompanyId ?? null, ownerType: b.ownerType, status: b.status, remarks: b.remarks ?? null,
+        vehicleCategory: b.vehicleCategory ?? null, make: b.make ?? null, model: b.model ?? null, manufacturingYear: b.manufacturingYear ?? null,
+        registrationDate: toDate(b.registrationDate),
+        numberOfAxles: b.numberOfAxles ?? null, bodyType: b.bodyType ?? null, fuelType: b.fuelType ?? null,
+        engineNo: b.engineNo ?? null, chassisNo: b.chassisNo ?? null, colour: b.colour ?? null,
+        contractRef: b.contractRef ?? null, transporterEffectiveFrom: toDate(b.transporterEffectiveFrom), transporterEffectiveTo: toDate(b.transporterEffectiveTo),
+        rfidTagNo: b.rfidTagNo ?? null, gpsDeviceId: b.gpsDeviceId ?? null, fastagId: b.fastagId ?? null,
+        registrationCertNo: b.registrationCertNo ?? null, registrationValidUpto: toDate(b.registrationValidUpto),
+        insuranceNo: b.insuranceNo ?? null, insuranceValidUpto: toDate(b.insuranceValidUpto),
+        fitnessNo: b.fitnessNo ?? null, fitnessValidUpto: toDate(b.fitnessValidUpto),
+        pollutionNo: b.pollutionNo ?? null, pollutionValidUpto: toDate(b.pollutionValidUpto),
+        permitNo: b.permitNo ?? null, permitValidUpto: toDate(b.permitValidUpto),
         updatedBy: user.id,
       },
     });

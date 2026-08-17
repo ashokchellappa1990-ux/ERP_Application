@@ -8637,9 +8637,48 @@ model VehicleMaster {
   capacity     Decimal @default(0) @db.Decimal(18, 3)
   capacityUnit String? @db.VarChar(20)
   transportCompanyId Int?
-  ownerType String @default("Own") @db.VarChar(16) // Own | Hired | Transporter | Supplier
+  ownerType String @default("Own") @db.VarChar(16) // Own | Hired | Transporter | Supplier | Contract | Customer
   status    String @default("Active") @db.VarChar(16)
   remarks   String? @db.Text
+
+  // Basic Information — beyond vehicleNo/vehicleType/status above.
+  vehicleCategory    String?   @db.VarChar(60)
+  make               String?   @db.VarChar(60)
+  model              String?   @db.VarChar(60)
+  manufacturingYear  Int?
+  registrationDate   DateTime?
+
+  // Capacity & Technical Details — beyond capacity/capacityUnit above.
+  numberOfAxles Int?
+  bodyType      String? @db.VarChar(60)
+  fuelType      String? @db.VarChar(30)
+  engineNo      String? @db.VarChar(60)
+  chassisNo     String? @db.VarChar(60)
+  colour        String? @db.VarChar(30)
+
+  // Transporter Relationship — dated contract context for the existing
+  // transportCompanyId pointer above (which stays the live/current link).
+  contractRef             String?   @db.VarChar(60)
+  transporterEffectiveFrom DateTime?
+  transporterEffectiveTo   DateTime?
+
+  // Tracking hardware tags.
+  rfidTagNo   String? @db.VarChar(60)
+  gpsDeviceId String? @db.VarChar(60)
+  fastagId    String? @db.VarChar(60)
+
+  // Compliance — document number + valid-upto per statutory item.
+  registrationCertNo    String?   @db.VarChar(60)
+  registrationValidUpto DateTime?
+  insuranceNo           String?   @db.VarChar(60)
+  insuranceValidUpto    DateTime?
+  fitnessNo             String?   @db.VarChar(60)
+  fitnessValidUpto      DateTime?
+  pollutionNo           String?   @db.VarChar(60)
+  pollutionValidUpto    DateTime?
+  permitNo              String?   @db.VarChar(60)
+  permitValidUpto       DateTime?
+
   createdBy Int?
   updatedBy Int?
   createdAt DateTime @default(now())
