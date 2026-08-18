@@ -45,6 +45,9 @@ function toJson(row: Record<string, unknown>) {
   for (const k of STR) out[k] = row[k] ?? "";
   for (const k of IMAGE_FIELDS) out[k] = row[k] ?? "";
   for (const k of FLAGS) out[k] = !!row[k];
+  out.tokenCodeType = row.tokenCodeType === "barcode" ? "barcode" : "qrcode";
+  out.tokenBrandFontSize = ["large", "xlarge"].includes(String(row.tokenBrandFontSize)) ? row.tokenBrandFontSize : "normal";
+  out.tokenBoldValues = !!row.tokenBoldValues;
   return out;
 }
 
@@ -72,6 +75,9 @@ export async function PUT(req: Request) {
   const data: Prisma.InvoiceTemplateUncheckedUpdateInput = {};
   for (const k of STR) if (b[k] != null) data[k] = String(b[k]).slice(0, k === "footerNote" ? 300 : k === "contactNumber" ? 40 : 200);
   if (b.paperSize && !["58mm", "80mm", "A5", "A4"].includes(String(b.paperSize))) delete data.paperSize;
+  if (b.tokenCodeType != null) data.tokenCodeType = String(b.tokenCodeType) === "barcode" ? "barcode" : "qrcode";
+  if (b.tokenBrandFontSize != null) data.tokenBrandFontSize = ["large", "xlarge"].includes(String(b.tokenBrandFontSize)) ? String(b.tokenBrandFontSize) : "normal";
+  if (b.tokenBoldValues != null) data.tokenBoldValues = !!b.tokenBoldValues;
   // Cap at 2MB of base64 text (~1.5MB image) — generous for a QR/signature
   // image while keeping a runaway upload from bloating this row indefinitely.
   for (const k of IMAGE_FIELDS) if (b[k] != null) data[k] = String(b[k]).slice(0, 2_000_000);

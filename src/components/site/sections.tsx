@@ -112,12 +112,12 @@ function CtaLink({ cta, big }: { cta: CtaButton; big?: boolean }) {
 const ORBIT_NODES = [
   { icon: "ShoppingCart", label: "Sales", angle: -90 },
   { icon: "Truck", label: "Purchase", angle: -50 },
-  { icon: "Users", label: "CRM", angle: -10 },
+  { icon: "CarFront", label: "Vehicle Management", angle: -10 },
   { icon: "Brain", label: "AI & Analytics", angle: 30 },
-  { icon: "Store", label: "E-Commerce", angle: 70 },
-  { icon: "Smartphone", label: "Customer App", angle: 110 },
+  { icon: "Fuel", label: "Fuel Management", angle: 70 },
+  { icon: "Ticket", label: "Transit Pass Management", angle: 110 },
   { icon: "Boxes", label: "Inventory", angle: 150 },
-  { icon: "UserCog", label: "HR & Payroll", angle: 190 },
+  { icon: "Scale", label: "Weighbridge Integration", angle: 190 },
   { icon: "ReceiptText", label: "Finance & GST", angle: 230 },
 ];
 const HERO_CARDS = [

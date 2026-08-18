@@ -1404,6 +1404,15 @@ model InvoiceTemplate {
   qrCodeImage    String? @db.LongText
   signatureImage String? @db.LongText
 
+  // TOKEN only — Pre Load Weight Slip's scannable code: a real QR (encoding a
+  // digital link to the gate entry, for a future mobile loading-confirmation
+  // flow) or the existing pseudo-barcode graphic.
+  tokenCodeType String? @db.VarChar(10) // qrcode | barcode
+  // TOKEN only — business name font size (normal|large|xlarge) and whether
+  // row values print bold.
+  tokenBrandFontSize String?  @db.VarChar(10)
+  tokenBoldValues    Boolean?
+
   updatedAt DateTime @updatedAt
 
   @@unique([tenantId, type])
@@ -9341,6 +9350,27 @@ model LoadingBay {
   @@map("loading_bay")
 }
 
+// Simple name-only roster (no login) for "who is performing this loading" —
+// selected on the public QR-scan loading-confirmation page, see
+// src/app/api/public/gate-entry-loading/[token]/route.ts.
+model LoadingOperator {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  name    String  @db.VarChar(150)
+  status  String  @default("Active") @db.VarChar(16)
+  remarks String? @db.Text
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@index([tenantId, branchId, status])
+  @@map("loading_operators")
+}
+
 model WeighbridgeMaster {
   id         Int    @id @default(autoincrement())
   tenantId   Int
@@ -9569,6 +9599,12 @@ model VehicleGateEntry {
   // goes into, selected at the Update Weight step; prefills the GRN's own areaId.
   areaId           Int?
   grnId            Int?     // the GRN this Raw Material entry spawned, once created
+
+  // Opaque, unguessable link target for the public (no-login) QR-scan Start
+  // Loading / Complete Loading page — generated lazily the first time a Pre
+  // Load Weight Slip is printed, never the gateEntryNo itself (only unique
+  // per-tenant, unsafe as a public cross-tenant lookup key).
+  publicToken String? @unique @db.VarChar(96)
 
   createdBy Int?
   updatedBy Int?

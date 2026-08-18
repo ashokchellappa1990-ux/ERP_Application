@@ -88,7 +88,7 @@ export default function InvoiceTemplatePage() {
   const buildPreviewHtml = () => (type === "WEIGHT_SLIP"
     ? buildWeightSlipHtml(WEIGHT_SLIP_SAMPLE, { title: tpl.title, footerNote: tpl.footerNote })
     : type === "TOKEN"
-    ? buildTokenSlipHtml(TOKEN_SLIP_SAMPLE, { title: tpl.title, footerNote: tpl.footerNote })
+    ? buildTokenSlipHtml(TOKEN_SLIP_SAMPLE, { title: tpl.title, footerNote: tpl.footerNote, tokenCodeType: tpl.tokenCodeType, tokenBrandFontSize: tpl.tokenBrandFontSize, tokenBoldValues: tpl.tokenBoldValues }, typeof window !== "undefined" ? window.location.origin : "")
     : type === "B2B_T3"
     ? buildTaxInvoiceT3Html({ ...TAX_INVOICE_T3_SAMPLE, qrCodeImage: qrCodeImage || null, signatureImage: signatureImage || null, termsNote: tpl.footerNote || TAX_INVOICE_T3_SAMPLE.termsNote }, { title: tpl.title, footerNote: tpl.footerNote })
     : buildTaxInvoiceHtml(TAX_INVOICE_SAMPLE, { title: tpl.title, footerNote: tpl.footerNote }));
@@ -169,6 +169,33 @@ export default function InvoiceTemplatePage() {
                   ? "This is the gate token printed right after a Pre-Loading Weighment is recorded (Token No, product, Ref No, date/in-time, customer, vehicle, Empty weight, payment, delivery) — Load & Net Weight always print blank since they aren't known until the vehicle is loaded and weighed out. Only Title and Footer Note are configurable here; a fixed safety notice always prints below the fields."
                   : "This is the weighbridge slip (Token No, Ref No, In/Out time, vehicle, Empty/Load/Net weight, payment, delivery) printed from a Load & Dispatch record's \"Print Weight Slip\" button. Only Title and Footer Note are configurable here — the rest is filled in per-dispatch automatically."}
               </p>
+            </Section>
+          )}
+          {type === "TOKEN" && (
+            <Section title="Scannable Code">
+              <p className="mb-3 text-2xs text-muted">QR Code prints a real, scannable QR encoding a link back to this gate entry (for a future mobile loading-confirmation flow). Barcode keeps the plain decorative bar graphic used previously.</p>
+              <div className="flex gap-1.5">
+                {(["qrcode", "barcode"] as const).map((v) => (
+                  <button key={v} onClick={() => set("tokenCodeType", v)} className={cn("rounded-md border px-3 py-2 text-2xs font-semibold transition", tpl.tokenCodeType === v ? "border-primary bg-primary-subtle text-primary" : "border-border bg-surface text-muted hover:border-primary/40")}>{v === "qrcode" ? "QR Code" : "Barcode"}</button>
+                ))}
+              </div>
+            </Section>
+          )}
+          {type === "TOKEN" && (
+            <Section title="Token Display">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Business Name Size">
+                  <div className="flex gap-1.5">
+                    {(["normal", "large", "xlarge"] as const).map((v) => (
+                      <button key={v} onClick={() => set("tokenBrandFontSize", v)} className={cn("rounded-md border px-2.5 py-2 text-2xs font-semibold transition", tpl.tokenBrandFontSize === v ? "border-primary bg-primary-subtle text-primary" : "border-border bg-surface text-muted hover:border-primary/40")}>{v === "normal" ? "Normal" : v === "large" ? "Large" : "Extra Large"}</button>
+                    ))}
+                  </div>
+                </Field>
+                <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2.5">
+                  <span><span className="block text-sm font-medium text-foreground">Bold Values</span><span className="block text-2xs text-subtle">Print field values (Token No, Customer, Vehicle, etc.) in bold.</span></span>
+                  <Switch checked={!!tpl.tokenBoldValues} onChange={(v) => set("tokenBoldValues", v)} aria-label="Bold values" />
+                </label>
+              </div>
             </Section>
           )}
           {type === "B2B_T3" && (

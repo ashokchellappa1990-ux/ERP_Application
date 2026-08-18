@@ -21,6 +21,9 @@ interface Row {
   dispatchType: string | null; referenceNo: string | null; customerName: string | null;
   arrivalTime: string | null; securityOfficer: string | null; remarks: string | null;
   status: GateEntryStatus; createdAt: string;
+  // Display-only overlay from the public QR Start/Complete Loading page —
+  // never affects `status` itself or any action button, purely informational.
+  loadingProgress: "started" | "completed" | null;
   // Once a Load & Dispatch has been submitted for this gate entry, ITS OWN
   // status drives the displayed status/action for the row instead of the raw
   // physical gate status — see the Actions/Status cells below.
@@ -320,6 +323,10 @@ export function VehicleGateEntryScreen() {
                   <td className="px-4 py-3 text-center">
                     {r.loadDispatchStatus ? (
                       <Badge tone={DISPATCH_STATUS_TONE[r.loadDispatchStatus] ?? "neutral"}>{DISPATCH_STATUS_LABEL[r.loadDispatchStatus] ?? r.loadDispatchStatus}</Badge>
+                    ) : r.loadingProgress === "completed" ? (
+                      <Badge tone="success">Loading Completed</Badge>
+                    ) : r.loadingProgress === "started" ? (
+                      <Badge tone="warning">Loading</Badge>
                     ) : (
                       <Badge tone={STATUS_TONE[r.status]}>{STATUS_DISPLAY_LABEL[r.status] ?? r.status}</Badge>
                     )}

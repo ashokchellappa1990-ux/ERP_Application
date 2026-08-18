@@ -200,6 +200,10 @@ export function DocumentSettings() {
               <Switch checked={!!dispatchCfg.flags.gateEntryNoIncludeMonthYear} onChange={(v) => setDispatchFlag("gateEntryNoIncludeMonthYear", v)} aria-label="Include month and year in Gate Entry No" />
             </label>
           </div>
+          <label className="mt-4 flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2.5">
+            <span><span className="block text-sm font-medium text-foreground">Auto-load Customer from Vehicle History</span><span className="block text-2xs text-subtle">Picking a Vehicle Number looks up that vehicle&apos;s most recent past gate entry and pre-fills its Customer — still changeable by the user afterward. When off, Customer is picked manually as today.</span></span>
+            <Switch checked={!!dispatchCfg.flags.autoLoadCustomerFromVehicleHistory} onChange={(v) => setDispatchFlag("autoLoadCustomerFromVehicleHistory", v)} aria-label="Auto-load customer from vehicle history" />
+          </label>
         </div>
       )}
       <div className="rounded-2xl border border-border bg-card shadow-sm">

@@ -190,6 +190,19 @@ export async function GET(req: Request) {
     // status/action for that row instead of the raw physical gate status.
     gateEntryIds.length ? prisma.loadDispatch.findMany({ where: { vehicleGateEntryId: { in: gateEntryIds }, deletedAt: null }, orderBy: { id: "desc" }, select: { id: true, vehicleGateEntryId: true, status: true, totalQty: true, saleId: true, dispatchDate: true } }) : Promise.resolve([]),
   ]);
+  // Display-only "Loading" / "Loading Completed" overlay from the public QR
+  // Start/Complete Loading page — deliberately NOT the same thing as
+  // r.status (which still only ever moves via the Dispatch/Complete/Exit
+  // buttons below). Purely informational; never gates any action here.
+  const loadingEvents = gateEntryIds.length
+    ? await prisma.vehicleMovementHistory.findMany({ where: { gateEntryId: { in: gateEntryIds }, eventType: { in: ["LoadingStart", "LoadingEnd"] } }, orderBy: { eventAt: "desc" }, select: { gateEntryId: true, eventType: true } })
+    : [];
+  const loadingProgressMap = new Map<number, "started" | "completed">();
+  for (const e of loadingEvents) {
+    // orderBy eventAt desc — the first event seen per gate is its most recent.
+    if (e.gateEntryId == null || loadingProgressMap.has(e.gateEntryId)) continue;
+    loadingProgressMap.set(e.gateEntryId, e.eventType === "LoadingEnd" ? "completed" : "started");
+  }
   // The GRN a Raw Material entry spawned, once created — its own status/tare/net
   // weight/value/invoice-recorded takes over the Raw Material table's GRN-derived columns.
   const grnIds = Array.from(new Set(rows.map((r) => r.grnId).filter((v): v is number => !!v)));
@@ -248,6 +261,9 @@ export async function GET(req: Request) {
       vehicleType: r.vehicleType, transportMode: r.transportMode,
       arrivalTime: r.arrivalTime ? r.arrivalTime.toISOString() : null,
       securityOfficer: r.securityOfficer, remarks: r.remarks, status: r.status,
+      // Display-only overlay from the public QR Start/Complete Loading page —
+      // see loadingProgressMap comment above; never affects `status` itself.
+      loadingProgress: loadingProgressMap.get(r.id) ?? null,
       loadDispatchId: dispatch?.id ?? null, loadDispatchStatus: dispatch?.status ?? null,
       dispatchDate: dispatch?.dispatchDate ?? null,
       totalQty: dispatch ? Number(dispatch.totalQty) : null,

@@ -122,6 +122,7 @@ export const NAV_SECTIONS: NavSection[] = [
           { label: "Transport Company Master", href: "/masters/transport/transport-company", icon: Truck },
           { label: "Route Master", href: "/masters/transport/route", icon: Route },
           { label: "Loading Bay Master", href: "/masters/transport/loading-bay", icon: Warehouse },
+          { label: "Loading Operator Master", href: "/masters/transport/loading-operator", icon: Users },
           { label: "Weighbridge Master", href: "/masters/transport/weighbridge", icon: Scale },
           { label: "Supplier Product PP Config", href: "/masters/purchase/supplier-product-price", icon: IndianRupee },
         ],

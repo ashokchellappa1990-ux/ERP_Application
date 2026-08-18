@@ -57,6 +57,11 @@ export const DEFAULT_DISPATCH_CONFIG: TransportConfigData = {
     // value they're free to change.
     lockDefaultDispatchType: false,
     lockDefaultReferenceType: false,
+    // When on, picking a Vehicle Number on Vehicle Gate Entry looks up that
+    // vehicle's most recent past gate entry and auto-fills its Customer —
+    // still fully user-editable afterward, never locked. Off by default so
+    // existing behavior is unchanged until an admin turns it on.
+    autoLoadCustomerFromVehicleHistory: false,
     // When off (the default), Vehicle Gate Entry's Item Details captures only
     // the product name — quantity isn't known yet at gate time for bulk
     // material dispatches; it gets derived later from the Post-Loading

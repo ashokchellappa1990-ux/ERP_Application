@@ -158,6 +158,12 @@ export const loadingBayInput = z.object({
 });
 export type LoadingBayInput = z.infer<typeof loadingBayInput>;
 
+export const loadingOperatorInput = z.object({
+  name: z.string().trim().min(1, "Name is required").max(150),
+  ...masterBase,
+});
+export type LoadingOperatorInput = z.infer<typeof loadingOperatorInput>;
+
 export const weighbridgeInput = z.object({
   code: z.string().trim().min(1, "Code is required").max(40),
   name: z.string().trim().min(1, "Name is required").max(150),

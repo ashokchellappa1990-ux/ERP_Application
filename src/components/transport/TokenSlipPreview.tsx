@@ -26,7 +26,10 @@ export function TokenSlipPreview() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [data, setData] = useState<TokenSlipData | null>(null);
-  const [tpl, setTpl] = useState({ title: DEFAULT_RECEIPT.title, footerNote: DEFAULT_RECEIPT.footerNote });
+  const [tpl, setTpl] = useState({
+    title: DEFAULT_RECEIPT.title, footerNote: DEFAULT_RECEIPT.footerNote, tokenCodeType: DEFAULT_RECEIPT.tokenCodeType,
+    tokenBrandFontSize: DEFAULT_RECEIPT.tokenBrandFontSize, tokenBoldValues: DEFAULT_RECEIPT.tokenBoldValues,
+  });
 
   useEffect(() => {
     let active = true;
@@ -42,7 +45,12 @@ export function TokenSlipPreview() {
         if (!active) return;
         if (!dataRes?.ok) { setErrorMsg(dataRes?.message || "Could not load this token."); return; }
         setData(dataRes.tokenSlip);
-        if (tplRes?.ok) setTpl({ title: tplRes.template.title, footerNote: tplRes.template.footerNote });
+        if (tplRes?.ok) setTpl({
+          title: tplRes.template.title, footerNote: tplRes.template.footerNote,
+          tokenCodeType: tplRes.template.tokenCodeType === "barcode" ? "barcode" : "qrcode",
+          tokenBrandFontSize: ["large", "xlarge"].includes(tplRes.template.tokenBrandFontSize) ? tplRes.template.tokenBrandFontSize : "normal",
+          tokenBoldValues: !!tplRes.template.tokenBoldValues,
+        });
       } catch (err) {
         console.error("[TokenSlipPreview] load error", err);
         if (active) setErrorMsg("Network error — could not load this token.");
@@ -66,7 +74,7 @@ export function TokenSlipPreview() {
     window.print();
   }
 
-  const { style: slipStyle, bodyHtml: slipBody } = data ? buildTokenSlipParts(data, tpl) : { style: "", bodyHtml: "" };
+  const { style: slipStyle, bodyHtml: slipBody } = data ? buildTokenSlipParts(data, tpl, window.location.origin) : { style: "", bodyHtml: "" };
 
   return (
     <div className="space-y-4">

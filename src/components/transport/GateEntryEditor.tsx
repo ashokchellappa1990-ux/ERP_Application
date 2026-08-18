@@ -10,7 +10,7 @@ import { AppLoader } from "@/components/ui/AppLoader";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { GATE_ENTRY_DISPATCH_TYPES, VEHICLE_TYPE_OPTS } from "@/lib/contracts/transport";
-import { fieldOn, fieldMust } from "@/lib/settings/docFieldsConfig";
+import { fieldOn, fieldMust, applyDocFieldsConfig } from "@/lib/settings/docFieldsConfig";
 
 const SCREEN = "vehicle_gate_entry";
 const req = (key: string) => (fieldMust(SCREEN, key) ? " *" : "");
@@ -71,6 +71,7 @@ export function GateEntryEditor() {
   // time, only once the vehicle is actually weighed on Load & Dispatch.
   const [itemCaptureMode, setItemCaptureMode] = useState<"None" | "Single" | "Multiple">("Multiple");
   const [captureQtyAtGate, setCaptureQtyAtGate] = useState(false);
+  const [autoLoadCustomerFromVehicleHistory, setAutoLoadCustomerFromVehicleHistory] = useState(false);
   const [soQuery, setSoQuery] = useState("");
   const [soHits, setSoHits] = useState<SalesOrderHit[] | null>(null);
   const [salesOrderId, setSalesOrderId] = useState<number | "">("");
@@ -167,8 +168,16 @@ export function GateEntryEditor() {
       const icm = j.config?.fields?.itemCaptureMode;
       if (icm === "None" || icm === "Single" || icm === "Multiple") setItemCaptureMode(icm);
       setCaptureQtyAtGate(!!j.config?.flags?.captureQtyAtGate);
+      setAutoLoadCustomerFromVehicleHistory(!!j.config?.flags?.autoLoadCustomerFromVehicleHistory);
     }).catch(() => {});
     const masters = loadMasters();
+    // Fetch this screen's own Document Field Settings directly rather than
+    // relying solely on the app-wide DocumentFieldsConfigLoader (mounted in
+    // the layout) having already resolved by the time this page mounts — that
+    // loader's fetch races this page's own fetches, and if this page finished
+    // first, save()'s fieldOn/fieldMust checks would silently see un-hydrated
+    // defaults (mandatory:false) even when the admin configured it otherwise.
+    const docFields = fetch("/api/settings/document-fields", { cache: "no-store" }).then((r) => r.json()).then((j) => { if (j.ok) applyDocFieldsConfig(j.config.screens); }).catch(() => {});
     const bays = fetch("/api/transport/masters/loading-bay?status=Active", { cache: "no-store" }).then((r) => r.json()).then((lb) => { if (lb.ok) setLoadingBays(lb.rows.map((x: { id: number; name: string }) => ({ id: x.id, label: x.name }))); }).catch(() => {});
     // Location — same source as the app's top bar (active business/branch scope).
     const scope = fetch("/api/system/scope", { cache: "no-store" }).then((r) => r.json()).then((j) => {
@@ -182,7 +191,7 @@ export function GateEntryEditor() {
         setLocation(`${branchIds.length} branches`);
       }
     }).catch(() => {});
-    Promise.allSettled([nextNumber, dispatchConfig, masters, bays, scope]).finally(() => setPageLoading(false));
+    Promise.allSettled([nextNumber, dispatchConfig, masters, docFields, bays, scope]).finally(() => setPageLoading(false));
   }, []);
 
   const soTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -252,6 +261,20 @@ export function GateEntryEditor() {
     if (v.vehicleType) setVehicleType(v.vehicleType);
     if (v.transportCompanyId) setTransportCompanyId(v.transportCompanyId);
     setVehicleOwnerType(v.ownerType ?? "");
+    // Auto-load Customer from Vehicle History (Dispatch Configuration, off by
+    // default) — pre-fills from this vehicle's most recent past gate entry,
+    // only when Customer hasn't already been picked; still fully editable
+    // afterward via the normal Customer search/pick above.
+    if (autoLoadCustomerFromVehicleHistory && !customerId) {
+      fetch(`/api/transport/gate-entry/vehicle-history?vehicleId=${v.id}`, { cache: "no-store" })
+        .then((r) => r.json())
+        .then((j) => {
+          if (!j.ok || !j.found) return;
+          if (j.customerId) setCustomerId(j.customerId);
+          setCustomerName(j.customerName); setCustomerQuery(j.customerName);
+        })
+        .catch(() => {});
+    }
   };
 
   const trTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -394,6 +417,48 @@ export function GateEntryEditor() {
         </div>
       </SectionCard>
 
+      <SectionCard icon={Truck} title="Transport Details" allowOverflow>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="relative">
+            <label className="mb-1 block text-2xs font-semibold text-muted">Vehicle Number{req("vehicleNumber")}</label>
+            <div className="flex gap-1.5">
+              <div className="relative flex-1">
+                <input
+                  value={vehicleQuery}
+                  onChange={(e) => onVehicleQuery(e.target.value)}
+                  onFocus={() => setVehicleHits(vehicles.filter((v) => v.label.toLowerCase().includes(vehicleQuery.trim().toLowerCase())))}
+                  placeholder="Search vehicle number…"
+                  className={inp}
+                />
+                {vehicleHits !== null && (
+                  <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border bg-card shadow-lg">
+                    {vehicleHits.length ? vehicleHits.map((v) => (
+                      <button key={v.id} type="button" onClick={() => pickVehicle(v)} className="block w-full border-b border-border px-3 py-2 text-left text-sm last:border-0 hover:bg-primary-subtle/40">{v.label}{v.vehicleType ? <span className="ml-1.5 text-2xs text-subtle">{v.vehicleType}</span> : null}</button>
+                    )) : <div className="px-3 py-2 text-sm text-muted">No matching vehicles.</div>}
+                  </div>
+                )}
+              </div>
+              <button type="button" title="Add new vehicle" onClick={() => setAddVehicleOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border-strong bg-surface text-muted hover:border-primary hover:text-primary"><Plus className="h-4 w-4" /></button>
+            </div>
+          </div>
+          {fieldOn(SCREEN, "vehicleType") && <Fld label={`Vehicle Type${req("vehicleType")}`}><select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} className={inp}><option value="">— Select —</option>{VEHICLE_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></Fld>}
+          {vehicleOwnerType && <Fld label="Vehicle Owner Type"><input readOnly value={vehicleOwnerType} className={cn(inp, "text-subtle")} /></Fld>}
+          {fieldOn(SCREEN, "transportCompany") && (
+          <div>
+            <label className="mb-1 block text-2xs font-semibold text-muted">Transport Company{req("transportCompany")}</label>
+            <div className="flex gap-1.5">
+              <select value={transportCompanyId} onChange={(e) => setTransportCompanyId(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">—</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select>
+              <button type="button" title="Add new transport company" onClick={() => setAddCompanyOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border-strong bg-surface text-muted hover:border-primary hover:text-primary"><Plus className="h-4 w-4" /></button>
+            </div>
+            <p className="mt-1 text-2xs text-subtle">Auto-fills from the selected vehicle&apos;s master record — adjust here if different.</p>
+          </div>
+          )}
+          {fieldOn(SCREEN, "transportMode") && <Fld label={`Transport Mode${req("transportMode")}`}><select value={transportMode} onChange={(e) => setTransportMode(e.target.value)} className={inp}>{TRANSPORT_MODES.map((t) => <option key={t} value={t}>{t || "—"}</option>)}</select></Fld>}
+          {fieldOn(SCREEN, "trailerNumber") && <Fld label="Trailer Number (optional)"><input value={trailerNumber} onChange={(e) => setTrailerNumber(e.target.value)} className={inp} /></Fld>}
+          {fieldOn(SCREEN, "containerNumber") && <Fld label="Container Number (optional)"><input value={containerNumber} onChange={(e) => setContainerNumber(e.target.value)} className={inp} /></Fld>}
+        </div>
+      </SectionCard>
+
       {!isRawMaterial && (
       <SectionCard icon={FileText} title="Dispatch Information &amp; Reference Document" allowOverflow>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -430,6 +495,7 @@ export function GateEntryEditor() {
                   )) : <div className="px-3 py-2 text-sm text-muted">No matching customers.</div>}
                 </div>
               )}
+              {autoLoadCustomerFromVehicleHistory && !customerId && vehicleId && <p className="mt-1 text-2xs text-subtle">Auto-loads from this vehicle&apos;s most recent gate entry — adjust here if different.</p>}
             </div>
           )}
         </div>
@@ -499,48 +565,6 @@ export function GateEntryEditor() {
         </div>
       </SectionCard>
       )}
-
-      <SectionCard icon={Truck} title="Transport Details" allowOverflow>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="relative">
-            <label className="mb-1 block text-2xs font-semibold text-muted">Vehicle Number{req("vehicleNumber")}</label>
-            <div className="flex gap-1.5">
-              <div className="relative flex-1">
-                <input
-                  value={vehicleQuery}
-                  onChange={(e) => onVehicleQuery(e.target.value)}
-                  onFocus={() => setVehicleHits(vehicles.filter((v) => v.label.toLowerCase().includes(vehicleQuery.trim().toLowerCase())))}
-                  placeholder="Search vehicle number…"
-                  className={inp}
-                />
-                {vehicleHits !== null && (
-                  <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border bg-card shadow-lg">
-                    {vehicleHits.length ? vehicleHits.map((v) => (
-                      <button key={v.id} type="button" onClick={() => pickVehicle(v)} className="block w-full border-b border-border px-3 py-2 text-left text-sm last:border-0 hover:bg-primary-subtle/40">{v.label}{v.vehicleType ? <span className="ml-1.5 text-2xs text-subtle">{v.vehicleType}</span> : null}</button>
-                    )) : <div className="px-3 py-2 text-sm text-muted">No matching vehicles.</div>}
-                  </div>
-                )}
-              </div>
-              <button type="button" title="Add new vehicle" onClick={() => setAddVehicleOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border-strong bg-surface text-muted hover:border-primary hover:text-primary"><Plus className="h-4 w-4" /></button>
-            </div>
-          </div>
-          {fieldOn(SCREEN, "vehicleType") && <Fld label={`Vehicle Type${req("vehicleType")}`}><select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} className={inp}><option value="">— Select —</option>{VEHICLE_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></Fld>}
-          {vehicleOwnerType && <Fld label="Vehicle Owner Type"><input readOnly value={vehicleOwnerType} className={cn(inp, "text-subtle")} /></Fld>}
-          {fieldOn(SCREEN, "transportCompany") && (
-          <div>
-            <label className="mb-1 block text-2xs font-semibold text-muted">Transport Company{req("transportCompany")}</label>
-            <div className="flex gap-1.5">
-              <select value={transportCompanyId} onChange={(e) => setTransportCompanyId(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">—</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select>
-              <button type="button" title="Add new transport company" onClick={() => setAddCompanyOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border-strong bg-surface text-muted hover:border-primary hover:text-primary"><Plus className="h-4 w-4" /></button>
-            </div>
-            <p className="mt-1 text-2xs text-subtle">Auto-fills from the selected vehicle&apos;s master record — adjust here if different.</p>
-          </div>
-          )}
-          {fieldOn(SCREEN, "transportMode") && <Fld label={`Transport Mode${req("transportMode")}`}><select value={transportMode} onChange={(e) => setTransportMode(e.target.value)} className={inp}>{TRANSPORT_MODES.map((t) => <option key={t} value={t}>{t || "—"}</option>)}</select></Fld>}
-          {fieldOn(SCREEN, "trailerNumber") && <Fld label="Trailer Number (optional)"><input value={trailerNumber} onChange={(e) => setTrailerNumber(e.target.value)} className={inp} /></Fld>}
-          {fieldOn(SCREEN, "containerNumber") && <Fld label="Container Number (optional)"><input value={containerNumber} onChange={(e) => setContainerNumber(e.target.value)} className={inp} /></Fld>}
-        </div>
-      </SectionCard>
 
       {!isRawMaterial && fieldOn(SCREEN, "itemDetails") && itemCaptureMode !== "None" && (
       <SectionCard icon={Boxes} title={`Item Details${fieldMust(SCREEN, "product") ? " *" : " (optional)"}`} allowOverflow>

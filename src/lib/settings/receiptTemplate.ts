@@ -19,6 +19,11 @@ export interface ReceiptTemplate {
   /** Print a contact / toll-free number in the header. */
   showContact: boolean;
   contactNumber: string;
+  /** TOKEN only — the Pre Load Weight Slip's scannable code. */
+  tokenCodeType?: "qrcode" | "barcode";
+  /** TOKEN only — business name font size and whether row values print bold. */
+  tokenBrandFontSize?: "normal" | "large" | "xlarge";
+  tokenBoldValues?: boolean;
 }
 
 export const DEFAULT_RECEIPT: ReceiptTemplate = {
@@ -38,6 +43,9 @@ export const DEFAULT_RECEIPT: ReceiptTemplate = {
   showBranchName: false,
   showContact: false,
   contactNumber: "",
+  tokenCodeType: "qrcode",
+  tokenBrandFontSize: "normal",
+  tokenBoldValues: false,
 };
 
 export const PAPER_SIZES: { value: ReceiptTemplate["paperSize"]; label: string; widthMm: number }[] = [
