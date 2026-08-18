@@ -10,7 +10,7 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { FetchWeightButton } from "@/components/shared/FetchWeightButton";
 import { WeighbridgeReadout } from "@/components/shared/WeighbridgeReadout";
-import { useWeighbridge } from "@/lib/hooks/useWeighbridge";
+import { useWeighbridgeContext } from "@/components/shared/WeighbridgeProvider";
 
 interface GateRow { id: number; gateEntryNo: string; vehicleNo: string; status: string }
 interface PreRow { id: number; gateEntryId: number; tareWeight: number }
@@ -31,7 +31,7 @@ export function PostLoadingWeighmentEditor() {
   const [operator, setOperator] = useState("");
   const [remarks, setRemarks] = useState("");
   const [enableWeighbridgeFetch, setEnableWeighbridgeFetch] = useState(false);
-  const wb = useWeighbridge(9600, enableWeighbridgeFetch);
+  const wb = useWeighbridgeContext();
 
   useEffect(() => {
     (async () => {

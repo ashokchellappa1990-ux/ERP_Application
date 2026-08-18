@@ -20,7 +20,7 @@ import { roundTonQty } from "@/lib/settings/transportConfigDefaults";
 import { AccountingPostingDetails } from "@/components/transport/AccountingPostingDetails";
 import { FetchWeightButton } from "@/components/shared/FetchWeightButton";
 import { WeighbridgeReadout } from "@/components/shared/WeighbridgeReadout";
-import { useWeighbridge } from "@/lib/hooks/useWeighbridge";
+import { useWeighbridgeContext } from "@/components/shared/WeighbridgeProvider";
 
 const SCREEN = "load_dispatch";
 const req = (key: string) => (fieldMust(SCREEN, key) ? " *" : "");
@@ -138,7 +138,7 @@ export function DirectLoadDispatchForm() {
   // completeLoadDispatch engine enforces server-side — see loadDispatch.ts).
   const [requireWeighment, setRequireWeighment] = useState(false);
   const [enableWeighbridgeFetch, setEnableWeighbridgeFetch] = useState(false);
-  const wb = useWeighbridge(9600, enableWeighbridgeFetch);
+  const wb = useWeighbridgeContext();
   useEffect(() => {
     fetch("/api/settings/purchase", { cache: "no-store" }).then((r) => r.json()).then((j) => {
       if (j.ok && j.config) setEnableWeighbridgeFetch(!!j.config.flags?.enableWeighbridgeFetch);

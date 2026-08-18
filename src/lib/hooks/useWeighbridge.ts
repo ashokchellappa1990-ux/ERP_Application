@@ -14,12 +14,16 @@ function parseWeight(line: string): number | null {
 
 export type WeighbridgeConnState = "unsupported" | "idle" | "connecting" | "connected" | "error";
 
-/** Shared Web Serial connection to a weighbridge indicator — same logic the
- * Weighbridge Setting test screen validated, reused by any weight input that
- * wants a "Fetch Weight" button (Gate Entry weighment, GRN Tare Weight, …).
- * Each consumer gets its own serial connection/port picker; the browser
- * remembers granted ports per-origin so repeat connects on the same device
- * need no new picker. */
+/** Web Serial connection to a weighbridge indicator. Mounted ONCE, app-wide,
+ * by WeighbridgeProvider (src/components/shared/WeighbridgeProvider.tsx) —
+ * every screen reads the same live connection via useWeighbridgeContext()
+ * instead of calling this hook directly, so navigating between screens never
+ * drops the connection (a COM port can only be held open by one connection
+ * at a time, and per-screen instances used to fight over it on mount/unmount).
+ * On every fresh app load (fresh tab, browser reopened, post-login) it
+ * silently reopens any already-authorized port via getPorts() — no picker,
+ * no user gesture needed — so in practice it only ever needs connecting
+ * once, ever, per browser/device. */
 export function useWeighbridge(defaultBaudRate = 9600, enabled = true) {
   const [supported, setSupported] = useState(true);
   const [state, setState] = useState<WeighbridgeConnState>("idle");
@@ -43,19 +47,31 @@ export function useWeighbridge(defaultBaudRate = 9600, enabled = true) {
       setAutoPorts(ports);
       if (ports.length === 1) openPort(ports[0]);
     }).catch(() => {});
-    // A COM port can only be held open by one connection at a time — release
-    // it on unmount (navigating to another screen) so the port is free for
-    // that screen's own auto-reconnect to pick straight back up, silently,
-    // with no repeat picker.
-    return () => {
-      readingActiveRef.current = false;
-      readerRef.current?.cancel().catch(() => {});
-      portRef.current?.close().catch(() => {});
-    };
-    // Re-runs if `enabled` flips (e.g. once the page's config fetch resolves
-    // and turns the feature on) — otherwise deliberately mount-only.
+    // Deliberately no cleanup/disconnect here — this hook is meant to live
+    // for the app's whole session (see WeighbridgeProvider), so unmounting
+    // only really happens on a full page reload, which the OS/browser
+    // already tears the port down for.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]);
+
+  // If the OS/driver drops the port (unplugged, driver reset, etc.), Web
+  // Serial fires "disconnect" on navigator.serial — reflect that immediately
+  // instead of silently sitting on a stale "connected" state.
+  useEffect(() => {
+    if (!("serial" in navigator) || !navigator.serial) return;
+    const onDisconnect = (e: Event) => {
+      if ((e.target as SerialPort | null) !== portRef.current) return;
+      readingActiveRef.current = false;
+      portRef.current = null;
+      readerRef.current = null;
+      setState("idle");
+      setPortInfo("");
+      setLiveWeight(null);
+      setLiveRaw("");
+    };
+    navigator.serial.addEventListener("disconnect", onDisconnect);
+    return () => navigator.serial?.removeEventListener("disconnect", onDisconnect);
+  }, []);
 
   function appendLog(line: string) {
     setLog((prev) => [line, ...prev].slice(0, 30));

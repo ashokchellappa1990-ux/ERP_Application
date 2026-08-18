@@ -9,13 +9,31 @@ import { driverInput } from "@/lib/contracts/transport";
 
 const PERM = "masters.transport";
 
-function toRow(r: {
-  id: number; name: string; licenseNo: string | null; licenseExpiry: string | null; phone: string | null;
-  transportCompanyId: number | null; status: string; remarks: string | null;
-}) {
+/** "YYYY-MM-DD" (from a date input) <-> DateTime column. */
+function toDate(s: string | null | undefined): Date | null {
+  if (!s || !s.trim()) return null;
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+function toDateStr(d: Date | null | undefined): string | null {
+  return d ? d.toISOString().slice(0, 10) : null;
+}
+
+type DriverRow = Awaited<ReturnType<typeof prisma.driverMaster.findFirstOrThrow>>;
+
+function toRow(r: DriverRow) {
   return {
     id: r.id, name: r.name, licenseNo: r.licenseNo, licenseExpiry: r.licenseExpiry, phone: r.phone,
     transportCompanyId: r.transportCompanyId, status: r.status, remarks: r.remarks,
+    driverCode: r.driverCode, alternateContact: r.alternateContact, address: r.address,
+    dob: toDateStr(r.dob), gender: r.gender, joiningDate: toDateStr(r.joiningDate),
+    licenseType: r.licenseType, licenseIssuingAuthority: r.licenseIssuingAuthority, licenseIssueDate: toDateStr(r.licenseIssueDate),
+    permittedVehicleClass: r.permittedVehicleClass,
+    employmentType: r.employmentType,
+    emergencyContactName: r.emergencyContactName, emergencyContactNumber: r.emergencyContactNumber, emergencyContactRelationship: r.emergencyContactRelationship,
+    idProofType: r.idProofType, idProofNo: r.idProofNo,
+    medicalFitnessNo: r.medicalFitnessNo, medicalFitnessValidUpto: toDateStr(r.medicalFitnessValidUpto),
+    otherDocumentsNote: r.otherDocumentsNote,
   };
 }
 
@@ -32,7 +50,7 @@ export async function GET(req: Request) {
 
   const scope = await getActiveScope(user);
   const where: Prisma.DriverMasterWhereInput = { ...scopeWhere(scope, { branch: true }), deletedAt: null };
-  if (q) where.OR = [{ name: { contains: q } }, { licenseNo: { contains: q } }, { phone: { contains: q } }];
+  if (q) where.OR = [{ name: { contains: q } }, { licenseNo: { contains: q } }, { phone: { contains: q } }, { driverCode: { contains: q } }];
   if (status && status !== "All") where.status = status;
 
   const rows = await prisma.driverMaster.findMany({ where, orderBy: { id: "desc" }, take: 500 });
@@ -59,6 +77,15 @@ export async function POST(req: Request) {
         tenantId: user.tenantId, businessId: seg.businessId ?? undefined, branchId: seg.branchId ?? undefined,
         name: b.name, licenseNo: b.licenseNo ?? null, licenseExpiry: b.licenseExpiry ?? null, phone: b.phone ?? null,
         transportCompanyId: b.transportCompanyId ?? null, status: b.status, remarks: b.remarks ?? null,
+        driverCode: b.driverCode ?? null, alternateContact: b.alternateContact ?? null, address: b.address ?? null,
+        dob: toDate(b.dob), gender: b.gender ?? null, joiningDate: toDate(b.joiningDate),
+        licenseType: b.licenseType ?? null, licenseIssuingAuthority: b.licenseIssuingAuthority ?? null, licenseIssueDate: toDate(b.licenseIssueDate),
+        permittedVehicleClass: b.permittedVehicleClass ?? null,
+        employmentType: b.employmentType,
+        emergencyContactName: b.emergencyContactName ?? null, emergencyContactNumber: b.emergencyContactNumber ?? null, emergencyContactRelationship: b.emergencyContactRelationship ?? null,
+        idProofType: b.idProofType ?? null, idProofNo: b.idProofNo ?? null,
+        medicalFitnessNo: b.medicalFitnessNo ?? null, medicalFitnessValidUpto: toDate(b.medicalFitnessValidUpto),
+        otherDocumentsNote: b.otherDocumentsNote ?? null,
         createdBy: user.id,
       },
     });

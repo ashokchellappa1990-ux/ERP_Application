@@ -20,14 +20,26 @@ interface Row {
   remarks: string;
 }
 
-const EVENT_TYPES = ["GateIn", "PreWeighment", "LoadingStart", "LoadingEnd", "PostWeighment", "GateOut"];
-const EVENT_TONE: Record<string, "info" | "warning" | "primary" | "success" | "neutral"> = {
+const EVENT_TYPES = [
+  "GateIn", "PreWeighment", "LoadingStart", "LoadingEnd", "PostWeighment", "GateOut",
+  "TripCreated", "TripStart", "TripInTransit", "TripArrived", "TripCompleted", "TripOnHold", "TripResumed", "TripCancelled", "TripReturned",
+];
+const EVENT_TONE: Record<string, "info" | "warning" | "primary" | "success" | "neutral" | "danger"> = {
   GateIn: "info",
   PreWeighment: "warning",
   LoadingStart: "primary",
   LoadingEnd: "primary",
   PostWeighment: "warning",
   GateOut: "success",
+  TripCreated: "neutral",
+  TripStart: "primary",
+  TripInTransit: "warning",
+  TripArrived: "warning",
+  TripCompleted: "success",
+  TripOnHold: "warning",
+  TripResumed: "primary",
+  TripCancelled: "danger",
+  TripReturned: "danger",
 };
 
 const fInp = "h-9 rounded-lg border border-border-strong bg-surface px-2.5 text-sm focus:border-primary focus:outline-none";

@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Car, Plus, Pencil, Trash2, Search, X } from "lucide-react";
+import { Car, Plus, Pencil, Trash2, Search, X, Users } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { AppLoader } from "@/components/ui/AppLoader";
 import { useToast } from "@/components/ui/Toast";
 import { vehicleInput, VEHICLE_TYPE_OPTS, VEHICLE_OWNER_TYPE_OPTS, VEHICLE_BODY_TYPE_OPTS, VEHICLE_FUEL_TYPE_OPTS, type VehicleInput } from "@/lib/contracts/transport";
+import { VehicleDriverAssignmentList } from "@/components/transport/masters/VehicleDriverAssignmentList";
 
 interface Row extends VehicleInput { id: number }
 interface CompanyOption { id: number; name: string }
@@ -27,6 +28,7 @@ export function VehicleMasterList() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [modal, setModal] = useState<{ mode: "add" | "edit"; id?: number } | null>(null);
+  const [assignedFor, setAssignedFor] = useState<{ id: number; label: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -82,6 +84,7 @@ export function VehicleMasterList() {
                   <td className="px-3 py-2 text-2xs text-muted">{companyName(r.transportCompanyId)}</td>
                   <td className="px-3 py-2 text-center"><Badge tone={r.status === "Active" ? "success" : "neutral"}>{r.status}</Badge></td>
                   <td className="px-3 py-2"><div className="flex items-center justify-end gap-1">
+                    <button onClick={() => setAssignedFor({ id: r.id, label: r.vehicleNo })} title="View Assigned Drivers" className="grid h-8 w-8 place-items-center rounded-md border border-transparent text-muted transition hover:border-info/30 hover:bg-info-subtle hover:text-info"><Users className="h-4 w-4" /></button>
                     <button onClick={() => setModal({ mode: "edit", id: r.id })} title="Edit" className="grid h-8 w-8 place-items-center rounded-md border border-primary/30 bg-primary-subtle text-primary transition hover:bg-primary hover:text-white"><Pencil className="h-4 w-4" /></button>
                     <button onClick={() => remove(r)} title="Delete" className="grid h-8 w-8 place-items-center rounded-md border border-transparent text-muted transition hover:border-danger/30 hover:bg-danger-subtle hover:text-danger"><Trash2 className="h-4 w-4" /></button>
                   </div></td>
@@ -93,6 +96,19 @@ export function VehicleMasterList() {
       )}
 
       {modal && <VehicleModal mode={modal.mode} id={modal.id} companies={companies} onClose={() => setModal(null)} onSaved={() => { setModal(null); load(); }} />}
+      {assignedFor && (
+        <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/40 p-4" onClick={() => setAssignedFor(null)}>
+          <div className="max-h-[85vh] w-full max-w-4xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-border bg-surface-2 px-5 py-3.5">
+              <h2 className="text-sm font-bold text-foreground">Assigned Drivers · {assignedFor.label}</h2>
+              <button onClick={() => setAssignedFor(null)} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-surface hover:text-foreground"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="max-h-[70vh] overflow-y-auto p-5">
+              <VehicleDriverAssignmentList embedded vehicleFilter={assignedFor.id} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

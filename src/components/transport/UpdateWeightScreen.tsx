@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Field } from "@/components/transport/VehicleGateEntryScreen";
 import { FetchWeightButton } from "@/components/shared/FetchWeightButton";
 import { WeighbridgeReadout } from "@/components/shared/WeighbridgeReadout";
-import { useWeighbridge } from "@/lib/hooks/useWeighbridge";
+import { useWeighbridgeContext } from "@/components/shared/WeighbridgeProvider";
 
 interface ProductHit { id: number; name: string; sku?: string; uom?: string }
 interface Data {
@@ -49,7 +49,7 @@ export function UpdateWeightScreen() {
   const [areas, setAreas] = useState<{ id: number; name: string; code: string }[]>([]);
   const [weightSlipRefNo, setWeightSlipRefNo] = useState("");
   const [enableWeighbridgeFetch, setEnableWeighbridgeFetch] = useState(false);
-  const wb = useWeighbridge(9600, enableWeighbridgeFetch);
+  const wb = useWeighbridgeContext();
 
   useEffect(() => {
     (async () => {

@@ -83,13 +83,47 @@ export const vehicleInput = z.object({
 });
 export type VehicleInput = z.infer<typeof vehicleInput>;
 
+/** Driver-specific status — richer than the generic Active/Inactive in
+ * masterBase, so drivers get their own enum instead of sharing that one
+ * (other masters keep the plain Active/Inactive they already have). */
+export const DRIVER_STATUS_OPTS = ["Active", "Inactive", "On Leave", "Suspended", "Blacklisted", "Resigned"] as const;
+
+export const DRIVER_EMPLOYMENT_TYPE_OPTS = ["Company Employee", "Contract Driver", "Transporter Driver", "Hired Driver", "Other"] as const;
+
+export const DRIVER_GENDER_OPTS = ["Male", "Female", "Other"] as const;
+
 export const driverInput = z.object({
   name: z.string().trim().min(1, "Driver name is required").max(150),
   licenseNo: z.string().trim().max(60).optional().nullable(),
   licenseExpiry: z.string().trim().max(20).optional().nullable(),
   phone: z.string().trim().max(20).optional().nullable(),
   transportCompanyId: z.coerce.number().int().positive().optional().nullable(),
-  ...masterBase,
+  status: z.enum(DRIVER_STATUS_OPTS).default("Active"),
+  remarks: z.string().trim().max(2000).optional().nullable(),
+  // Basic Details
+  driverCode: z.string().trim().max(30).optional().nullable(),
+  alternateContact: z.string().trim().max(20).optional().nullable(),
+  address: z.string().trim().max(2000).optional().nullable(),
+  dob: z.string().trim().max(20).optional().nullable(),
+  gender: z.string().trim().max(20).optional().nullable(),
+  joiningDate: z.string().trim().max(20).optional().nullable(),
+  // Driving Licence
+  licenseType: z.string().trim().max(30).optional().nullable(),
+  licenseIssuingAuthority: z.string().trim().max(120).optional().nullable(),
+  licenseIssueDate: z.string().trim().max(20).optional().nullable(),
+  permittedVehicleClass: z.string().trim().max(60).optional().nullable(),
+  // Employment / Relationship
+  employmentType: z.enum(DRIVER_EMPLOYMENT_TYPE_OPTS).default("Company Employee"),
+  // Emergency Details
+  emergencyContactName: z.string().trim().max(150).optional().nullable(),
+  emergencyContactNumber: z.string().trim().max(20).optional().nullable(),
+  emergencyContactRelationship: z.string().trim().max(60).optional().nullable(),
+  // Documents — reference only (number/note + validity), no file upload
+  idProofType: z.string().trim().max(60).optional().nullable(),
+  idProofNo: z.string().trim().max(60).optional().nullable(),
+  medicalFitnessNo: z.string().trim().max(60).optional().nullable(),
+  medicalFitnessValidUpto: z.string().trim().max(20).optional().nullable(),
+  otherDocumentsNote: z.string().trim().max(2000).optional().nullable(),
 });
 export type DriverInput = z.infer<typeof driverInput>;
 

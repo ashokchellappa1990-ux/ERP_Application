@@ -8,6 +8,7 @@ import { writeAudit } from "@/lib/audit/log";
 import { gateEntryInput } from "@/lib/contracts/transport";
 import { getDispatchConfig } from "@/lib/settings/dispatchConfig";
 import { buildGateEntryNo } from "@/lib/settings/transportConfigDefaults";
+import { createOrLinkTripForGateEntry } from "@/lib/transport/vehicleTrip";
 
 const PERM = "transport.gate-entry";
 const num = (v: unknown) => (v == null ? 0 : Number(v));
@@ -448,6 +449,23 @@ export async function POST(req: Request) {
       return entry.id;
     }, { maxWait: 10_000, timeout: 30_000 });
     await writeAudit(prisma, user, { action: "vehicle_gate_entry.create", entity: "VehicleGateEntry", entityId: id, summary: `Vehicle gate entry created for vehicle #${input.vehicleId}`, businessId: scope.businessId ?? null, branchId: scope.branchId ?? null, ip: requestMeta(req).ip });
+
+    // Vehicle Trip Management — best-effort, non-fatal side effect (same
+    // convention as GRN's own post-create back-links): every gate entry, Sales
+    // or Purchase, gets an auto-created/linked Trip so the vehicle's
+    // operational journey is tracked without touching gate entry logic itself.
+    try {
+      await createOrLinkTripForGateEntry({
+        tenantId: user.tenantId, businessId: scope.businessId ?? null, branchId: scope.branchId ?? null,
+        gateEntryId: id, gateEntryNo: input.gateEntryNo || `GATE-${id}`, entryType: input.entryType ?? "Dispatch",
+        vehicleId: input.vehicleId, driverId: input.driverId ?? null, transportCompanyId: input.transportCompanyId ?? null,
+        supplierName: supplierName ?? null, customerName: customerName ?? null, deliveryAddress: deliveryAddress ?? null,
+        location: location ?? null, sourceWarehouse: sourceWarehouse ?? null, destinationWarehouse: destinationWarehouse ?? null,
+        expectedMaterial: input.expectedMaterial ?? null, expectedLoadWeight: input.expectedLoadWeight ?? null,
+        createdBy: user.id,
+      });
+    } catch (e) { console.error("[transport/gate-entry] trip auto-create failed (non-fatal)", e); }
+
     return NextResponse.json({ ok: true, message: "Gate entry recorded.", id }, { status: 201 });
   } catch (err) {
     console.error("[transport/gate-entry] create error", err);

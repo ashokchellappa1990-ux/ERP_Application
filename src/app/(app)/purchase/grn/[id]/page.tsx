@@ -14,7 +14,7 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { FetchWeightButton } from "@/components/shared/FetchWeightButton";
 import { WeighbridgeReadout } from "@/components/shared/WeighbridgeReadout";
-import { useWeighbridge } from "@/lib/hooks/useWeighbridge";
+import { useWeighbridgeContext } from "@/components/shared/WeighbridgeProvider";
 
 // Shared API contract — one source of truth for the GRN detail shapes.
 import type { GrnDetail as Grn } from "@/lib/contracts/grn";
@@ -360,7 +360,7 @@ function TareWeightModal({ id, weightUom, grossWeight, billNetWeight, onClose, o
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [enableWeighbridgeFetch, setEnableWeighbridgeFetch] = useState(false);
-  const wb = useWeighbridge(9600, enableWeighbridgeFetch);
+  const wb = useWeighbridgeContext();
   useEffect(() => {
     (async () => {
       const j = await fetch("/api/settings/purchase", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));

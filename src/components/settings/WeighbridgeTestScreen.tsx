@@ -7,13 +7,14 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import { Badge } from "@/components/ui/Badge";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
-import { useWeighbridge, type WeighbridgeConnState } from "@/lib/hooks/useWeighbridge";
+import { useWeighbridgeContext } from "@/components/shared/WeighbridgeProvider";
+import type { WeighbridgeConnState } from "@/lib/hooks/useWeighbridge";
 
 const BAUD_RATES = [1200, 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200];
 
 export function WeighbridgeTestScreen() {
   const toast = useToast();
-  const { supported, state, baudRate, setBaudRate, autoPorts, portInfo, errorMsg, liveWeight, liveRaw, log, setLog, connect, disconnect } = useWeighbridge();
+  const { supported, state, baudRate, setBaudRate, autoPorts, portInfo, errorMsg, liveWeight, liveRaw, log, setLog, connect, disconnect } = useWeighbridgeContext();
   const [fetchedWeight, setFetchedWeight] = useState<number | null>(null);
 
   function fetchWeight() {

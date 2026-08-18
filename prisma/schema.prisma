@@ -8700,8 +8700,38 @@ model DriverMaster {
   licenseExpiry String? @db.VarChar(20)
   phone         String? @db.VarChar(20)
   transportCompanyId Int?
-  status    String @default("Active") @db.VarChar(16)
+  status    String @default("Active") @db.VarChar(16) // Active | Inactive | On Leave | Suspended | Blacklisted | Resigned
   remarks   String? @db.Text
+
+  // Basic Details — beyond name/phone/status above.
+  driverCode       String?   @db.VarChar(30)
+  alternateContact String?   @db.VarChar(20)
+  address          String?   @db.Text
+  dob              DateTime?
+  gender           String?   @db.VarChar(20)
+  joiningDate      DateTime?
+
+  // Driving Licence — beyond licenseNo/licenseExpiry above.
+  licenseType             String?   @db.VarChar(30)
+  licenseIssuingAuthority String?   @db.VarChar(120)
+  licenseIssueDate        DateTime?
+  permittedVehicleClass   String?   @db.VarChar(60)
+
+  // Employment / Relationship.
+  employmentType String @default("Company Employee") @db.VarChar(30)
+
+  // Emergency Details.
+  emergencyContactName         String? @db.VarChar(150)
+  emergencyContactNumber       String? @db.VarChar(20)
+  emergencyContactRelationship String? @db.VarChar(60)
+
+  // Documents — reference tracking only (number/note + validity), no file upload.
+  idProofType            String?   @db.VarChar(60)
+  idProofNo              String?   @db.VarChar(60)
+  medicalFitnessNo       String?   @db.VarChar(60)
+  medicalFitnessValidUpto DateTime?
+  otherDocumentsNote     String?   @db.Text
+
   createdBy Int?
   updatedBy Int?
   createdAt DateTime @default(now())
@@ -8735,6 +8765,118 @@ model TransportCompany {
   @@unique([tenantId, code])
   @@index([tenantId, status])
   @@map("transport_company")
+}
+
+// Vehicle-Driver Assignment — the operational link between VehicleMaster and
+// DriverMaster (many-to-many over time: one driver can run several vehicles,
+// one vehicle can have several drivers across shifts/periods). References
+// both masters by plain Int id, same as every other cross-master pointer in
+// this schema (e.g. VehicleMaster.transportCompanyId) — no FK constraint,
+// resolved manually in API code. `status` is written as Active/Cancelled only;
+// "Completed" is derived at read time from `toDate` vs today (no cron needed),
+// mirroring the inventory-expiry compute-at-read pattern elsewhere in the app.
+model VehicleDriverAssignment {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+
+  assignmentNo String @db.VarChar(30)
+
+  vehicleId Int
+  driverId  Int
+
+  assignmentType String  @default("Primary") @db.VarChar(20) // Primary | Secondary | Temporary | Trip-wise (configurable)
+  isPrimary      Boolean @default(false)
+
+  fromDate DateTime
+  toDate   DateTime?
+
+  status  String  @default("Active") @db.VarChar(16) // Active | Completed | Cancelled — Completed is also derived, see above
+  remarks String? @db.Text
+
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedBy Int?
+  updatedAt DateTime @updatedAt
+
+  cancelledBy         Int?
+  cancelledAt         DateTime?
+  cancellationReason  String?   @db.Text
+
+  @@unique([tenantId, assignmentNo])
+  @@index([tenantId, vehicleId])
+  @@index([tenantId, driverId])
+  @@index([tenantId, status])
+  @@index([tenantId, fromDate])
+  @@map("vehicle_driver_assignment")
+}
+
+// Vehicle Trip — the common operational-journey engine sitting OVER Sales
+// Dispatch and Purchase GRN (never replacing them). Auto-created the moment a
+// vehicle is identified on a Vehicle Gate Entry (both entryType "Dispatch" and
+// "RawMaterial" pass through the one gate-entry creation route — see
+// createOrLinkTripForGateEntry in src/lib/transport/vehicleTrip.ts), or
+// created manually for "Other" (non-sales/non-purchase) movements. Only
+// `vehicleGateEntryId` is stored as a link — Dispatch/GRN/Weighment detail is
+// resolved live through that gate entry at read time (mirrors how GRN and
+// LoadDispatch already back-link to the same gate entry), so nothing here
+// duplicates those transactions' own data.
+model VehicleTrip {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+
+  tripNo String @db.VarChar(30)
+
+  tripType    String  @default("Other") @db.VarChar(20) // Sales | Purchase | Other
+  tripPurpose String? @db.VarChar(60)
+
+  vehicleId          Int
+  driverId           Int?
+  transportCompanyId Int?
+
+  sourceLocation      String? @db.VarChar(200)
+  destinationLocation String? @db.VarChar(200)
+
+  materialName String?  @db.VarChar(200)
+  plannedQty   Decimal? @db.Decimal(18, 3)
+  actualQty    Decimal? @db.Decimal(18, 3) // Sales/Purchase trips leave this null and resolve the real figure live from the linked Weighment/GRN instead — see #23 of the spec.
+  uom          String?  @db.VarChar(20)
+
+  plannedStartAt DateTime?
+  actualStartAt  DateTime?
+  arrivalAt      DateTime?
+  endAt          DateTime?
+
+  startOdometer Decimal? @db.Decimal(12, 2)
+  endOdometer   Decimal? @db.Decimal(12, 2)
+  tripDistance  Decimal? @db.Decimal(12, 2)
+
+  sourceModule          String? @db.VarChar(20) // SALES | PURCHASE | VEHICLE
+  sourceTransactionType String? @db.VarChar(30) // GATE_ENTRY | OTHER
+  sourceTransactionId   Int?
+  sourceTransactionNo   String? @db.VarChar(60)
+
+  vehicleGateEntryId Int?
+
+  status       String  @default("PLANNED") @db.VarChar(20) // PLANNED|ASSIGNED|STARTED|IN_TRANSIT|ARRIVED|COMPLETED|ON_HOLD|CANCELLED|RETURNED
+  preHoldStatus String? @db.VarChar(20) // remembered so Resume can put it back where it was
+  remarks      String? @db.Text
+
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedBy Int?
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, tripNo])
+  @@unique([tenantId, sourceModule, sourceTransactionType, sourceTransactionId])
+  @@index([tenantId, vehicleId])
+  @@index([tenantId, driverId])
+  @@index([tenantId, status])
+  @@index([tenantId, tripType])
+  @@map("vehicle_trip")
 }
 
 model RouteMaster {

@@ -3,6 +3,7 @@ import { SessionProvider } from "@/components/auth/SessionProvider";
 import { ScopeProvider } from "@/components/scope/ScopeProvider";
 import { GeneralConfigLoader } from "@/components/settings/GeneralConfigProvider";
 import { DocumentFieldsConfigLoader } from "@/components/settings/DocumentFieldsConfigLoader";
+import { WeighbridgeProvider } from "@/components/shared/WeighbridgeProvider";
 
 /**
  * Layout for all authenticated console routes. Wraps pages in the session
@@ -19,7 +20,9 @@ export default function ConsoleLayout({
       <ScopeProvider>
         <GeneralConfigLoader />
         <DocumentFieldsConfigLoader />
-        <AppShell>{children}</AppShell>
+        <WeighbridgeProvider>
+          <AppShell>{children}</AppShell>
+        </WeighbridgeProvider>
       </ScopeProvider>
     </SessionProvider>
   );

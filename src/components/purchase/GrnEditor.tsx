@@ -13,7 +13,7 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { FetchWeightButton } from "@/components/shared/FetchWeightButton";
 import { WeighbridgeReadout } from "@/components/shared/WeighbridgeReadout";
-import { useWeighbridge } from "@/lib/hooks/useWeighbridge";
+import { useWeighbridgeContext } from "@/components/shared/WeighbridgeProvider";
 
 interface Candidate { productId: number; productName: string; sku: string; uom: string; category: string; mrp: number; gst: number; invBatch: boolean; invMfg: boolean; invExpiry: boolean; invSerial: boolean; qrRequired: boolean }
 interface Line extends Candidate {
@@ -144,7 +144,7 @@ export function GrnEditor() {
   const [enableTruckWeightGrn, setEnableTruckWeightGrn] = useState(false);
   const [truckWeightUom, setTruckWeightUom] = useState("Kg");
   const [enableWeighbridgeFetch, setEnableWeighbridgeFetch] = useState(false);
-  const wb = useWeighbridge(9600, enableWeighbridgeFetch);
+  const wb = useWeighbridgeContext();
   useEffect(() => {
     (async () => {
       try {
