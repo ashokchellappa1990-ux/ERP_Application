@@ -26,7 +26,9 @@ export interface GrnHeader {
   supplierInvoiceNo: string | null; supplierInvoiceDate: string | null; poNo: string | null;
   warehouse: string | null; areaId: number | null; notes: string | null; status: string;
   gstMode: string; gstPct: number | null;
-  subtotal: number; taxTotal: number; freightAmount: number; otherCharges: number; roundOff: number; totalInvoiceValue: number;
+  subtotal: number; taxTotal: number; freightAmount: number; otherCharges: number;
+  transitPassRefNo: string | null; transitPassQty: number | null; transitPassRate: number | null; transitPassAmount: number;
+  roundOff: number; totalInvoiceValue: number;
   paymentStatus: string; amountPaid: number; paymentMode: string | null; paymentRef: string | null; paymentDate: string | null;
   paymentTerms: string | null; creditDays: number | null; dueDate: string | null;
   transporterName: string | null; transportMode: string | null; transportType: string | null; vehicleNo: string | null;
@@ -94,8 +96,12 @@ export function buildGrnPayload(body: unknown): BuiltGrn | { error: string } {
   const taxTotal = gstMode === "invoice" ? r2(subtotal * (gstPct ?? 0) / 100) : r2(lineTaxTotal);
   const freightAmount = r2(n0(b.freightAmount));
   const otherCharges = r2(n0(b.otherCharges));
+  const transitPassRefNo = s(b.transitPassRefNo);
+  const transitPassQty = dec(b.transitPassQty);
+  const transitPassRate = dec(b.transitPassRate);
+  const transitPassAmount = r2(n0(b.transitPassAmount));
   const roundOff = r2(n0(b.roundOff));
-  const grandTotal = r2(subtotal + taxTotal + freightAmount + otherCharges + roundOff);
+  const grandTotal = r2(subtotal + taxTotal + freightAmount + otherCharges + transitPassAmount + roundOff);
   const totalInvoiceValue = dec(b.totalInvoiceValue) ?? grandTotal;
 
   // Payment
@@ -110,7 +116,7 @@ export function buildGrnPayload(body: unknown): BuiltGrn | { error: string } {
     supplierInvoiceNo: s(b.supplierInvoiceNo), supplierInvoiceDate: s(b.supplierInvoiceDate), poNo: s(b.poNo),
     warehouse: s(b.warehouse), areaId: intOrNull(b.areaId), notes: s(b.notes), status,
     gstMode, gstPct,
-    subtotal, taxTotal, freightAmount, otherCharges, roundOff, totalInvoiceValue,
+    subtotal, taxTotal, freightAmount, otherCharges, transitPassRefNo, transitPassQty, transitPassRate, transitPassAmount, roundOff, totalInvoiceValue,
     paymentStatus, amountPaid, paymentMode: s(b.paymentMode), paymentRef: s(b.paymentRef), paymentDate: s(b.paymentDate),
     paymentTerms: s(b.paymentTerms), creditDays, dueDate,
     transporterName: s(b.transporterName), transportMode: s(b.transportMode), transportType: s(b.transportType), vehicleNo: s(b.vehicleNo),

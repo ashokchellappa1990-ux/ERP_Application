@@ -159,7 +159,7 @@ export async function POST(req: Request) {
         await postPurchaseJournal(tx, {
           tenantId: user.tenantId, ...seg, grnId: grn.id, grnNo, date: header.grnDate as string, supplier: header.supplier as string | null,
           subtotal: Number(header.subtotal) || 0, taxTotal: Number(header.taxTotal) || 0, freight: Number(header.freightAmount) || 0,
-          otherCharges: Number(header.otherCharges) || 0, roundOff: Number(header.roundOff) || 0,
+          otherCharges: Number(header.otherCharges) || 0, transitPass: Number(header.transitPassAmount) || 0, roundOff: Number(header.roundOff) || 0,
           grandTotal, amountPaid, paymentMode: header.paymentMode as string | null, createdBy: user.id, hasInvoice,
         });
         await syncGrnPayable(tx, user.tenantId, { id: grn.id, grnNo, supplier: header.supplier as string | null, grnDate: header.grnDate as string, paymentTerms: header.paymentTerms as string | null, dueDate: header.dueDate as string | null }, grandTotal, amountPaid, post, seg, !hasInvoice);

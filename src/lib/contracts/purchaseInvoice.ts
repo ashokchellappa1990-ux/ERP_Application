@@ -125,7 +125,7 @@ export interface PendingGrnLine {
 export interface PendingGrnDetail {
   id: number; grnNo: string; grnDate: string; supplier: string; supplierGstin: string; poNo: string;
   businessId: number | null; branchId: number | null; warehouse: string;
-  subtotal: number; taxTotal: number; freightAmount: number; otherCharges: number; roundOff: number; grnAmount: number;
+  subtotal: number; taxTotal: number; freightAmount: number; otherCharges: number; transitPassAmount: number; roundOff: number; grnAmount: number;
   paymentTerms: string; creditDays: number | null; dueDate: string;
   lines: PendingGrnLine[];
 }

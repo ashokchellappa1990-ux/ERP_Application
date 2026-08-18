@@ -6,6 +6,7 @@ import { getActiveScope, scopeWhere, resolveWriteScope } from "@/lib/auth/scope"
 import { requirePermission } from "@/lib/auth/guard";
 import { writeAudit } from "@/lib/audit/log";
 import { tripCreateInput, type TripRow } from "@/lib/contracts/vehicleTrip";
+import { isVehicleUnderMaintenance } from "@/lib/transport/vehicleMaintenance";
 
 // Shares the Transport masters' permission key — same one-key-per-module
 // convention already used for Vehicle/Driver/Transport Company masters and
@@ -118,6 +119,7 @@ export async function POST(req: Request) {
   const vehicle = await prisma.vehicleMaster.findFirst({ where: { id: b.vehicleId, tenantId: user.tenantId, deletedAt: null } });
   if (!vehicle) return NextResponse.json({ ok: false, message: "Vehicle not found." }, { status: 422 });
   if (vehicle.status !== "Active") return NextResponse.json({ ok: false, message: "This vehicle is not Active." }, { status: 422 });
+  if (await isVehicleUnderMaintenance(user.tenantId, b.vehicleId)) return NextResponse.json({ ok: false, message: "This vehicle is currently under maintenance and cannot be assigned to a new trip." }, { status: 422 });
 
   if (b.driverId) {
     const driver = await prisma.driverMaster.findFirst({ where: { id: b.driverId, tenantId: user.tenantId, deletedAt: null } });

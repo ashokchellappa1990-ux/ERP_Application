@@ -144,7 +144,7 @@ export interface DirectCustomerDispatchInput {
   payment?: PaymentCollectionInput;
   // Payment Details section — see the field comments on directCustomerDispatchInput
   // in src/lib/contracts/loadDispatch.ts for exactly what each one means.
-  vehicleRent?: number; transitPassQty?: number; driverBattaMode?: "Adjustment" | "Payment"; driverBattaPaymentMode?: string | null;
+  vehicleRent?: number; transitPassQty?: number; transitPassRefNo?: string | null; driverBattaMode?: "Adjustment" | "Payment"; driverBattaPaymentMode?: string | null;
   remarks?: string | null; items: DirectDispatchItemInput[];
 }
 
@@ -197,6 +197,7 @@ export async function createDirectCustomerDispatch(scope: ActiveScope, user: Act
   const tonQty = items.reduce((s, it) => s + ((it.uom || "").toLowerCase() === "ton" ? num(it.dispatchedQty) : 0), 0);
   const driverBattaAmount = r2(computeDriverBatta(cfg, tonQty));
   const transitPassQty = cfg.fields.transitPassQtyMode === "AutoNetWeight" ? tonQty : Math.max(0, Number(input.transitPassQty) || 0);
+  const transitPassRate = Number(cfg.fields.transitPassPerTon) || 0;
   const transitPassAmount = r2(computeTransitPass(cfg, transitPassQty));
   const vehicleRent = Math.max(0, Number(input.vehicleRent) || 0);
 
@@ -222,7 +223,7 @@ export async function createDirectCustomerDispatch(scope: ActiveScope, user: Act
         paymentMethod: payment?.paymentMethod ?? undefined, bankId: payment?.bankId ?? undefined,
         bankName: payment?.bankName ?? undefined, bankAccount: payment?.bankAccount ?? undefined,
         paymentSplits: (payment?.paymentSplits as Prisma.InputJsonValue | undefined) ?? undefined,
-        vehicleRent, transitPassQty, transitPassAmount, driverBattaAmount,
+        vehicleRent, transitPassQty, transitPassRefNo: input.transitPassRefNo?.trim() || undefined, transitPassRate, transitPassAmount, driverBattaAmount,
         driverBattaMode: input.driverBattaMode ?? "Adjustment",
         driverBattaPaymentMode: input.driverBattaPaymentMode ?? undefined,
         remarks: input.remarks ?? undefined,

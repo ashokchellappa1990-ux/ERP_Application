@@ -81,6 +81,10 @@ export interface GrnDetail {
   taxTotal: number;
   freightAmount: number;
   otherCharges: number;
+  transitPassRefNo: string;
+  transitPassQty: number | string;
+  transitPassRate: number | null;
+  transitPassAmount: number;
   roundOff: number;
   totalInvoiceValue: number;
   paymentStatus: string;

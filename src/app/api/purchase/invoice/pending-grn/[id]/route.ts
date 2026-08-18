@@ -21,7 +21,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const data: PendingGrnDetail = {
     id: g.id, grnNo: g.grnNo, grnDate: g.grnDate, supplier: g.supplier ?? "", supplierGstin: g.supplierGstin ?? "", poNo: g.poNo ?? "",
     businessId: g.businessId, branchId: g.branchId, warehouse: g.warehouse ?? "",
-    subtotal: num(g.subtotal), taxTotal: num(g.taxTotal), freightAmount: num(g.freightAmount), otherCharges: num(g.otherCharges), roundOff: num(g.roundOff), grnAmount: grnGrandTotal(g),
+    subtotal: num(g.subtotal), taxTotal: num(g.taxTotal), freightAmount: num(g.freightAmount), otherCharges: num(g.otherCharges), transitPassAmount: num(g.transitPassAmount), roundOff: num(g.roundOff), grnAmount: grnGrandTotal(g),
     paymentTerms: g.paymentTerms ?? "", creditDays: g.creditDays, dueDate: g.dueDate ?? "",
     lines: g.lines.map((l) => {
       const gross = num(l.qty) * num(l.rate);

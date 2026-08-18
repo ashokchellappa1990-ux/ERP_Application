@@ -5,7 +5,10 @@ export const s = (v: unknown) => { const t = typeof v === "string" ? v.trim() : 
 const num = (v: unknown) => (v == null || v === "" ? 0 : Number(v) || 0);
 const int = (v: unknown) => Math.trunc(num(v));
 const bool = (v: unknown) => v === true || v === "true" || v === 1 || v === "1";
-const PARTY = ["Supplier", "Expense Party", "Vendor", "Employee"];
+// "Workshop"/"Fuel Station" are additive — let a supplier be tagged as a
+// vehicle-maintenance workshop or an external fuel station (reused by those
+// modules' pickers) without separate Vendor masters.
+const PARTY = ["Supplier", "Expense Party", "Vendor", "Employee", "Workshop", "Fuel Station"];
 
 /** Map a validated supplier body → Prisma column data (master fields; not addresses/scope). */
 export function toSupplierData(b: Record<string, unknown>): Prisma.SupplierUncheckedUpdateInput {

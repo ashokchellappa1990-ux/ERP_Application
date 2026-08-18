@@ -2591,6 +2591,15 @@ model GoodsReceiptNote {
   taxTotal          Decimal @default(0) @db.Decimal(18, 2)
   freightAmount     Decimal @default(0) @db.Decimal(18, 2)
   otherCharges      Decimal @default(0) @db.Decimal(18, 2)
+  // Transit Pass — Qty × Purchase Configuration's per-Ton rate, payable to the
+  // supplier alongside the goods value (folds into subtotal/grandTotal the same
+  // way freightAmount/otherCharges already do — see buildGrnPayload).
+  transitPassRefNo  String? @db.VarChar(60)
+  transitPassQty    Decimal? @db.Decimal(12, 3)
+  // Rate (₹ per Ton) in effect at submission time — stored so historical rows
+  // stay accurate even after Purchase Configuration's rate later changes.
+  transitPassRate   Decimal? @db.Decimal(12, 2)
+  transitPassAmount Decimal @default(0) @db.Decimal(18, 2)
   roundOff          Decimal @default(0) @db.Decimal(9, 2)
   totalInvoiceValue Decimal @default(0) @db.Decimal(18, 2) // supplier-stated invoice grand total
 
@@ -8879,6 +8888,413 @@ model VehicleTrip {
   @@map("vehicle_trip")
 }
 
+// Vehicle Maintenance Management — additive over VehicleMaster/DriverMaster/
+// VehicleTrip (referenced by id only, never duplicated). Vehicle "current KM"
+// is NOT stored here either — it's resolved live from the latest completed
+// VehicleTrip.endOdometer for that vehicle (see src/lib/transport/vehicleMaintenance.ts),
+// same "one authoritative source" principle as everything else in this schema.
+
+model VehicleMaintenanceSchedule {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+
+  scheduleNo String @db.VarChar(30)
+  vehicleId  Int
+
+  maintenanceType String @db.VarChar(60) // Periodic Service | Engine Oil Change | ... (free text, not a rigid enum)
+  triggerType     String @db.VarChar(10) // Date | KM | Both
+
+  intervalKm     Decimal? @db.Decimal(12, 2)
+  intervalMonths Int?
+
+  lastServiceDate DateTime?
+  lastServiceKm   Decimal?  @db.Decimal(12, 2)
+  nextDueDate     DateTime?
+  nextDueKm       Decimal?  @db.Decimal(12, 2)
+
+  alertBeforeDays Int?
+  alertBeforeKm   Decimal? @db.Decimal(12, 2)
+
+  status  String  @default("Active") @db.VarChar(16) // Active | Inactive
+  remarks String? @db.Text
+
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedBy Int?
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, scheduleNo])
+  @@index([tenantId, vehicleId])
+  @@index([tenantId, status])
+  @@map("vehicle_maintenance_schedule")
+}
+
+// Service Entry — Preventive/Repair maintenance actually performed (not
+// Breakdown, which is its own workflow/table below). May optionally fulfil a
+// VehicleMaintenanceSchedule.
+model VehicleMaintenance {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+
+  maintenanceNo String @db.VarChar(30)
+  vehicleId     Int
+  scheduleId    Int?
+
+  maintenanceType     String @db.VarChar(60) // Periodic Service | Engine Oil Change | Brake Service | ... | Repair
+  maintenanceCategory String @default("Preventive") @db.VarChar(16) // Preventive | Repair
+
+  serviceDate DateTime
+  odometer    Decimal? @db.Decimal(12, 2)
+
+  workshopId   Int? // -> Supplier (category "Workshop") when it's a known vendor
+  workshopName String? @db.VarChar(200) // free text fallback (local mechanic, internal workshop)
+  mechanic     String? @db.VarChar(150)
+
+  description    String? @db.Text
+  workPerformed  String? @db.Text
+
+  partsCost    Decimal @default(0) @db.Decimal(18, 2)
+  labourCost   Decimal @default(0) @db.Decimal(18, 2)
+  workshopCost Decimal @default(0) @db.Decimal(18, 2)
+  otherCost    Decimal @default(0) @db.Decimal(18, 2)
+  totalCost    Decimal @default(0) @db.Decimal(18, 2)
+
+  nextDueDate DateTime?
+  nextDueKm   Decimal?  @db.Decimal(12, 2)
+
+  status  String  @default("Draft") @db.VarChar(16) // Draft | InProgress | Completed | Cancelled
+  remarks String? @db.Text
+
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedBy Int?
+  updatedAt DateTime @updatedAt
+
+  cancelledBy        Int?
+  cancelledAt        DateTime?
+  cancellationReason String?   @db.Text
+
+  @@unique([tenantId, maintenanceNo])
+  @@index([tenantId, vehicleId])
+  @@index([tenantId, status])
+  @@index([tenantId, scheduleId])
+  @@map("vehicle_maintenance")
+}
+
+// Breakdown Maintenance — unplanned failures, own richer workflow
+// (Reported→Inspection→RepairInProgress→Testing→Completed→Cancelled),
+// optionally linked to the VehicleTrip that was in progress when it happened.
+model VehicleBreakdown {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+
+  breakdownNo String @db.VarChar(30)
+  vehicleId   Int
+  driverId    Int?
+  tripId      Int? // -> VehicleTrip, when the breakdown happened during an active trip
+
+  breakdownDate DateTime
+  odometer      Decimal? @db.Decimal(12, 2)
+  location      String?  @db.VarChar(200)
+
+  breakdownType       String  @db.VarChar(60) // Engine Breakdown | Brake Failure | Tyre-related Issue | Electrical Problem | ...
+  problemDescription  String? @db.Text
+  priority            String  @default("Normal") @db.VarChar(10) // Low | Normal | High | Critical
+  diagnosisNotes      String? @db.Text
+
+  workshopId   Int?
+  workshopName String? @db.VarChar(200)
+
+  partsCost  Decimal @default(0) @db.Decimal(18, 2)
+  labourCost Decimal @default(0) @db.Decimal(18, 2)
+  otherCost  Decimal @default(0) @db.Decimal(18, 2)
+  totalCost  Decimal @default(0) @db.Decimal(18, 2)
+
+  status String @default("Reported") @db.VarChar(20) // Reported | Inspection | RepairInProgress | Testing | Completed | Cancelled
+
+  releasedAt DateTime?
+  closedAt   DateTime?
+  remarks    String?   @db.Text
+
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedBy Int?
+  updatedAt DateTime @updatedAt
+
+  cancelledBy        Int?
+  cancelledAt        DateTime?
+  cancellationReason String?   @db.Text
+
+  @@unique([tenantId, breakdownNo])
+  @@index([tenantId, vehicleId])
+  @@index([tenantId, status])
+  @@index([tenantId, tripId])
+  @@map("vehicle_breakdown")
+}
+
+// Spare parts / labour cost lines — shared by both VehicleMaintenance and
+// VehicleBreakdown (exactly one of maintenanceId/breakdownId is set per row),
+// so the two workflows don't need two separate near-identical child tables.
+model VehicleMaintenanceItem {
+  id       Int @id @default(autoincrement())
+  tenantId Int
+
+  maintenanceId Int?
+  breakdownId   Int?
+
+  productId Int? // -> Product (existing Item Master), when picked from catalog
+  itemName  String  @db.VarChar(200) // snapshot name — also the sole name source for a free-text (non-catalog) item
+  qty       Decimal @default(1) @db.Decimal(18, 3)
+  uom       String? @db.VarChar(20)
+  rate      Decimal @default(0) @db.Decimal(18, 2)
+  amount    Decimal @default(0) @db.Decimal(18, 2)
+  remarks   String? @db.VarChar(300)
+
+  createdAt DateTime @default(now())
+
+  @@index([maintenanceId])
+  @@index([breakdownId])
+  @@map("vehicle_maintenance_item")
+}
+
+model VehicleMaintenanceLabour {
+  id       Int @id @default(autoincrement())
+  tenantId Int
+
+  maintenanceId Int?
+  breakdownId   Int?
+
+  description String  @db.VarChar(200)
+  hours       Decimal? @db.Decimal(10, 2)
+  rate        Decimal  @default(0) @db.Decimal(18, 2)
+  amount      Decimal  @default(0) @db.Decimal(18, 2)
+  technician  String?  @db.VarChar(150)
+  remarks     String?  @db.VarChar(300)
+
+  createdAt DateTime @default(now())
+
+  @@index([maintenanceId])
+  @@index([breakdownId])
+  @@map("vehicle_maintenance_labour")
+}
+
+// Fuel Management — additive over VehicleMaster/DriverMaster/VehicleTrip/
+// Supplier (all referenced by id, never duplicated). "Fuel Entry" = external
+// refuelling (no stock impact, plain expense record); "Fuel Issue" =
+// dispensed from the company's own FuelTank (decrements stock) — the nav's
+// two separate screens map to these two distinct tables rather than one
+// entry sharing an ambiguous "source" flag. Odometer's "last known reading"
+// for validation is resolved live across FuelEntry+FuelIssue+VehicleTrip,
+// never a second stored odometer system.
+
+model FuelStation {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  code     String  @db.VarChar(40)
+  name     String  @db.VarChar(150)
+  location String? @db.VarChar(200)
+  status   String  @default("Active") @db.VarChar(16)
+  remarks  String? @db.Text
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedBy Int?
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+  @@map("fuel_station")
+}
+
+model FuelTank {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  tankCode String @db.VarChar(40)
+  tankName String @db.VarChar(150)
+  stationId Int
+  fuelType  String  @default("Diesel") @db.VarChar(20)
+  capacity  Decimal @default(0) @db.Decimal(12, 2)
+  currentQty Decimal @default(0) @db.Decimal(12, 2)
+  minLevel  Decimal? @db.Decimal(12, 2)
+  maxLevel  Decimal? @db.Decimal(12, 2)
+  status    String  @default("Active") @db.VarChar(16)
+  remarks   String? @db.Text
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedBy Int?
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, tankCode])
+  @@index([tenantId, stationId])
+  @@index([tenantId, status])
+  @@map("fuel_tank")
+}
+
+// Replenishes an internal FuelTank — deliberately its own lightweight table,
+// NOT a GRN/Purchase Invoice: references Supplier by id (never duplicated)
+// but posts no GL/inventory entries itself, per "do not create duplicate
+// purchase/GL functionality" — shaped to be accounting-integration-ready
+// (supplier/invoice/date/qty/rate/amount) if that's wired up later.
+model FuelPurchase {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  purchaseNo String @db.VarChar(30)
+
+  supplierId   Int?
+  supplierName String? @db.VarChar(200)
+  purchaseDate DateTime
+  fuelType     String  @db.VarChar(20)
+  tankId       Int
+
+  quantity Decimal @db.Decimal(12, 2)
+  rate     Decimal @default(0) @db.Decimal(12, 2)
+  amount   Decimal @default(0) @db.Decimal(14, 2)
+
+  invoiceNo   String?   @db.VarChar(60)
+  invoiceDate DateTime?
+
+  status  String  @default("Confirmed") @db.VarChar(16) // Draft | Confirmed | Cancelled
+  remarks String? @db.Text
+
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedBy Int?
+  updatedAt DateTime @updatedAt
+  cancelledBy        Int?
+  cancelledAt        DateTime?
+  cancellationReason String?   @db.Text
+
+  @@unique([tenantId, purchaseNo])
+  @@index([tenantId, tankId])
+  @@index([tenantId, status])
+  @@map("fuel_purchase")
+}
+
+// External refuelling — vehicle fills up at an outside fuel station. No tank
+// stock is touched (that station's stock isn't ours to track).
+model FuelEntry {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  entryNo   String   @db.VarChar(30)
+  entryDate DateTime
+
+  vehicleId Int
+  driverId  Int?
+  tripId    Int?
+
+  fuelType String @default("Diesel") @db.VarChar(20)
+
+  fuelStationId   Int?
+  fuelStationName String? @db.VarChar(200)
+
+  quantity Decimal @db.Decimal(12, 2)
+  uom      String  @default("Litre") @db.VarChar(20)
+  rate     Decimal @default(0) @db.Decimal(12, 2)
+  amount   Decimal @default(0) @db.Decimal(14, 2)
+
+  odometer Decimal? @db.Decimal(12, 2)
+
+  invoiceNo   String?   @db.VarChar(60)
+  invoiceDate DateTime?
+  paymentMode String?   @db.VarChar(30)
+
+  status  String  @default("Confirmed") @db.VarChar(16) // Draft | Confirmed | Cancelled
+  remarks String? @db.Text
+
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedBy Int?
+  updatedAt DateTime @updatedAt
+  cancelledBy        Int?
+  cancelledAt        DateTime?
+  cancellationReason String?   @db.Text
+
+  @@unique([tenantId, entryNo])
+  @@index([tenantId, vehicleId])
+  @@index([tenantId, driverId])
+  @@index([tenantId, tripId])
+  @@index([tenantId, status])
+  @@map("fuel_entry")
+}
+
+// Internal dispensing from a company-owned FuelTank — decrements tank stock
+// on Confirm.
+model FuelIssue {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  issueNo   String   @db.VarChar(30)
+  issueDate DateTime
+
+  stationId Int?
+  tankId    Int
+
+  vehicleId Int
+  driverId  Int?
+  tripId    Int?
+
+  fuelType String @default("Diesel") @db.VarChar(20)
+  quantity Decimal @db.Decimal(12, 2)
+  rate     Decimal @default(0) @db.Decimal(12, 2)
+  amount   Decimal @default(0) @db.Decimal(14, 2)
+
+  odometer   Decimal? @db.Decimal(12, 2)
+  dispenser  String?  @db.VarChar(100)
+  operator   String?  @db.VarChar(150)
+
+  status  String  @default("Confirmed") @db.VarChar(16) // Draft | Confirmed | Cancelled
+  remarks String? @db.Text
+
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedBy Int?
+  updatedAt DateTime @updatedAt
+  cancelledBy        Int?
+  cancelledAt        DateTime?
+  cancellationReason String?   @db.Text
+
+  @@unique([tenantId, issueNo])
+  @@index([tenantId, vehicleId])
+  @@index([tenantId, tankId])
+  @@index([tenantId, status])
+  @@map("fuel_issue")
+}
+
+model FuelStockAdjustment {
+  id         Int    @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+  adjustmentNo   String   @db.VarChar(30)
+  tankId         Int
+  adjustmentDate DateTime
+  adjustmentType String   @db.VarChar(10) // Increase | Decrease
+  quantity       Decimal  @db.Decimal(12, 2)
+  reason         String   @db.VarChar(60) // Measurement Difference | Leakage | Evaporation | Stock Correction | Calibration Difference | Other
+  remarks        String?  @db.Text
+
+  createdBy Int?
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, adjustmentNo])
+  @@index([tenantId, tankId])
+  @@map("fuel_stock_adjustment")
+}
+
 model RouteMaster {
   id         Int    @id @default(autoincrement())
   tenantId   Int
@@ -9483,7 +9899,11 @@ model LoadDispatch {
   // trusted verbatim from the client for the amounts (transitPassQty is the
   // one exception — user-entered in Manual mode).
   vehicleRent       Decimal  @default(0) @db.Decimal(18, 2)
+  transitPassRefNo  String?  @db.VarChar(60)
   transitPassQty    Decimal? @db.Decimal(18, 3)
+  // Rate (₹ per Ton) in effect at submission time — stored so historical rows
+  // stay accurate even after Dispatch Configuration's rate later changes.
+  transitPassRate   Decimal? @db.Decimal(12, 2)
   transitPassAmount Decimal  @default(0) @db.Decimal(18, 2)
   driverBattaAmount Decimal  @default(0) @db.Decimal(18, 2)
   // Batta Payment Mode captured on the create form when driverBattaMode is

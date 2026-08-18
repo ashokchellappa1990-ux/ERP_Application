@@ -49,7 +49,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     paymentMode: doc.paymentMode as LoadDispatchDetail["paymentMode"], paymentAmount: doc.paymentAmount != null ? num(doc.paymentAmount) : null,
     paymentMethod: doc.paymentMethod, bankId: doc.bankId, bankName: doc.bankName, bankAccount: doc.bankAccount,
     paymentSplits: Array.isArray(doc.paymentSplits) ? (doc.paymentSplits as unknown as LoadDispatchDetail["paymentSplits"]) : null,
-    vehicleRent: num(doc.vehicleRent), transitPassQty: doc.transitPassQty != null ? num(doc.transitPassQty) : null,
+    vehicleRent: num(doc.vehicleRent), transitPassRefNo: doc.transitPassRefNo, transitPassQty: doc.transitPassQty != null ? num(doc.transitPassQty) : null, transitPassRate: doc.transitPassRate != null ? num(doc.transitPassRate) : null,
     transitPassAmount: num(doc.transitPassAmount), driverBattaAmount: num(doc.driverBattaAmount),
     driverBattaMode: doc.driverBattaMode as LoadDispatchDetail["driverBattaMode"], driverBattaPaymentMode: doc.driverBattaPaymentMode,
     dispatchVoucherPosted: doc.dispatchVoucherPosted, dispatchClearingAmount: num(doc.dispatchClearingAmount),
@@ -101,6 +101,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   const driverBattaAmount = Math.round(computeDriverBatta(cfg, tonQty) * 100) / 100;
   const transitPassQty = cfg.fields.transitPassQtyMode === "AutoNetWeight" ? tonQty : (input.transitPassQty != null ? Math.max(0, input.transitPassQty) : undefined);
   const transitPassAmount = transitPassQty != null ? Math.round(computeTransitPass(cfg, transitPassQty) * 100) / 100 : undefined;
+  const transitPassRate = transitPassQty != null ? Number(cfg.fields.transitPassPerTon) || 0 : undefined;
 
   await prisma.$transaction(async (tx) => {
     await tx.loadDispatch.update({
@@ -117,7 +118,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         paymentMode: input.payment?.paymentMode, paymentAmount: input.payment?.paymentAmount,
         paymentMethod: input.payment?.paymentMethod, bankId: input.payment?.bankId,
         bankName: input.payment?.bankName, bankAccount: input.payment?.bankAccount,
-        vehicleRent: input.vehicleRent, transitPassQty, transitPassAmount, driverBattaAmount,
+        vehicleRent: input.vehicleRent, transitPassRefNo: input.transitPassRefNo === undefined ? undefined : (input.transitPassRefNo?.trim() || null), transitPassQty, transitPassRate, transitPassAmount, driverBattaAmount,
         driverBattaMode: input.driverBattaMode,
         updatedBy: user.id,
       },

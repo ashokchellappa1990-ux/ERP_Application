@@ -18,7 +18,7 @@ export type GrnWithLines = Prisma.GoodsReceiptNoteGetPayload<{ include: { lines:
 
 /** The GRN's grand total (supplier bill basis) = goods + tax + GRN-level charges. */
 export function grnGrandTotal(g: GrnWithLines): number {
-  return r2(num(g.subtotal) + num(g.taxTotal) + num(g.freightAmount) + num(g.otherCharges) + num(g.roundOff));
+  return r2(num(g.subtotal) + num(g.taxTotal) + num(g.freightAmount) + num(g.otherCharges) + num(g.transitPassAmount) + num(g.roundOff));
 }
 
 export interface BuiltInvoice {
@@ -354,7 +354,7 @@ export async function reversePurchaseInvoiceTx(tx: Prisma.TransactionClient, ten
       if (legacy) {
         const g = await tx.goodsReceiptNote.findUnique({ where: { id: m.grnId } });
         if (g && g.status === "Posted") {
-          const grand = r2(num(g.subtotal) + num(g.taxTotal) + num(g.freightAmount) + num(g.otherCharges) + num(g.roundOff));
+          const grand = r2(num(g.subtotal) + num(g.taxTotal) + num(g.freightAmount) + num(g.otherCharges) + num(g.transitPassAmount) + num(g.roundOff));
           const balance = r2(grand - num(g.amountPaid));
           await tx.payable.deleteMany({ where: { tenantId, sourceType: "GRN", sourceId: g.id } });
           if (balance > 0.005) {

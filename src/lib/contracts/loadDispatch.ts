@@ -126,6 +126,7 @@ export const directCustomerDispatchInput = z.object({
   // from the dispatched Ton qty + configured rate/rounding.
   vehicleRent: z.coerce.number().min(0).default(0),
   transitPassQty: z.coerce.number().min(0).default(0),
+  transitPassRefNo: z.string().trim().max(60).optional().nullable(),
   driverBattaMode: z.enum(["Adjustment", "Payment"]).default("Adjustment"),
   // Only meaningful when driverBattaMode is "Payment" (the business pays the
   // driver separately) — which account the Driver Batta Expense JV credits.
@@ -179,6 +180,7 @@ export const loadDispatchUpdateInput = z.object({
   // accepted from the client (see createDirectCustomerDispatch's comment).
   vehicleRent: z.coerce.number().min(0).optional(),
   transitPassQty: z.coerce.number().min(0).optional(),
+  transitPassRefNo: z.string().trim().max(60).optional().nullable(),
   driverBattaMode: z.enum(["Adjustment", "Payment"]).optional(),
 });
 
@@ -242,7 +244,7 @@ export interface LoadDispatchDetail {
   paymentMode: "Full" | "Partial" | "Credit" | null; paymentAmount: number | null; paymentMethod: string | null;
   bankId: number | null; bankName: string | null; bankAccount: string | null;
   paymentSplits: { mode: string; amount: number; reference?: string | null }[] | null;
-  vehicleRent: number; transitPassQty: number | null; transitPassAmount: number;
+  vehicleRent: number; transitPassRefNo: string | null; transitPassQty: number | null; transitPassRate: number | null; transitPassAmount: number;
   driverBattaAmount: number; driverBattaMode: "Adjustment" | "Payment" | null; driverBattaPaymentMode: string | null;
   dispatchVoucherPosted: boolean; dispatchClearingAmount: number;
   // Once the Sales Invoice has posted — the invoice's own Cash/Card/UPI/Split/Credit

@@ -158,6 +158,8 @@ export default function GrnViewPage() {
           <KV k="Transporter" v={grn.transporterName} /><KV k="Vehicle Owner Type" v={grn.vehicleOwnerType} /><KV k="Mode" v={grn.transportMode} /><KV k="Vehicle" v={grn.vehicleNo} />
           <KV k="LR / Docket" v={grn.lrNo} /><KV k="E-Way Bill" v={grn.ewayBillNo} /><KV k="Packages" v={grn.numPackages ? String(grn.numPackages) : ""} />
           <KV k="Freight" v={grn.freightAmount ? money(grn.freightAmount) : ""} /><KV k="Freight By" v={grn.freightPaidBy} />
+          {grn.transitPassRefNo && <KV k="Transit Pass Ref No" v={grn.transitPassRefNo} />}
+          {!!grn.transitPassQty && <KV k="Transit Pass Qty" v={`${grn.transitPassQty} Ton`} />}
         </SectionCard>
       </div>
 
@@ -240,6 +242,9 @@ export default function GrnViewPage() {
           <KV k="Subtotal" v={money(grn.subtotal)} />
           <KV k={`GST ${grn.gstMode === "invoice" ? `(@ ${grn.gstPct}%)` : "(line-wise)"}`} v={money(grn.taxTotal)} />
           <KV k="Freight" v={money(grn.freightAmount)} /><KV k="Other" v={money(grn.otherCharges)} />
+          {!!grn.transitPassAmount && (
+            <div className="-mx-2 flex items-center justify-between rounded-md bg-warning-subtle px-2 py-1"><span className="font-medium text-warning">Transit Pass Value</span><span className="font-semibold text-warning">{money(grn.transitPassAmount)}</span></div>
+          )}
           {!!grn.roundOff && <KV k="Round Off" v={money(grn.roundOff)} />}
           <div className="my-1 h-px bg-border" />
           <KV k="Grand Total" v={money(grn.totalValue)} strong />

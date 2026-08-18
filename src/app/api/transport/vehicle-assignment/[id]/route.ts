@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth/guard";
 import { writeAudit } from "@/lib/audit/log";
 import { vehicleAssignmentInput, effectiveAssignmentStatus, type AssignmentDetail } from "@/lib/contracts/vehicleAssignment";
 import { findDuplicateAssignment, findOverlappingPrimary } from "@/lib/transport/vehicleAssignment";
+import { isVehicleUnderMaintenance } from "@/lib/transport/vehicleMaintenance";
 
 const PERM = "masters.transport";
 
@@ -88,6 +89,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   const vehicle = await prisma.vehicleMaster.findFirst({ where: { id: b.vehicleId, tenantId: user.tenantId, deletedAt: null } });
   if (!vehicle) return NextResponse.json({ ok: false, message: "Vehicle not found." }, { status: 422 });
   if (vehicle.status !== "Active") return NextResponse.json({ ok: false, message: "This vehicle is not Active and cannot be assigned." }, { status: 422 });
+  if (await isVehicleUnderMaintenance(user.tenantId, b.vehicleId)) return NextResponse.json({ ok: false, message: "This vehicle is currently under maintenance and cannot be assigned." }, { status: 422 });
 
   const driver = await prisma.driverMaster.findFirst({ where: { id: b.driverId, tenantId: user.tenantId, deletedAt: null } });
   if (!driver) return NextResponse.json({ ok: false, message: "Driver not found." }, { status: 422 });

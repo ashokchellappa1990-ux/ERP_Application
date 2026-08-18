@@ -130,6 +130,26 @@ export function PurchaseSettings() {
           <Switch checked={flag("enableWeighbridgeFetch")} onChange={(v) => setFlag("enableWeighbridgeFetch", v)} aria-label="Enable weighbridge fetch" />
         </label>
       </Section>
+
+      <Section icon={Scale} title="Transit Pass">
+        <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-surface p-3.5">
+          <span><span className="block text-sm font-medium text-foreground">Enable Transit Pass</span><span className="text-2xs text-muted">Show the Transit Pass section on the GRN screen (Reference No, Qty, computed Value payable to the supplier).</span></span>
+          <Switch checked={flag("enableTransitPass")} onChange={(v) => setFlag("enableTransitPass", v)} aria-label="Enable transit pass" />
+        </label>
+        {flag("enableTransitPass") && (
+          <>
+            <Grid>
+              <Input label="Transit Pass Rate (₹ per Ton)" type="number" value={field("transitPassPerTon")} onChange={(e) => setField("transitPassPerTon", e.target.value)} placeholder="0" />
+            </Grid>
+            <Grid>
+              <Input label="Wallet Opening Balance Qty (Ton)" type="number" value={field("transitPassOpeningQty")} onChange={(e) => setField("transitPassOpeningQty", e.target.value)} placeholder="0" />
+              <Input label="Wallet Opening Balance Amount (₹)" type="number" value={field("transitPassOpeningAmount")} onChange={(e) => setField("transitPassOpeningAmount", e.target.value)} placeholder="0" />
+            </Grid>
+            <p className="mt-1 text-2xs text-muted">One-time starting balance for the Transit Pass Reconciliation ledger (Transport &amp; Vehicle Operations → Transit Pass Reconciliation) — set once before switching this feature on; every GRN and dispatch after that updates the running balance automatically.</p>
+          </>
+        )}
+        <p className="mt-2 text-2xs text-muted">Used on the GRN screen — Transit Pass Qty (Ton) entered there × this rate = Transit Pass Value, payable to the supplier alongside the goods value.</p>
+      </Section>
     </div>
   );
 }

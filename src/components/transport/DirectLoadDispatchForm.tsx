@@ -205,6 +205,7 @@ export function DirectLoadDispatchForm() {
   const [transitPassPerTon, setTransitPassPerTon] = useState(140);
   const [transitPassQtyMode, setTransitPassQtyMode] = useState<"Manual" | "AutoNetWeight">("Manual");
   const [transitPassQtyManual, setTransitPassQtyManual] = useState("");
+  const [transitPassRefNo, setTransitPassRefNo] = useState("");
   const [roundOffInvoiceTotal, setRoundOffInvoiceTotal] = useState(false);
   const [roundOffNearest, setRoundOffNearest] = useState(10);
   // Always "Payment" — the full invoice amount is collected from the
@@ -488,6 +489,7 @@ export function DirectLoadDispatchForm() {
       sealNumber: sealNumber.trim() || null,
       vehicleRent: n(vehicleRent),
       transitPassQty: transitPassQty,
+      transitPassRefNo: transitPassRefNo.trim() || null,
       driverBattaMode: (driverBattaMode === "adjustment" ? "Adjustment" : "Payment") as "Adjustment" | "Payment",
       driverBattaPaymentMode: driverBattaMode === "payment" ? battaPaymentMode : null,
       payment: {
@@ -893,6 +895,12 @@ export function DirectLoadDispatchForm() {
               </div>
             ) : (
               <p className="text-2xs text-subtle">Transit Pass Qty auto-fills from Net Weight: {tonQty.toFixed(3)} Ton × ₹{transitPassPerTon}/Ton.</p>
+            )}
+            {transitPassAmount > 0 && (
+              <div className="flex items-center justify-between gap-3">
+                <span className="shrink-0 text-2xs text-subtle">Transit Pass Number</span>
+                <input type="text" value={transitPassRefNo} onChange={(e) => setTransitPassRefNo(e.target.value)} placeholder="e.g. TP-00123" className={cn(inp, "h-8 w-40 text-right")} />
+              </div>
             )}
             <div className="my-1 h-px bg-border" />
             <Row k="Total" v={preRoundInvoiceAmount.toFixed(2)} big />

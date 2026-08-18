@@ -70,12 +70,14 @@ const sellingFromProfit = (cost: number, profit: number, tax: number, incl: bool
 const mrpFromSelling = (selling: number, tax: number, incl: boolean) => +(incl ? selling : selling * (1 + (tax > 0 ? tax : 0) / 100)).toFixed(2);
 
 interface Extra {
-  gstPct: string; freightAmount: string; otherCharges: string; roundOff: string; totalInvoiceValue: string;
+  gstPct: string; freightAmount: string; otherCharges: string;
+  transitPassRefNo: string; transitPassQty: string;
+  roundOff: string; totalInvoiceValue: string;
   paymentStatus: "Paid" | "Unpaid" | "Partial"; amountPaid: string; paymentMode: string; paymentRef: string; paymentDate: string;
   paymentTerms: string; creditDays: string; dueDate: string;
   transporterName: string; transportMode: string; transportType: string; vehicleNo: string; lrNo: string; ewayBillNo: string; freightPaidBy: string; numPackages: string; transportRemarks: string;
 }
-const EMPTY_EXTRA: Extra = { gstPct: "", freightAmount: "", otherCharges: "", roundOff: "", totalInvoiceValue: "", paymentStatus: "Unpaid", amountPaid: "", paymentMode: "", paymentRef: "", paymentDate: "", paymentTerms: "", creditDays: "", dueDate: "", transporterName: "", transportMode: "", transportType: "", vehicleNo: "", lrNo: "", ewayBillNo: "", freightPaidBy: "", numPackages: "", transportRemarks: "" };
+const EMPTY_EXTRA: Extra = { gstPct: "", freightAmount: "", otherCharges: "", transitPassRefNo: "", transitPassQty: "", roundOff: "", totalInvoiceValue: "", paymentStatus: "Unpaid", amountPaid: "", paymentMode: "", paymentRef: "", paymentDate: "", paymentTerms: "", creditDays: "", dueDate: "", transporterName: "", transportMode: "", transportType: "", vehicleNo: "", lrNo: "", ewayBillNo: "", freightPaidBy: "", numPackages: "", transportRemarks: "" };
 
 export function GrnEditor() {
   const router = useRouter();
@@ -144,6 +146,8 @@ export function GrnEditor() {
   const [enableTruckWeightGrn, setEnableTruckWeightGrn] = useState(false);
   const [truckWeightUom, setTruckWeightUom] = useState("Kg");
   const [enableWeighbridgeFetch, setEnableWeighbridgeFetch] = useState(false);
+  const [enableTransitPass, setEnableTransitPass] = useState(false);
+  const [transitPassPerTon, setTransitPassPerTon] = useState(0);
   const wb = useWeighbridgeContext();
   useEffect(() => {
     (async () => {
@@ -154,6 +158,8 @@ export function GrnEditor() {
           setEnableTruckWeightGrn(!!j.config.flags?.enableTruckWeightGrn);
           setTruckWeightUom(j.config.fields?.truckWeightUom || "Kg");
           setEnableWeighbridgeFetch(!!j.config.flags?.enableWeighbridgeFetch);
+          setEnableTransitPass(!!j.config.flags?.enableTransitPass);
+          setTransitPassPerTon(Number(j.config.fields?.transitPassPerTon) || 0);
         }
       } catch { /* keep defaults */ }
     })();
@@ -371,7 +377,9 @@ export function GrnEditor() {
       setGstMode(d.gstMode === "invoice" ? "invoice" : "line");
       setGstApplicable(Number(d.taxTotal) > 0 || Number(d.gstPct) > 0 || (d.lines ?? []).some((l: Record<string, unknown>) => Number(l.taxPct) > 0));
       setExtra({
-        gstPct: sv(d.gstPct), freightAmount: sv(d.freightAmount), otherCharges: sv(d.otherCharges), roundOff: sv(d.roundOff), totalInvoiceValue: sv(d.totalInvoiceValue),
+        gstPct: sv(d.gstPct), freightAmount: sv(d.freightAmount), otherCharges: sv(d.otherCharges),
+        transitPassRefNo: d.transitPassRefNo ?? "", transitPassQty: sv(d.transitPassQty),
+        roundOff: sv(d.roundOff), totalInvoiceValue: sv(d.totalInvoiceValue),
         paymentStatus: (d.paymentStatus as Extra["paymentStatus"]) || "Unpaid", amountPaid: sv(d.amountPaid), paymentMode: d.paymentMode || "", paymentRef: d.paymentRef || "", paymentDate: d.paymentDate || "",
         paymentTerms: d.paymentTerms || "", creditDays: sv(d.creditDays), dueDate: d.dueDate || "",
         transporterName: d.transporterName || "", transportMode: d.transportMode || "", transportType: d.transportType || "", vehicleNo: d.vehicleNo || "", lrNo: d.lrNo || "", ewayBillNo: d.ewayBillNo || "", freightPaidBy: d.freightPaidBy || "", numPackages: sv(d.numPackages), transportRemarks: d.transportRemarks || "",
@@ -494,7 +502,8 @@ export function GrnEditor() {
   const lineDisplay = (l: Line) => +(lineNet(l) + lineTax(l)).toFixed(2);
   const subtotal = +valid.reduce((s, l) => s + lineNet(l), 0).toFixed(2);
   const taxTotal = +(!gstApplicable ? 0 : gstMode === "invoice" ? (subtotal * n(extra.gstPct)) / 100 : valid.reduce((s, l) => s + lineTax(l), 0)).toFixed(2);
-  const grandTotal = +(subtotal + taxTotal + n(extra.freightAmount) + n(extra.otherCharges) + n(extra.roundOff)).toFixed(2);
+  const transitPassAmount = enableTransitPass ? +(n(extra.transitPassQty) * transitPassPerTon).toFixed(2) : 0;
+  const grandTotal = +(subtotal + taxTotal + n(extra.freightAmount) + n(extra.otherCharges) + transitPassAmount + n(extra.roundOff)).toFixed(2);
   const amountPaid = extra.paymentStatus === "Paid" ? grandTotal : extra.paymentStatus === "Partial" ? Math.min(grandTotal, n(extra.amountPaid)) : 0;
   const balance = +(grandTotal - amountPaid).toFixed(2);
   const totalValue = grandTotal;
@@ -538,6 +547,7 @@ export function GrnEditor() {
       grnDate, supplier, supplierGstin, supplierContact, supplierInvoiceNo, supplierInvoiceDate, poNo, weightSlipRefNo, inventoryMovement, areaId: areaId === "" ? null : areaId, vehicleOwnerType, warehouse, notes, status,
       gstMode: gstApplicable ? gstMode : "line", ...extra,
       gstPct: gstApplicable && gstMode === "invoice" ? extra.gstPct : "",
+      transitPassAmount, transitPassRate: enableTransitPass ? transitPassPerTon : null,
       tareWeight: enableTruckWeightGrn ? tareWeight : "", grossWeight: enableTruckWeightGrn ? grossWeight : "",
       netWeight: enableTruckWeightGrn && netWeight != null ? String(netWeight) : "", weightUom: enableTruckWeightGrn ? truckWeightUom : "",
       billNetWeight: enableTruckWeightGrn ? billNetWeight : "",
@@ -838,6 +848,17 @@ export function GrnEditor() {
         </div>
       </div>
 
+      {/* Transit Pass */}
+      {enableTransitPass && (
+        <SectionCard icon={Truck} title="Transit Pass">
+          <div className="grid gap-2.5 sm:grid-cols-3">
+            <Field label="Transit Pass Reference No"><input value={extra.transitPassRefNo} onChange={(e) => setE("transitPassRefNo", e.target.value)} placeholder="Optional" className={inpSm} /></Field>
+            <Field label="Transit Pass Qty (Ton)"><input type="number" min={0} value={extra.transitPassQty} onChange={(e) => setE("transitPassQty", e.target.value)} placeholder="0" className={inpSm} /></Field>
+            <Field label={`Transit Pass Value (₹${transitPassPerTon}/Ton)`}><input readOnly value={transitPassAmount ? inr(transitPassAmount) : ""} placeholder="0" className={cn(inpSm, "bg-surface-2 font-semibold text-primary")} /></Field>
+          </div>
+        </SectionCard>
+      )}
+
       {/* Payment · Transport · Totals */}
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Payment */}
@@ -892,6 +913,9 @@ export function GrnEditor() {
             <Row label="Subtotal" value={inr(subtotal)} />
             <Row label={!gstApplicable ? "GST (not applicable)" : `GST ${gstMode === "invoice" ? `(@ ${n(extra.gstPct)}%)` : "(line-wise)"}`} value={inr(taxTotal)} />
             <Row label="Freight" value={inr(n(extra.freightAmount))} />
+            {transitPassAmount > 0 && (
+              <div className="flex items-center justify-between rounded-md bg-warning-subtle px-2 py-1 -mx-2"><span className="font-medium text-warning">Transit Pass Value</span><span className="font-semibold text-warning">{inr(transitPassAmount)}</span></div>
+            )}
             <div className="flex items-center justify-between gap-2"><span className="text-muted">Other Charges</span><input type="number" value={extra.otherCharges} onChange={(e) => setE("otherCharges", e.target.value)} placeholder="0" className="h-7 w-24 rounded border border-border-strong bg-surface px-2 text-right text-xs focus:border-primary focus:outline-none" /></div>
             <div className="flex items-center justify-between gap-2"><span className="text-muted">Round Off</span><input type="number" value={extra.roundOff} onChange={(e) => setE("roundOff", e.target.value)} placeholder="0" className="h-7 w-24 rounded border border-border-strong bg-surface px-2 text-right text-xs focus:border-primary focus:outline-none" /></div>
             <div className="my-1.5 h-px bg-border" />

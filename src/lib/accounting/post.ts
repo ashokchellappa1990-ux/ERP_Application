@@ -65,7 +65,7 @@ export async function postJournal(tx: Prisma.TransactionClient, input: PostJourn
 
 export interface PurchaseJournalInput {
   tenantId: number; businessId?: number | null; branchId?: number | null; grnId: number; grnNo: string; date: string; supplier?: string | null;
-  subtotal: number; taxTotal: number; freight: number; otherCharges: number; roundOff: number;
+  subtotal: number; taxTotal: number; freight: number; otherCharges: number; transitPass: number; roundOff: number;
   grandTotal: number; amountPaid: number; paymentMode?: string | null; createdBy?: number | null;
   hasInvoice?: boolean; // supplier-invoice details were entered at GRN
 }
@@ -74,7 +74,7 @@ export interface PurchaseJournalInput {
  * Accounts Payable. Otherwise the goods sit in GRN Clearing (Dr Inventory / Cr GRN
  * Clearing) until the supplier bill is recorded via Purchase Invoice. */
 export async function postPurchaseJournal(tx: Prisma.TransactionClient, p: PurchaseJournalInput) {
-  const goodsValue = r2(p.subtotal + p.freight + p.otherCharges + p.roundOff); // landed cost, ex-GST
+  const goodsValue = r2(p.subtotal + p.freight + p.otherCharges + p.transitPass + p.roundOff); // landed cost, ex-GST
   if (!p.hasInvoice) {
     return postJournal(tx, {
       tenantId: p.tenantId, businessId: p.businessId, branchId: p.branchId, voucherType: "PURCHASE", prefix: "PV", date: p.date,

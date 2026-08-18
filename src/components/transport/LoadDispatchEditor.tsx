@@ -97,6 +97,7 @@ export function LoadDispatchEditor({ id }: { id: number }) {
   // accepted verbatim — same rule as at creation time).
   const [vehicleRentInput, setVehicleRentInput] = useState("0");
   const [transitPassQtyInput, setTransitPassQtyInput] = useState("0");
+  const [transitPassRefNoInput, setTransitPassRefNoInput] = useState("");
   const [driverBattaModeInput, setDriverBattaModeInput] = useState<"Adjustment" | "Payment">("Adjustment");
 
   const [items, setItems] = useState<EditableItem[]>([]);
@@ -146,6 +147,7 @@ export function LoadDispatchEditor({ id }: { id: number }) {
 
     setVehicleRentInput(String(d.vehicleRent ?? 0));
     setTransitPassQtyInput(d.transitPassQty != null ? String(d.transitPassQty) : "0");
+    setTransitPassRefNoInput(d.transitPassRefNo ?? "");
     setDriverBattaModeInput(d.driverBattaMode ?? "Adjustment");
 
     setItems(d.items.map((it) => ({ ...it, dispatchedQtyInput: String(it.dispatchedQty) })));
@@ -264,7 +266,7 @@ export function LoadDispatchEditor({ id }: { id: number }) {
       loadingStart: loadingStart || null, loadingEnd: loadingEnd || null,
       trailerNumber: trailerNumber || null, containerNumber: containerNumber || null,
       packages: Number(packages) || 0, pallets: Number(pallets) || 0, remarks: remarks || null,
-      vehicleRent: Number(vehicleRentInput) || 0, transitPassQty: Math.max(0, Number(transitPassQtyInput) || 0), driverBattaMode: driverBattaModeInput,
+      vehicleRent: Number(vehicleRentInput) || 0, transitPassQty: Math.max(0, Number(transitPassQtyInput) || 0), transitPassRefNo: transitPassRefNoInput.trim() || null, driverBattaMode: driverBattaModeInput,
       items: items.map((it) => ({
         productId: it.productId, productName: it.productName, sku: it.sku, uom: it.uom, batchNo: it.batchNo,
         mfgDate: it.mfgDate, expiryDate: it.expiryDate, serialNo: it.serialNo, allocationLotId: it.allocationLotId,
@@ -659,6 +661,16 @@ export function LoadDispatchEditor({ id }: { id: number }) {
               </div>
             ) : (
               x.transitPassQty != null && <p className="text-2xs text-subtle">Transit Pass Qty: {x.transitPassQty.toFixed(3)} Ton</p>
+            )}
+            {canEdit ? (
+              transitPassAmountVal > 0 && (
+                <div className="flex items-center justify-between gap-3">
+                  <span className="shrink-0 text-2xs text-subtle">Transit Pass Number</span>
+                  <input type="text" value={transitPassRefNoInput} onChange={(e) => setTransitPassRefNoInput(e.target.value)} placeholder="e.g. TP-00123" className={cn(inp, "h-8 w-40 text-right")} />
+                </div>
+              )
+            ) : (
+              x.transitPassRefNo && <p className="text-2xs text-subtle">Transit Pass No: {x.transitPassRefNo}</p>
             )}
             {canEdit && <p className="text-2xs text-subtle">Rent / Transit Pass Qty save with Save Draft below — Driver Batta &amp; Transit Pass Amount are always recalculated server-side.</p>}
             <div className="my-1 h-px bg-border" />
