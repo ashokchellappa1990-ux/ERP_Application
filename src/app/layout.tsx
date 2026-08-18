@@ -5,6 +5,7 @@ import { NavigationLoader } from "@/components/ui/NavigationLoader";
 import { ToastProvider } from "@/components/ui/Toast";
 import { getPublishedConfig } from "@/lib/website/service";
 import { DEFAULT_PRODUCT_NAME } from "@/lib/brand";
+import { WeighbridgeProvider } from "@/components/shared/WeighbridgeProvider";
 
 // This app is a multi-tenant, authenticated ERP/SaaS — nothing under it should
 // be statically prerendered at BUILD time (content is per-tenant/per-user and
@@ -90,7 +91,10 @@ export default function RootLayout({
         <ThemeProvider>
           <ToastProvider>
             <NavigationLoader />
-            {children}
+            {/* Mounted app-wide (not just inside the authenticated (app) layout) so
+                the live weighbridge connection survives navigating to/from /login —
+                see the note in src/app/(app)/layout.tsx for why. */}
+            <WeighbridgeProvider>{children}</WeighbridgeProvider>
           </ToastProvider>
         </ThemeProvider>
       </body>

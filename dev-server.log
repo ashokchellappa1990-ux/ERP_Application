@@ -398,3 +398,37 @@
  ✓ Compiled /api/transport/movement-history in 279ms (701 modules)
  GET /api/transport/movement-history? 200 in 1130ms
  GET /api/transport/movement-history? 200 in 1132ms
+ ✓ Compiled in 561ms (569 modules)
+ ✓ Compiled in 353ms (569 modules)
+ ✓ Compiled in 333ms (569 modules)
+ ✓ Compiled in 342ms (569 modules)
+ ✓ Compiled in 750ms (1148 modules)
+ ✓ Compiled in 912ms (1148 modules)
+ GET /masters/transport/vehicle-trip 200 in 501ms
+ ✓ Compiled /transport/movement-history in 184ms (585 modules)
+ GET /transport/movement-history 200 in 584ms
+ GET /transport/movement-history 200 in 3004ms
+ ✓ Compiled /api/settings/general in 417ms (617 modules)
+ ✓ Compiled (735 modules)
+ GET /icon.svg?7f33ccf9ef44f536 200 in 881ms
+ ✓ Compiled /api/settings/document-fields in 148ms (737 modules)
+ GET /api/website/config 200 in 1082ms
+ GET /api/website/config 200 in 1090ms
+ ✓ Compiled /api/auth/me in 109ms (739 modules)
+ ✓ Compiled (742 modules)
+ GET /api/settings/theme 200 in 1381ms
+ GET /api/settings/general 200 in 1256ms
+ GET /api/settings/theme 200 in 1433ms
+ GET /api/settings/document-fields 200 in 622ms
+ GET /api/system/scope 200 in 639ms
+ GET /api/system/scope 200 in 393ms
+ GET /api/settings/document-fields 200 in 470ms
+ GET /api/settings/general 200 in 474ms
+ GET /api/auth/me 200 in 828ms
+ ✓ Compiled /api/transport/movement-history in 226ms (744 modules)
+ GET /api/auth/me 200 in 589ms
+ ✓ Compiled /api/company-setup in 216ms (827 modules)
+ GET /api/transport/movement-history? 200 in 1371ms
+ GET /api/transport/movement-history? 200 in 1493ms
+ GET /api/company-setup 200 in 1167ms
+ GET /api/company-setup 200 in 1343ms
