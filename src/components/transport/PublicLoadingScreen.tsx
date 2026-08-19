@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Truck, Package, User, CheckCircle2, Loader2, AlertTriangle } from "lucide-react";
+import { Logo } from "@/components/ui/Logo";
+import { useBrand } from "@/components/theme/ThemeProvider";
 
 interface Operator { id: number; name: string }
 interface Data {
@@ -41,6 +43,7 @@ const STATUS_TONE: Record<string, string> = {
  * their name (Loading Operator master), and Start Loading / Complete
  * Loading. Deliberately talks straight to /api/public/... (no session). */
 export function PublicLoadingScreen({ token }: { token: string }) {
+  const brand = useBrand();
   const [data, setData] = useState<Data | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -80,7 +83,12 @@ export function PublicLoadingScreen({ token }: { token: string }) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
+    <div className="flex min-h-screen flex-col bg-background">
+      <header className="flex items-center bg-brand-gradient px-4 py-3 shadow-sm">
+        <Logo showText invert />
+      </header>
+
+      <div className="flex flex-1 items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm space-y-4">
         {loading && (
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-10 text-center shadow-sm">
@@ -162,15 +170,20 @@ export function PublicLoadingScreen({ token }: { token: string }) {
           </div>
         )}
       </div>
+      </div>
+
+      <footer className="border-t border-border bg-card px-4 py-3 text-center text-2xs text-subtle">
+        © {new Date().getFullYear()} {brand.productName}. All rights reserved.
+      </footer>
     </div>
   );
 }
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-2xs font-semibold uppercase tracking-wide text-muted">{label}</span>
-      <span className="text-right text-sm font-medium text-foreground">{value}</span>
+    <div className="flex items-start justify-between gap-3">
+      <span className="shrink-0 text-2xs font-semibold uppercase tracking-wide text-muted">{label}</span>
+      <span className="min-w-0 break-words text-right text-sm font-semibold text-primary">{value}</span>
     </div>
   );
 }

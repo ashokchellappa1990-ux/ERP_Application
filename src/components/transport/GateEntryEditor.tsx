@@ -705,6 +705,12 @@ export function GateEntryEditor() {
         </div>
       )}
       {navigating && <AppLoader fullScreen label={isRawMaterial ? "Please wait…" : "Opening Pre Loading Weighment"} />}
+      {/* Covers the whole gap between clicking "Record Gate Entry" and either
+          the success popup (savedId set) or an error toast — same fullScreen
+          treatment as the post-save "navigating" loader above, so there's
+          never a stretch where nothing visibly indicates the save is in
+          progress. */}
+      {saving && savedId == null && <AppLoader fullScreen label="Recording gate entry…" />}
     </div>
   );
 }

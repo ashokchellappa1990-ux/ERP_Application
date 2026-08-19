@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Weight, ArrowLeft, Truck, Save, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { AppLoader } from "@/components/ui/AppLoader";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
@@ -139,6 +140,9 @@ export function PostLoadingWeighmentEditor() {
           </div>
         </>
       )}
+      {/* Covers the gap between clicking "Record Weighment" and either
+          navigating away on success or an error toast. */}
+      {saving && <AppLoader fullScreen label="Recording weighment…" />}
     </div>
   );
 }

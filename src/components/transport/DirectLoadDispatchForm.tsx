@@ -14,8 +14,6 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { BankPicker, emptyBank, type BankValue } from "@/components/finance/BankPicker";
 import { fieldOn, fieldMust } from "@/lib/settings/docFieldsConfig";
-import { buildTaxInvoiceHtml, type TaxInvoiceData } from "@/lib/print/taxInvoiceHtml";
-import { DEFAULT_RECEIPT } from "@/lib/settings/receiptTemplate";
 import { roundTonQty } from "@/lib/settings/transportConfigDefaults";
 import { AccountingPostingDetails } from "@/components/transport/AccountingPostingDetails";
 import { FetchWeightButton } from "@/components/shared/FetchWeightButton";
@@ -570,27 +568,17 @@ export function DirectLoadDispatchForm() {
     setDcId(j.deliveryChallanId ?? null);
     return j.deliveryChallanId ?? null;
   }
-  // Prints the same "Delivery Note" template as the Load & Dispatch view
-  // page's own "Print DC" button (buildTaxInvoiceHtml + the print-data
-  // route's deliveryNote) — previously this navigated to the old, plainer
-  // /transport/delivery-challan/[id] page instead of matching that template.
+  // Same in-app preview + explicit Print button that LoadDispatchEditor's own
+  // "Print DC" button already uses (LoadDispatchDocumentPreview, kind="dc")
+  // — no popup/auto-print. `next` sends the user to the Vehicle Gate Entry
+  // list once they're done previewing/printing, rather than back to this
+  // dispatch's own view page.
   async function handlePrintDc() {
     if (createdId == null) return;
     setActionBusy("dc");
     try {
       await ensureDeliveryChallan(createdId);
-      const dataRes = await fetch(`/api/warehouse/load-dispatch/${createdId}/print-data`, { cache: "no-store" }).then((r) => r.json());
-      if (dataRes?.ok && dataRes.deliveryNote) {
-        const html = buildTaxInvoiceHtml(dataRes.deliveryNote as TaxInvoiceData, { title: "Delivery Note", footerNote: DEFAULT_RECEIPT.footerNote });
-        const w = window.open("", "_blank", "width=900,height=800");
-        if (w) { w.document.write(html); w.document.close(); }
-      } else {
-        toast.success(postStage === "invoiced" ? "Delivery Challan generated — Sales Invoice was posted automatically." : "Delivery Challan generated.");
-      }
-      // Once the print window has opened (or there's nothing to print), the
-      // popup's job is done — move on to the view page with the now-updated
-      // status instead of leaving the "Dispatch Created" popup sitting open.
-      router.push(`/warehouse/transfer/load-dispatch/${createdId}`);
+      router.push(`/warehouse/transfer/load-dispatch/print?id=${createdId}&kind=dc&next=${encodeURIComponent("/transport/gate-entry")}`);
     } catch (e) { toast.error(e instanceof Error ? e.message : "Could not generate the Delivery Challan."); }
     setActionBusy("");
   }
@@ -1012,6 +1000,9 @@ export function DirectLoadDispatchForm() {
           </div>
         </div>
       )}
+      {/* Covers the gap between clicking "Create Dispatch" and either the
+          post-submit popup (createdId set) or an error toast. */}
+      {submitting && createdId == null && <AppLoader fullScreen label="Creating dispatch…" />}
     </div>
   );
 }

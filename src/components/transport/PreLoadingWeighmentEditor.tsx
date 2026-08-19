@@ -268,6 +268,10 @@ export function PreLoadingWeighmentEditor() {
           </div>
         </div>
       )}
+      {/* Covers the gap between clicking "Record Weighment" and either the
+          success popup (savedId set) or an error toast — same fullScreen
+          treatment used on Vehicle Gate Entry's Record Gate Entry button. */}
+      {saving && savedId == null && <AppLoader fullScreen label="Recording weighment…" />}
     </div>
   );
 }
