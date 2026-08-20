@@ -22,7 +22,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   if (!parsed.success) return NextResponse.json({ ok: false, message: parsed.error.issues[0]?.message ?? "Invalid request.", errors: parsed.error.flatten().fieldErrors }, { status: 422 });
   const b = parsed.data;
 
-  const updated = await prisma.fuelTank.update({ where: { id }, data: { tankCode: b.tankCode, tankName: b.tankName, stationId: b.stationId, fuelType: b.fuelType, capacity: b.capacity, minLevel: b.minLevel ?? null, maxLevel: b.maxLevel ?? null, status: b.status, remarks: b.remarks ?? null, updatedBy: user.id } });
+  const updated = await prisma.fuelTank.update({ where: { id }, data: { tankCode: b.tankCode, tankName: b.tankName, stationId: b.stationId ?? null, fuelType: b.fuelType, capacity: b.capacity, minLevel: b.minLevel ?? null, maxLevel: b.maxLevel ?? null, status: b.status, remarks: b.remarks ?? null, updatedBy: user.id } });
   await writeAudit(prisma, user, { action: "fuel_tank.update", entity: "FuelTank", entityId: id, summary: `Updated fuel tank ${updated.tankCode}`, businessId: existing.businessId, branchId: existing.branchId, ip: requestMeta(req).ip });
   return NextResponse.json({ ok: true, message: "Fuel tank updated." });
 }

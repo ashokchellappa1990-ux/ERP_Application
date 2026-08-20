@@ -23,14 +23,15 @@ export async function GET(req: Request) {
   if (status && status !== "All") where.status = status;
 
   const rows = await prisma.fuelTank.findMany({ where, orderBy: { tankName: "asc" } });
-  const stations = await prisma.fuelStation.findMany({ where: { id: { in: Array.from(new Set(rows.map((r) => r.stationId))) } }, select: { id: true, name: true } });
+  const stationIds = Array.from(new Set(rows.map((r) => r.stationId).filter((x): x is number => x != null)));
+  const stations = stationIds.length ? await prisma.fuelStation.findMany({ where: { id: { in: stationIds } }, select: { id: true, name: true } }) : [];
   const sMap = new Map(stations.map((s) => [s.id, s.name]));
 
   const list: TankRow[] = rows.map((r) => {
     const currentQty = num(r.currentQty) ?? 0;
     const minLevel = num(r.minLevel);
     return {
-      id: r.id, tankCode: r.tankCode, tankName: r.tankName, stationId: r.stationId, stationName: sMap.get(r.stationId) ?? "—",
+      id: r.id, tankCode: r.tankCode, tankName: r.tankName, stationId: r.stationId, stationName: r.stationId != null ? sMap.get(r.stationId) ?? "—" : null,
       fuelType: r.fuelType, capacity: num(r.capacity) ?? 0, currentQty, minLevel, maxLevel: num(r.maxLevel),
       status: r.status, lowStock: minLevel != null && currentQty < minLevel,
     };
@@ -50,13 +51,15 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ ok: false, message: parsed.error.issues[0]?.message ?? "Invalid request.", errors: parsed.error.flatten().fieldErrors }, { status: 422 });
   const b = parsed.data;
 
-  const station = await prisma.fuelStation.findFirst({ where: { id: b.stationId, tenantId: user.tenantId } });
-  if (!station) return NextResponse.json({ ok: false, message: "Fuel station not found." }, { status: 422 });
+  if (b.stationId) {
+    const station = await prisma.fuelStation.findFirst({ where: { id: b.stationId, tenantId: user.tenantId } });
+    if (!station) return NextResponse.json({ ok: false, message: "Fuel station not found." }, { status: 422 });
+  }
 
   const seg = await resolveWriteScope(user);
   try {
     const created = await prisma.fuelTank.create({
-      data: { tenantId: user.tenantId, businessId: seg.businessId ?? undefined, branchId: seg.branchId ?? undefined, tankCode: b.tankCode, tankName: b.tankName, stationId: b.stationId, fuelType: b.fuelType, capacity: b.capacity, minLevel: b.minLevel ?? null, maxLevel: b.maxLevel ?? null, status: b.status, remarks: b.remarks ?? null, createdBy: user.id },
+      data: { tenantId: user.tenantId, businessId: seg.businessId ?? undefined, branchId: seg.branchId ?? undefined, tankCode: b.tankCode, tankName: b.tankName, stationId: b.stationId ?? null, fuelType: b.fuelType, capacity: b.capacity, minLevel: b.minLevel ?? null, maxLevel: b.maxLevel ?? null, status: b.status, remarks: b.remarks ?? null, createdBy: user.id },
     });
     await writeAudit(prisma, user, { action: "fuel_tank.create", entity: "FuelTank", entityId: created.id, summary: `Created fuel tank ${created.tankCode} — ${b.tankName}`, businessId: seg.businessId ?? null, branchId: seg.branchId ?? null, ip: requestMeta(req).ip });
     return NextResponse.json({ ok: true, id: created.id, message: "Fuel tank created." }, { status: 201 });

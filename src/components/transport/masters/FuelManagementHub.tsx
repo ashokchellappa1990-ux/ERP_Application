@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Fuel, Plus, Eye, Search, AlertTriangle, X } from "lucide-react";
+import { Fuel, Plus, Eye, Search, AlertTriangle, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { AppLoader } from "@/components/ui/AppLoader";
@@ -10,7 +10,7 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import {
   ADJUSTMENT_TYPE_OPTS, ADJUSTMENT_REASON_OPTS, stockAdjustmentInput,
-  type FuelEntryRow, type FuelIssueRow, type FuelPurchaseRow, type TankRow, type AdjustmentRow, type StockAdjustmentInput,
+  type FuelEntryRow, type FuelIssueRow, type FuelPurchaseRow, type TankRow, type AdjustmentRow, type StockAdjustmentInput, type FuelStorageLogRow,
 } from "@/lib/contracts/fuelManagement";
 import { StationTankManager } from "@/components/transport/masters/StationTankManager";
 
@@ -19,7 +19,7 @@ const TXN_TONE: Record<string, "neutral" | "info" | "success" | "danger"> = { Dr
 
 export function FuelManagementHub({ vehicleFilter, embedded }: { vehicleFilter?: number; embedded?: boolean } = {}) {
   const router = useRouter();
-  const [tab, setTab] = useState<"entry" | "issue" | "purchase" | "stations" | "adjustments">("entry");
+  const [tab, setTab] = useState<"entry" | "issue" | "purchase" | "storageLog" | "stations" | "adjustments">("entry");
   const [stats, setStats] = useState<Stats | null>(null);
   const [entries, setEntries] = useState<FuelEntryRow[]>([]);
   const [issues, setIssues] = useState<FuelIssueRow[]>([]);
@@ -63,7 +63,8 @@ export function FuelManagementHub({ vehicleFilter, embedded }: { vehicleFilter?:
           <div className="flex shrink-0 flex-nowrap gap-2">
             <Button size="md" onClick={() => router.push("/masters/transport/fuel-management/entry/new")}><Plus className="h-4 w-4" /> Fuel Purchase</Button>
             <Button variant="outline" size="md" onClick={() => router.push("/masters/transport/fuel-management/issue/new")}><Plus className="h-4 w-4" /> Fuel Issue</Button>
-            <Button variant="outline" size="md" onClick={() => router.push("/masters/transport/fuel-management/purchase/new")}><Plus className="h-4 w-4" /> Fuel Entry (Tank)</Button>
+            {/* "Fuel Entry (Tank)" (legacy direct-tank-purchase) hidden — Fuel Purchase's
+                "Storage" mode now covers this; re-enable by uncommenting if needed. */}
           </div>
         </div>
       )}
@@ -85,7 +86,9 @@ export function FuelManagementHub({ vehicleFilter, embedded }: { vehicleFilter?:
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="inline-flex overflow-hidden rounded-md border border-border text-2xs">
-          {([["entry", "Fuel Purchase"], ["issue", "Fuel Issue"], ["purchase", "Fuel Entry (Tank)"], ["stations", "Station / Tank"], ["adjustments", "Adjustments"]] as const).map(([k, lbl]) => (
+          {/* "purchase" (Fuel Entry (Tank), legacy) hidden from the tab list —
+              re-add the tuple below to bring it back if needed. */}
+          {([["entry", "Fuel Purchase"], ["issue", "Fuel Issue"], ["storageLog", "Storage Log"], ["stations", "Station / Tank"], ["adjustments", "Adjustments"]] as const).map(([k, lbl]) => (
             <button key={k} onClick={() => setTab(k)} className={cn("px-3 py-1.5 font-semibold transition", tab === k ? "bg-primary text-white" : "bg-surface text-muted hover:text-foreground")}>{lbl}</button>
           ))}
         </div>
@@ -104,7 +107,7 @@ export function FuelManagementHub({ vehicleFilter, embedded }: { vehicleFilter?:
               renderRow={(r: FuelEntryRow) => (
                 <tr key={r.id} className="cursor-pointer border-b border-border/60 last:border-0 hover:bg-surface-2/20" onClick={() => router.push(`/masters/transport/fuel-management/entry/${r.id}`)}>
                   <td className="px-3 py-2 font-medium text-foreground">{r.entryNo}</td>
-                  <td className="px-3 py-2 text-2xs text-muted">{r.vehicleNo}</td>
+                  <td className="px-3 py-2 text-2xs text-muted">{r.usageType === "storage" ? "Storage" : r.vehicleNo ?? "—"}</td>
                   <td className="px-3 py-2 text-2xs text-muted">{r.driverName ?? "—"}</td>
                   <td className="px-3 py-2 text-2xs text-muted">{r.fuelStationName ?? "—"}</td>
                   <td className="px-3 py-2 text-2xs text-muted">{r.quantity} L</td>
@@ -117,12 +120,12 @@ export function FuelManagementHub({ vehicleFilter, embedded }: { vehicleFilter?:
               )} />
           )}
           {tab === "issue" && (
-            <ListTable rows={issues} empty="No fuel issues yet." columns={["Issue No.", "Vehicle", "Tank", "Driver", "Qty", "Amount", "Odometer", "Status", ""]}
+            <ListTable rows={issues} empty="No fuel issues yet." columns={["Issue No.", "Tank", "Vehicle / To Tank", "Driver", "Qty", "Amount", "Odometer", "Status", ""]}
               renderRow={(r: FuelIssueRow) => (
                 <tr key={r.id} className="cursor-pointer border-b border-border/60 last:border-0 hover:bg-surface-2/20" onClick={() => router.push(`/masters/transport/fuel-management/issue/${r.id}`)}>
                   <td className="px-3 py-2 font-medium text-foreground">{r.issueNo}</td>
-                  <td className="px-3 py-2 text-2xs text-muted">{r.vehicleNo}</td>
                   <td className="px-3 py-2 text-2xs text-muted">{r.tankName}</td>
+                  <td className="px-3 py-2 text-2xs text-muted">{r.transferType === "tank_tank" ? `→ ${r.toTankName}` : r.vehicleNo ?? "—"}</td>
                   <td className="px-3 py-2 text-2xs text-muted">{r.driverName ?? "—"}</td>
                   <td className="px-3 py-2 text-2xs text-muted">{r.quantity} L</td>
                   <td className="px-3 py-2 text-2xs text-muted">₹{r.amount.toLocaleString()}</td>
@@ -132,6 +135,7 @@ export function FuelManagementHub({ vehicleFilter, embedded }: { vehicleFilter?:
                 </tr>
               )} />
           )}
+          {tab === "storageLog" && <FuelStorageLogTab tanks={tanks} />}
           {tab === "purchase" && (
             <ListTable rows={purchases} empty="No fuel tank entries yet." columns={["Entry No.", "Date", "Supplier", "Tank", "Qty", "Amount", "Status"]}
               renderRow={(r: FuelPurchaseRow) => (
@@ -187,6 +191,118 @@ function ListTable<T>({ rows, columns, renderRow, empty }: { rows: T[]; columns:
 
 const modalInp = "h-9 w-full rounded-md border border-border-strong bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none";
 const modalLbl = "mb-1 block text-2xs font-semibold text-muted";
+
+function monthStart(): string { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10); }
+function today(): string { return new Date().toISOString().slice(0, 10); }
+
+// Tank-wise stock ledger — Opening/Purchase/Transfer(Issue)/Closing per day.
+// Clicking a date row expands it inline (same table) to show the individual
+// purchase and issue transactions behind that day's movement.
+function FuelStorageLogTab({ tanks }: { tanks: TankRow[] }) {
+  const [tankId, setTankId] = useState<number | "">("");
+  const [from, setFrom] = useState(monthStart);
+  const [to, setTo] = useState(today);
+  const [rows, setRows] = useState<FuelStorageLogRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const qs = new URLSearchParams({ from, to });
+    if (tankId) qs.set("tankId", String(tankId));
+    const j = await fetch(`/api/transport/fuel-storage-log?${qs}`, { cache: "no-store" }).then((r) => r.json()).catch(() => null);
+    if (j?.ok) setRows(j.rows);
+    setLoading(false);
+  }, [tankId, from, to]);
+  useEffect(() => { load(); }, [load]);
+
+  const toggle = (key: string) => setExpanded((c) => { const n = new Set(c); if (n.has(key)) n.delete(key); else n.add(key); return n; });
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-end gap-2 rounded-2xl border border-border bg-card p-3 shadow-sm">
+        <div><label className={modalLbl}>From Date</label><input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={modalInp} /></div>
+        <div><label className={modalLbl}>To Date</label><input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={modalInp} /></div>
+        <div className="min-w-[200px]"><label className={modalLbl}>Tank</label><select value={tankId} onChange={(e) => setTankId(e.target.value ? Number(e.target.value) : "")} className={modalInp}><option value="">All Tanks</option>{tanks.map((t) => <option key={t.id} value={t.id}>{t.tankName}</option>)}</select></div>
+      </div>
+
+      {loading ? <div className="rounded-2xl border border-border bg-card p-10 shadow-sm"><AppLoader label="Loading…" size="sm" /></div> : rows.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border-strong bg-card p-10 text-center text-sm text-muted">No stock movement in this range.</div>
+      ) : (
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"><div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] text-sm">
+            <thead><tr className="border-b border-border bg-surface-2/40 text-2xs uppercase tracking-wide text-muted">
+              <th className="px-3 py-2.5 text-left">Date</th>
+              <th className="px-3 py-2.5 text-left">Tank</th>
+              <th className="px-3 py-2.5 text-right">Opening Qty</th>
+              <th className="px-3 py-2.5 text-right">Purchase</th>
+              <th className="px-3 py-2.5 text-right">Transfer (Issue)</th>
+              <th className="px-3 py-2.5 text-right">Available Qty</th>
+            </tr></thead>
+            <tbody>
+              {rows.map((r) => {
+                const key = `${r.tankId}-${r.date}`;
+                const isOpen = expanded.has(key);
+                const hasDetail = r.purchases.length > 0 || r.issues.length > 0;
+                return (
+                  <Fragment key={key}>
+                    <tr className={cn("border-b border-border/60 last:border-0", hasDetail && "cursor-pointer hover:bg-surface-2/20")} onClick={() => hasDetail && toggle(key)}>
+                      <td className="px-3 py-2 font-medium text-foreground">
+                        <span className="inline-flex items-center gap-1">{hasDetail && (isOpen ? <ChevronUp className="h-3.5 w-3.5 text-muted" /> : <ChevronDown className="h-3.5 w-3.5 text-muted" />)}{r.date}</span>
+                      </td>
+                      <td className="px-3 py-2 text-2xs text-muted">{r.tankName}</td>
+                      <td className="px-3 py-2 text-right text-2xs text-muted">{r.opening} L</td>
+                      <td className="px-3 py-2 text-right text-2xs font-semibold text-success">{r.purchaseQty > 0 ? `+${r.purchaseQty} L` : "—"}</td>
+                      <td className="px-3 py-2 text-right text-2xs font-semibold text-danger">{r.issueQty > 0 ? `-${r.issueQty} L` : "—"}</td>
+                      <td className="px-3 py-2 text-right text-2xs font-bold text-foreground">{r.closing} L</td>
+                    </tr>
+                    {isOpen && (
+                      <tr className="border-b border-border/60 last:border-0 bg-surface-2/20">
+                        <td colSpan={6} className="p-0">
+                          <div className="space-y-3 p-3">
+                            {r.purchases.length > 0 && (
+                              <div>
+                                <p className="mb-1 text-2xs font-bold uppercase tracking-wide text-subtle">Purchases</p>
+                                <table className="w-full text-2xs"><tbody>
+                                  {r.purchases.map((p) => (
+                                    <tr key={`p-${p.id}`} className="border-b border-border/40 last:border-0">
+                                      <td className="py-1 pr-3 font-medium text-foreground">{p.refNo}</td>
+                                      <td className="py-1 pr-3 text-muted">{p.note ?? "—"}</td>
+                                      <td className="py-1 pr-3 text-right text-success">+{p.qty} L</td>
+                                      <td className="py-1 text-right text-muted">₹{p.amount.toLocaleString()}</td>
+                                    </tr>
+                                  ))}
+                                </tbody></table>
+                              </div>
+                            )}
+                            {r.issues.length > 0 && (
+                              <div>
+                                <p className="mb-1 text-2xs font-bold uppercase tracking-wide text-subtle">Transfers to Vehicle (Issue)</p>
+                                <table className="w-full text-2xs"><tbody>
+                                  {r.issues.map((i) => (
+                                    <tr key={`i-${i.id}`} className="border-b border-border/40 last:border-0">
+                                      <td className="py-1 pr-3 font-medium text-foreground">{i.refNo}</td>
+                                      <td className="py-1 pr-3 text-muted">{i.note ?? "—"}</td>
+                                      <td className="py-1 text-right text-danger">-{i.qty} L</td>
+                                    </tr>
+                                  ))}
+                                </tbody></table>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div></div>
+      )}
+    </div>
+  );
+}
 
 function AdjustmentModal({ tanks, onClose, onSaved }: { tanks: TankRow[]; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();

@@ -7,14 +7,10 @@
   - Environments: .env
 
  ✓ Starting...
- ✓ Ready in 2.1s
- ○ Compiling / ...
- ✓ Compiled / in 5s (908 modules)
- GET / 200 in 6614ms
- ○ Compiling /accounting/petty-cash-config ...
- ✓ Compiled /accounting/petty-cash-config in 1307ms (1261 modules)
- GET /accounting/petty-cash-config 200 in 1682ms
- ✓ Compiled /[...slug] in 227ms (1259 modules)
- GET /accounting/petty-cash/new 200 in 919ms
- ✓ Compiled /masters/transport/fuel-management/entry/new in 304ms (1274 modules)
- GET /masters/transport/fuel-management/entry/new 200 in 622ms
+ ✓ Ready in 2.6s
+ ○ Compiling /masters/transport/fuel-management ...
+ ✓ Compiled /masters/transport/fuel-management in 5.2s (1022 modules)
+ GET /masters/transport/fuel-management 200 in 6241ms
+ ○ Compiling /masters/transport/fuel-management/issue/new ...
+ ✓ Compiled /masters/transport/fuel-management/issue/new in 2.4s (1037 modules)
+ GET /masters/transport/fuel-management/issue/new 200 in 2784ms

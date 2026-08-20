@@ -3425,19 +3425,19 @@ model ExpenseHead {
   tenantId Int
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  name        String        @db.VarChar(120)
-  parentId    Int?
-  parent      ExpenseHead?  @relation("ExpenseTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children    ExpenseHead[] @relation("ExpenseTree")
-  active      Boolean       @default(true)
-  sortOrder   Int           @default(0)
-  accountId   Int? // GL account this expense head posts to (Chart of Accounts). Null → falls back to Indirect Expenses.
-  trackBudget Boolean       @default(false) // "Track Expense Against Budget" — auto-loads this head into Budget Planning.
+  name          String        @db.VarChar(120)
+  parentId      Int?
+  parent        ExpenseHead?  @relation("ExpenseTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children      ExpenseHead[] @relation("ExpenseTree")
+  active        Boolean       @default(true)
+  sortOrder     Int           @default(0)
+  accountId     Int? // GL account this expense head posts to (Chart of Accounts). Null → falls back to Indirect Expenses.
+  trackBudget   Boolean       @default(false) // "Track Expense Against Budget" — auto-loads this head into Budget Planning.
   // When set, this head represents a dedicated-screen feature (e.g. "fuel_purchase")
   // rather than a generic petty-cash line — the Petty Cash Voucher screen blocks
   // picking it and redirects to that feature's own screen instead, since a plain
   // expense line would lose the feature's structured data (vehicle/odometer/etc).
-  linkedFeature String? @db.VarChar(40)
+  linkedFeature String?       @db.VarChar(40)
 
   createdAt  DateTime @default(now())
   businessId Int?
@@ -9183,7 +9183,7 @@ model FuelTank {
   branchId   Int?
   tankCode   String   @db.VarChar(40)
   tankName   String   @db.VarChar(150)
-  stationId  Int
+  stationId  Int? // optional — a tank/drum doesn't have to belong to a formal Fuel Station
   fuelType   String   @default("Diesel") @db.VarChar(20)
   capacity   Decimal  @default(0) @db.Decimal(12, 2)
   currentQty Decimal  @default(0) @db.Decimal(12, 2)
@@ -9254,12 +9254,21 @@ model FuelEntry {
   entryNo    String   @db.VarChar(30)
   entryDate  DateTime
 
-  vehicleId Int
+  // "vehicle" (default) = fuel goes straight into a vehicle, vehicleId
+  // required; "storage" = bought into a barrel/drum/FuelTank for later use —
+  // tankId required instead, and that tank's currentQty is incremented
+  // (same stock effect as the FuelPurchase/"Fuel Entry (Tank)" screen, but
+  // this one also carries full Payment + Accounting).
+  usageType String @default("vehicle") @db.VarChar(16)
+  vehicleId Int?
   driverId  Int?
   tripId    Int?
+  tankId    Int?
 
   fuelType String @default("Diesel") @db.VarChar(20)
 
+  // Supplier/vendor this fuel was bought from — resolved server-side from
+  // Supplier Master, never free-typed (fuelStationName is a snapshot only).
   fuelStationId   Int?
   fuelStationName String? @db.VarChar(200)
 
@@ -9279,17 +9288,18 @@ model FuelEntry {
   // structure. headId resolves to ExpenseHead.accountId -> LedgerAccount.code
   // for the Dr side (falls back to ACC.FUEL_EXPENSE when unmapped); postingType
   // "ap" credits Accounts Payable (+ a Payable row) instead of Cash/Bank.
-  headId        Int?
-  gstApplicable Boolean  @default(false)
-  gstPct        Decimal? @db.Decimal(9, 2)
-  taxAmount     Decimal  @default(0) @db.Decimal(14, 2)
-  otherCost     Decimal  @default(0) @db.Decimal(14, 2) // sum of FuelEntryLine amounts (e.g. helper conveyance)
-  totalAmount   Decimal  @default(0) @db.Decimal(14, 2) // amount + taxAmount + otherCost
-  supplierGstin String?  @db.VarChar(20)
-  postingType   String   @default("paynow") @db.VarChar(10) // "ap" | "paynow"
-  bankId        Int?
-  bankName      String?  @db.VarChar(160)
-  bankAccount   String?  @db.VarChar(60)
+  headId          Int?
+  gstApplicable   Boolean  @default(false)
+  gstPct          Decimal? @db.Decimal(9, 2)
+  taxAmount       Decimal  @default(0) @db.Decimal(14, 2)
+  otherCost       Decimal  @default(0) @db.Decimal(14, 2) // sum of FuelEntryLine amounts (e.g. helper conveyance)
+  totalAmount     Decimal  @default(0) @db.Decimal(14, 2) // amount + taxAmount + otherCost
+  supplierGstin   String?  @db.VarChar(20)
+  postingType     String   @default("paynow") @db.VarChar(10) // "ap" | "paynow"
+  bankId          Int?
+  bankName        String?  @db.VarChar(160)
+  bankAccount     String?  @db.VarChar(60)
+  attachmentsJson String?  @db.Text // [{fileName, fileUrl, fileType, size}] — bill/invoice copies
 
   status  String  @default("Confirmed") @db.VarChar(16) // Draft | Confirmed | Cancelled
   remarks String? @db.Text
@@ -9328,8 +9338,26 @@ model FuelEntryLine {
   @@map("fuel_entry_line")
 }
 
+// Split tender lines for a Fuel Entry ("Fuel Purchase") — same convention as
+// PettyCashPayment. A single shared bank (FuelEntry.bankId/bankName/bankAccount)
+// applies across all non-cash lines here, matching PettyCashForm's own UX.
+model FuelEntryPayment {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int
+  fuelEntryId Int
+  mode        String   @db.VarChar(30)
+  amount      Decimal  @db.Decimal(14, 2)
+  reference   String?  @db.VarChar(80)
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, fuelEntryId])
+  @@map("fuel_entry_payment")
+}
+
 // Internal dispensing from a company-owned FuelTank — decrements tank stock
-// on Confirm.
+// on Confirm. transferType "tank_vehicle" (default) dispenses to a vehicle
+// (vehicleId required); "tank_tank" moves fuel to another FuelTank instead
+// (toTankId required, incremented; no vehicle/driver/trip involved).
 model FuelIssue {
   id         Int      @id @default(autoincrement())
   tenantId   Int
@@ -9341,7 +9369,10 @@ model FuelIssue {
   stationId Int?
   tankId    Int
 
-  vehicleId Int
+  transferType String @default("tank_vehicle") @db.VarChar(16) // "tank_vehicle" | "tank_tank"
+  toTankId     Int?
+
+  vehicleId Int?
   driverId  Int?
   tripId    Int?
 

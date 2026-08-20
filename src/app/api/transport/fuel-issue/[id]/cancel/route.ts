@@ -25,6 +25,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   await prisma.$transaction(async (tx) => {
     await tx.fuelTank.update({ where: { id: existing.tankId }, data: { currentQty: { increment: Number(existing.quantity) } } });
+    if (existing.transferType === "tank_tank" && existing.toTankId != null) {
+      await tx.fuelTank.update({ where: { id: existing.toTankId }, data: { currentQty: { decrement: Number(existing.quantity) } } });
+    }
     await tx.fuelIssue.update({ where: { id }, data: { status: "Cancelled", cancelledBy: user.id, cancelledAt: new Date(), cancellationReason: parsed.data.cancellationReason, updatedBy: user.id } });
   });
   await writeAudit(prisma, user, { action: "fuel_issue.cancel", entity: "FuelIssue", entityId: id, summary: `Cancelled fuel issue ${existing.issueNo}`, meta: { reason: parsed.data.cancellationReason }, businessId: existing.businessId, branchId: existing.branchId, ip: requestMeta(req).ip });

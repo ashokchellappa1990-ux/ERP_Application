@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/Button";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { AppLoader } from "@/components/ui/AppLoader";
 import { useToast } from "@/components/ui/Toast";
-import { fuelIssueInput, type FuelIssueInput } from "@/lib/contracts/fuelManagement";
+import { cn } from "@/lib/cn";
+import { TRANSFER_TYPE_OPTS, fuelIssueInput, type FuelIssueInput } from "@/lib/contracts/fuelManagement";
 import type { TankRow } from "@/lib/contracts/fuelManagement";
 
 interface VehicleOption { id: number; vehicleNo: string }
@@ -16,7 +17,7 @@ interface DriverOption { id: number; name: string }
 interface TripOption { id: number; tripNo: string; vehicleId: number }
 
 const BLANK: FuelIssueInput = {
-  issueDate: new Date().toISOString().slice(0, 10), tankId: 0, vehicleId: 0, driverId: null, tripId: null,
+  issueDate: new Date().toISOString().slice(0, 10), transferType: "tank_vehicle", tankId: 0, toTankId: null, vehicleId: null, driverId: null, tripId: null,
   quantity: 0, rate: 0, odometer: null, dispenser: "", operator: "", remarks: "", overrideOdometerWarning: false,
 };
 
@@ -77,15 +78,31 @@ export function FuelIssueForm() {
       {loading ? <div className="rounded-2xl border border-border bg-card p-10 shadow-sm"><AppLoader label="Loading…" size="sm" /></div> : (
         <>
           <SectionCard icon={Fuel} title="Basic Details">
+            <div className="mb-3">
+              <label className={lbl}>Transfer Type</label>
+              <div className="inline-flex overflow-hidden rounded-md border border-border text-2xs">
+                {(TRANSFER_TYPE_OPTS).map((tt) => (
+                  <button key={tt} type="button" onClick={() => set("transferType", tt)} className={cn("px-3 py-2 font-semibold transition", f.transferType === tt ? "bg-primary text-white" : "bg-surface text-muted hover:text-foreground")}>
+                    {tt === "tank_vehicle" ? "Tank to Vehicle" : "Tank to Tank"}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <div><label className={lbl}>Date *</label><input type="date" value={f.issueDate} onChange={(e) => set("issueDate", e.target.value)} className={inp} /></div>
-              <div><label className={lbl}>Fuel Tank *</label><select value={f.tankId || ""} onChange={(e) => set("tankId", Number(e.target.value) || 0)} className={inp}><option value="">— Select —</option>{tanks.map((t) => <option key={t.id} value={t.id}>{t.tankName} ({t.currentQty}L available)</option>)}</select></div>
-              <div><label className={lbl}>Vehicle *</label><select value={f.vehicleId || ""} onChange={(e) => set("vehicleId", Number(e.target.value) || 0)} className={inp}><option value="">— Select —</option>{vehicles.map((v) => <option key={v.id} value={v.id}>{v.vehicleNo}</option>)}</select></div>
-              <div><label className={lbl}>Driver</label><select value={f.driverId ?? ""} onChange={(e) => set("driverId", Number(e.target.value) || null)} className={inp}><option value="">— None —</option>{drivers.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select></div>
-              <div><label className={lbl}>Trip (optional)</label><select value={f.tripId ?? ""} onChange={(e) => set("tripId", Number(e.target.value) || null)} className={inp}><option value="">— None —</option>{vehicleTrips.map((t) => <option key={t.id} value={t.id}>{t.tripNo}</option>)}</select></div>
-              <div><label className={lbl}>Odometer Reading (KM)</label><input type="number" min={0} value={f.odometer ?? ""} onChange={(e) => { set("odometer", e.target.value ? Number(e.target.value) : null); setOdoWarning(null); }} className={inp} /></div>
-              <div><label className={lbl}>Dispenser/Pump</label><input value={f.dispenser ?? ""} onChange={(e) => set("dispenser", e.target.value)} className={inp} /></div>
-              <div><label className={lbl}>Operator</label><input value={f.operator ?? ""} onChange={(e) => set("operator", e.target.value)} className={inp} /></div>
+              <div><label className={lbl}>{f.transferType === "tank_tank" ? "From Tank *" : "Fuel Tank *"}</label><select value={f.tankId || ""} onChange={(e) => set("tankId", Number(e.target.value) || 0)} className={inp}><option value="">— Select —</option>{tanks.map((t) => <option key={t.id} value={t.id}>{t.tankName} ({t.currentQty}L available)</option>)}</select></div>
+              {f.transferType === "tank_tank" ? (
+                <div><label className={lbl}>To Tank *</label><select value={f.toTankId ?? ""} onChange={(e) => set("toTankId", Number(e.target.value) || null)} className={inp}><option value="">— Select —</option>{tanks.filter((t) => t.id !== f.tankId).map((t) => <option key={t.id} value={t.id}>{t.tankName} ({t.currentQty}L current)</option>)}</select></div>
+              ) : (
+                <>
+                  <div><label className={lbl}>Vehicle *</label><select value={f.vehicleId ?? ""} onChange={(e) => set("vehicleId", Number(e.target.value) || null)} className={inp}><option value="">— Select —</option>{vehicles.map((v) => <option key={v.id} value={v.id}>{v.vehicleNo}</option>)}</select></div>
+                  <div><label className={lbl}>Driver</label><select value={f.driverId ?? ""} onChange={(e) => set("driverId", Number(e.target.value) || null)} className={inp}><option value="">— None —</option>{drivers.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select></div>
+                  <div><label className={lbl}>Trip (optional)</label><select value={f.tripId ?? ""} onChange={(e) => set("tripId", Number(e.target.value) || null)} className={inp}><option value="">— None —</option>{vehicleTrips.map((t) => <option key={t.id} value={t.id}>{t.tripNo}</option>)}</select></div>
+                  <div><label className={lbl}>Odometer Reading (KM)</label><input type="number" min={0} value={f.odometer ?? ""} onChange={(e) => { set("odometer", e.target.value ? Number(e.target.value) : null); setOdoWarning(null); }} className={inp} /></div>
+                  <div><label className={lbl}>Dispenser/Pump</label><input value={f.dispenser ?? ""} onChange={(e) => set("dispenser", e.target.value)} className={inp} /></div>
+                  <div><label className={lbl}>Operator</label><input value={f.operator ?? ""} onChange={(e) => set("operator", e.target.value)} className={inp} /></div>
+                </>
+              )}
             </div>
             {selectedTank && <p className="mt-2 text-2xs text-muted">Available in {selectedTank.tankName}: <span className="font-semibold text-foreground">{selectedTank.currentQty} L</span></p>}
           </SectionCard>
@@ -108,7 +125,7 @@ export function FuelIssueForm() {
 
           <div className="flex items-center justify-end gap-2">
             <Link href="/masters/transport/fuel-management"><Button variant="outline" size="md">Cancel</Button></Link>
-            <Button size="md" onClick={() => save(false)} disabled={busy}><Save className="h-4 w-4" /> {busy ? "Saving…" : "Issue Fuel"}</Button>
+            <Button size="md" onClick={() => save(false)} disabled={busy}><Save className="h-4 w-4" /> {busy ? "Saving…" : f.transferType === "tank_tank" ? "Transfer Fuel" : "Issue Fuel"}</Button>
           </div>
         </>
       )}

@@ -45,7 +45,7 @@ export function FuelIssueDetail() {
         <div>
           <div className="mb-1 flex items-center gap-2 text-xs text-muted"><Link href="/masters/transport/fuel-management" className="hover:text-foreground">Fuel Management</Link><span className="text-subtle">/</span><span className="font-medium text-foreground">{detail.issueNo}</span></div>
           <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Fuel className="h-5 w-5 text-primary" /> {detail.issueNo}<Badge tone={TXN_TONE[detail.status] ?? "neutral"}>{detail.status}</Badge></h1>
-          <p className="mt-0.5 text-sm text-muted">{detail.vehicleNo} · {detail.tankName} · Internal</p>
+          <p className="mt-0.5 text-sm text-muted">{detail.transferType === "tank_tank" ? `${detail.tankName} → ${detail.toTankName}` : `${detail.vehicleNo} · ${detail.tankName}`} · Internal</p>
         </div>
         <Button variant="outline" size="md" onClick={() => router.push("/masters/transport/fuel-management")}><ArrowLeft className="h-4 w-4" /> Back</Button>
       </div>
@@ -53,25 +53,33 @@ export function FuelIssueDetail() {
       <SectionCard icon={Fuel} title="Fuel Issue Details">
         <div className="grid gap-3 sm:grid-cols-3">
           <ReadKV k="Date" v={detail.issueDate} />
-          <ReadKV k="Tank" v={detail.tankName} />
-          <ReadKV k="Vehicle" v={detail.vehicleNo} />
-          <ReadKV k="Driver" v={detail.driverName ?? "—"} />
-          <ReadKV k="Trip Reference" v={detail.tripNo ?? "—"} />
+          <ReadKV k={detail.transferType === "tank_tank" ? "From Tank" : "Tank"} v={detail.tankName} />
+          {detail.transferType === "tank_tank" ? (
+            <ReadKV k="To Tank" v={detail.toTankName ?? "—"} />
+          ) : (
+            <>
+              <ReadKV k="Vehicle" v={detail.vehicleNo ?? "—"} />
+              <ReadKV k="Driver" v={detail.driverName ?? "—"} />
+              <ReadKV k="Trip Reference" v={detail.tripNo ?? "—"} />
+              <ReadKV k="Odometer" v={detail.odometer != null ? `${detail.odometer} KM` : "—"} />
+              <ReadKV k="Dispenser" v={detail.dispenser ?? "—"} />
+              <ReadKV k="Operator" v={detail.operator ?? "—"} />
+            </>
+          )}
           <ReadKV k="Quantity" v={`${detail.quantity} L`} />
           <ReadKV k="Rate" v={`₹${detail.rate}`} />
           <ReadKV k="Amount" v={`₹${detail.amount.toLocaleString()}`} />
-          <ReadKV k="Odometer" v={detail.odometer != null ? `${detail.odometer} KM` : "—"} />
-          <ReadKV k="Dispenser" v={detail.dispenser ?? "—"} />
-          <ReadKV k="Operator" v={detail.operator ?? "—"} />
         </div>
       </SectionCard>
 
-      <SectionCard icon={Fuel} title="Fuel Efficiency">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <ReadKV k="Distance Since Previous Fill" v={detail.distanceSincePrev != null ? `${detail.distanceSincePrev} KM` : "Insufficient data"} />
-          <ReadKV k="Efficiency" v={detail.efficiency != null ? `${detail.efficiency} KM/L` : "Insufficient data"} />
-        </div>
-      </SectionCard>
+      {detail.transferType !== "tank_tank" && (
+        <SectionCard icon={Fuel} title="Fuel Efficiency">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ReadKV k="Distance Since Previous Fill" v={detail.distanceSincePrev != null ? `${detail.distanceSincePrev} KM` : "Insufficient data"} />
+            <ReadKV k="Efficiency" v={detail.efficiency != null ? `${detail.efficiency} KM/L` : "Insufficient data"} />
+          </div>
+        </SectionCard>
+      )}
 
       {detail.status === "Confirmed" && (
         <SectionCard icon={Ban} title="Cancel Issue">

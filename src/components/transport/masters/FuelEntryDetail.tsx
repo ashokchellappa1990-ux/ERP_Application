@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Fuel, ArrowLeft, Ban } from "lucide-react";
+import { Fuel, ArrowLeft, Ban, FileText } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { SectionCard } from "@/components/ui/SectionCard";
@@ -45,7 +45,7 @@ export function FuelEntryDetail() {
         <div>
           <div className="mb-1 flex items-center gap-2 text-xs text-muted"><Link href="/masters/transport/fuel-management" className="hover:text-foreground">Fuel Management</Link><span className="text-subtle">/</span><span className="font-medium text-foreground">{detail.entryNo}</span></div>
           <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Fuel className="h-5 w-5 text-primary" /> {detail.entryNo}<Badge tone={TXN_TONE[detail.status] ?? "neutral"}>{detail.status}</Badge></h1>
-          <p className="mt-0.5 text-sm text-muted">{detail.vehicleNo} · {detail.fuelType} · External</p>
+          <p className="mt-0.5 text-sm text-muted">{detail.usageType === "storage" ? "Storage (Barrel/Drum)" : detail.vehicleNo} · {detail.fuelType} · External</p>
         </div>
         <Button variant="outline" size="md" onClick={() => router.push("/masters/transport/fuel-management")}><ArrowLeft className="h-4 w-4" /> Back</Button>
       </div>
@@ -53,10 +53,10 @@ export function FuelEntryDetail() {
       <SectionCard icon={Fuel} title="Fuel Purchase Details">
         <div className="grid gap-3 sm:grid-cols-3">
           <ReadKV k="Date" v={detail.entryDate} />
-          <ReadKV k="Vehicle" v={detail.vehicleNo} />
+          {detail.usageType === "storage" ? <ReadKV k="Tank" v={detail.tankName ?? "—"} /> : <ReadKV k="Vehicle" v={detail.vehicleNo ?? "—"} />}
           <ReadKV k="Driver" v={detail.driverName ?? "—"} />
           <ReadKV k="Trip Reference" v={detail.tripNo ?? "—"} />
-          <ReadKV k="Fuel Station" v={detail.fuelStationName ?? "—"} />
+          <ReadKV k="Supplier / Vendor" v={detail.fuelStationName ?? "—"} />
           <ReadKV k="Quantity" v={`${detail.quantity} ${detail.uom}`} />
           <ReadKV k="Rate" v={`₹${detail.rate}`} />
           <ReadKV k="Fuel Amount" v={`₹${detail.amount.toLocaleString()}`} />
@@ -72,9 +72,21 @@ export function FuelEntryDetail() {
           <ReadKV k="Other Costs" v={detail.otherCost > 0 ? `₹${detail.otherCost.toLocaleString()}` : "—"} />
           <ReadKV k="Total Amount" v={`₹${detail.totalAmount.toLocaleString()}`} />
           <ReadKV k="Posting" v={detail.postingType === "ap" ? "On Credit (Payable)" : "Pay Now"} />
-          <ReadKV k="Payment Mode" v={detail.paymentMode ?? "—"} />
           {detail.bankName && <ReadKV k="Bank" v={`${detail.bankName}${detail.bankAccount ? ` · ${detail.bankAccount}` : ""}`} />}
         </div>
+        {detail.payments.length > 0 && (
+          <div className="mt-3">
+            <p className="mb-1.5 text-2xs font-semibold text-muted">Payment Tenders</p>
+            <div className="space-y-1">
+              {detail.payments.map((p) => (
+                <div key={p.id} className="flex items-center justify-between rounded-lg bg-surface-2/40 px-3 py-1.5 text-sm">
+                  <span className="text-foreground">{p.mode}{p.reference ? ` — ${p.reference}` : ""}</span>
+                  <span className="font-semibold text-foreground">₹{p.amount.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {detail.lines.length > 0 && (
           <div className="mt-3">
             <p className="mb-1.5 text-2xs font-semibold text-muted">Additional Cost Lines</p>
@@ -88,14 +100,28 @@ export function FuelEntryDetail() {
             </div>
           </div>
         )}
+        {detail.attachments.length > 0 && (
+          <div className="mt-3">
+            <p className="mb-1.5 text-2xs font-semibold text-muted">Bill / Invoice Copy</p>
+            <div className="space-y-1">
+              {detail.attachments.map((a, i) => (
+                <a key={i} href={a.fileUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-lg bg-surface-2/40 px-3 py-1.5 text-sm text-foreground hover:text-primary">
+                  <FileText className="h-4 w-4 shrink-0 text-muted" /><span className="truncate">{a.fileName}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </SectionCard>
 
-      <SectionCard icon={Fuel} title="Fuel Efficiency">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <ReadKV k="Distance Since Previous Fill" v={detail.distanceSincePrev != null ? `${detail.distanceSincePrev} KM` : "Insufficient data"} />
-          <ReadKV k="Efficiency" v={detail.efficiency != null ? `${detail.efficiency} KM/L` : "Insufficient data"} />
-        </div>
-      </SectionCard>
+      {detail.usageType === "vehicle" && (
+        <SectionCard icon={Fuel} title="Fuel Efficiency">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ReadKV k="Distance Since Previous Fill" v={detail.distanceSincePrev != null ? `${detail.distanceSincePrev} KM` : "Insufficient data"} />
+            <ReadKV k="Efficiency" v={detail.efficiency != null ? `${detail.efficiency} KM/L` : "Insufficient data"} />
+          </div>
+        </SectionCard>
+      )}
 
       {detail.status === "Confirmed" && (
         <SectionCard icon={Ban} title="Cancel Entry">

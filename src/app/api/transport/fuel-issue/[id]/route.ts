@@ -19,20 +19,22 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const r = await prisma.fuelIssue.findFirst({ where: { id: Number(params.id), tenantId: user.tenantId } });
   if (!r) return NextResponse.json({ ok: false, message: "Fuel issue not found." }, { status: 404 });
 
-  const [vehicle, driver, trip, tank, createdByUser, updatedByUser, cancelledByUser, eff] = await Promise.all([
-    prisma.vehicleMaster.findFirst({ where: { id: r.vehicleId }, select: { vehicleNo: true } }),
+  const [vehicle, driver, trip, tank, toTank, createdByUser, updatedByUser, cancelledByUser, eff] = await Promise.all([
+    r.vehicleId != null ? prisma.vehicleMaster.findFirst({ where: { id: r.vehicleId }, select: { vehicleNo: true } }) : null,
     r.driverId != null ? prisma.driverMaster.findFirst({ where: { id: r.driverId }, select: { name: true } }) : null,
     r.tripId != null ? prisma.vehicleTrip.findFirst({ where: { id: r.tripId }, select: { tripNo: true } }) : null,
     prisma.fuelTank.findFirst({ where: { id: r.tankId }, select: { tankName: true } }),
+    r.toTankId != null ? prisma.fuelTank.findFirst({ where: { id: r.toTankId }, select: { tankName: true } }) : null,
     r.createdBy != null ? prisma.user.findFirst({ where: { id: r.createdBy }, select: { fullName: true } }) : null,
     r.updatedBy != null ? prisma.user.findFirst({ where: { id: r.updatedBy }, select: { fullName: true } }) : null,
     r.cancelledBy != null ? prisma.user.findFirst({ where: { id: r.cancelledBy }, select: { fullName: true } }) : null,
-    computeEfficiency(user.tenantId, r.vehicleId, num(r.odometer), num(r.quantity) ?? 0, { excludeFuelIssueId: r.id }),
+    r.vehicleId != null ? computeEfficiency(user.tenantId, r.vehicleId, num(r.odometer), num(r.quantity) ?? 0, { excludeFuelIssueId: r.id }) : Promise.resolve({ efficiency: null, distanceSincePrev: null }),
   ]);
 
   const row: FuelIssueDetail = {
-    id: r.id, issueNo: r.issueNo, issueDate: dateStr(r.issueDate) ?? "", tankId: r.tankId, tankName: tank?.tankName ?? "—",
-    vehicleId: r.vehicleId, vehicleNo: vehicle?.vehicleNo ?? "—", driverId: r.driverId, driverName: driver?.name ?? null,
+    id: r.id, issueNo: r.issueNo, issueDate: dateStr(r.issueDate) ?? "", transferType: r.transferType, tankId: r.tankId, tankName: tank?.tankName ?? "—",
+    toTankId: r.toTankId, toTankName: r.toTankId != null ? toTank?.tankName ?? "—" : null,
+    vehicleId: r.vehicleId, vehicleNo: r.vehicleId != null ? vehicle?.vehicleNo ?? "—" : null, driverId: r.driverId, driverName: driver?.name ?? null,
     tripId: r.tripId, tripNo: trip?.tripNo ?? null, quantity: num(r.quantity) ?? 0, rate: num(r.rate) ?? 0, amount: num(r.amount) ?? 0,
     odometer: num(r.odometer), status: r.status, createdByName: createdByUser?.fullName ?? null, createdAt: r.createdAt.toISOString(),
     stationId: r.stationId, dispenser: r.dispenser, operator: r.operator, remarks: r.remarks,
