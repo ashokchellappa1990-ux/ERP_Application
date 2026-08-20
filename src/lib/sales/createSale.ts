@@ -211,12 +211,16 @@ export async function prepareSale(user: ScopeUser, body: SaleCreateInput): Promi
     const remainingForEngine = r2(netOfItem - billDiscount - loyaltyRedeemValue - couponDiscount - promoDiscount - membershipDiscount);
     if (remainingForEngine > 0) {
       const scope = await getActiveScope(user);
+      // Small indexed lookup so "Customer Group" applicability rules can match
+      // at real sale time — the loyalty block above only fetches this when a
+      // loyalty program exists, so it can't be relied on here.
+      const custGroup = customerId ? (await prisma.customer.findUnique({ where: { id: customerId }, select: { customerGroup: true } }))?.customerGroup ?? undefined : undefined;
       const res = await evaluateForSale(
         { tenantId: user.tenantId, businessId: scope.businessId ?? null },
         {
           billAmount: remainingForEngine, billTaxable: r2(taxableValue),
           items: lines.map((l) => { const m = productMeta.get(Number(l.productId)); return { productId: Number(l.productId), category: m?.category, brand: m?.brand, qty: num(l.qty), amount: r2(num(l.rate) * num(l.qty) - num(l.discAmount)), taxable: num(l.taxableValue) }; }),
-          customerId: customerId ?? undefined, channel: "POS", date: saleDate,
+          customerId: customerId ?? undefined, customerGroup: custGroup, channel: "POS", date: saleDate,
           flags: { isMember: membershipLevelId != null },
         },
       );

@@ -68,7 +68,7 @@ export const DISCOUNT_TYPE_META: Record<string, { form: DiscountForm; method: "p
   "Manager Override": { form: "percent", method: "percentage", desc: "Manager-approved override discount (set approval + limits)." },
 };
 export const typeMeta = (t: string) => DISCOUNT_TYPE_META[t] ?? { form: "percent" as DiscountForm, method: "percentage" as const, desc: "Percentage / amount discount." };
-export const DISCOUNT_METHODS = ["percentage", "flat", "fixed_price"] as const;
+export const DISCOUNT_METHODS = ["percentage", "flat", "fixed_price", "per_unit"] as const;
 /** Base a % discount is computed on: MRP incl. tax, or the material value (pre-tax). */
 export const DISCOUNT_BASES = ["inclusive", "exclusive"] as const;
 export const DISCOUNT_STATUSES = ["Draft", "Active", "Inactive", "Expired"] as const;

@@ -9,7 +9,8 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import { formatMoney } from "@/lib/settings/generalConfig";
 import { cn } from "@/lib/cn";
 import { BankPicker, emptyBank } from "@/components/finance/BankPicker";
-import type { ExpenseHeadDto as Head } from "@/lib/contracts/finance";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { linkedFeatureHref, linkedFeatureLabel, type ExpenseHeadDto as Head } from "@/lib/contracts/finance";
 import type { BudgetUsageDto } from "@/lib/contracts/budget";
 import type { CentreOption } from "@/lib/contracts/costCentre";
 
@@ -58,6 +59,11 @@ export function PettyCashForm() {
   const [voucherDate, setVoucherDate] = useState(today);
   const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<Line[]>([{ ...EMPTY_LINE }]);
+  // A head flagged with a Linked Feature has its own dedicated entry screen —
+  // picking it here is blocked (this generic line would lose that feature's
+  // structured data, e.g. vehicle/odometer for Fuel Purchase) and the user is
+  // redirected to that screen instead.
+  const [blockedFeature, setBlockedFeature] = useState<{ label: string; href: string } | null>(null);
   const [payments, setPayments] = useState<Pay[]>([{ mode: "Cash", amount: "", reference: "" }]);
   const [bank, setBank] = useState(emptyBank);
 
@@ -343,7 +349,18 @@ export function PettyCashForm() {
                     return (
                     <tr key={i} className="border-b border-border last:border-0">
                       <td className="px-3 py-2">
-                        <select value={l.headId} onChange={(e) => setLine(i, { headId: e.target.value })} className="h-9 w-full min-w-[150px] rounded-md border border-border-strong bg-surface px-2 text-sm focus:border-primary focus:outline-none">
+                        <select
+                          value={l.headId}
+                          onChange={(e) => {
+                            const picked = heads.find((h) => h.id === Number(e.target.value));
+                            if (picked?.linkedFeature) {
+                              const href = linkedFeatureHref(picked.linkedFeature);
+                              if (href) { setBlockedFeature({ label: linkedFeatureLabel(picked.linkedFeature) ?? picked.name, href }); return; }
+                            }
+                            setLine(i, { headId: e.target.value });
+                          }}
+                          className="h-9 w-full min-w-[150px] rounded-md border border-border-strong bg-surface px-2 text-sm focus:border-primary focus:outline-none"
+                        >
                           <option value="">Select head…</option>
                           {categories.map((cat) => { const hs = leafHeads.filter((h) => h.parentId === cat.id); return hs.length ? <optgroup key={cat.id} label={cat.name}>{hs.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}</optgroup> : null; })}
                         </select>
@@ -447,6 +464,17 @@ export function PettyCashForm() {
           </SectionCard>
         </aside>
       </div>
+
+      <ConfirmDialog
+        open={!!blockedFeature}
+        title={`Use the ${blockedFeature?.label ?? ""} screen instead`}
+        message={`This expense has its own dedicated screen — recording it here as a generic line would lose its structured details (e.g. vehicle, odometer, quantity). Go to ${blockedFeature?.label ?? "that"} to record it properly.`}
+        icon={FileText}
+        confirmLabel={`Go to ${blockedFeature?.label ?? "screen"}`}
+        cancelLabel="Stay here"
+        onCancel={() => setBlockedFeature(null)}
+        onConfirm={() => { if (blockedFeature) router.push(blockedFeature.href); }}
+      />
     </div>
   );
 }

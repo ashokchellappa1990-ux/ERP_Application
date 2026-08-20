@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ ok: false, message: "Not signed in." }, { status: 401 });
   const denied = await requirePermission(user, PERM, { req, entity: "ExpenseHead" });
   if (denied) return denied;
-  let b: { name?: string; parentId?: number | null; accountId?: number | null };
+  let b: { name?: string; parentId?: number | null; accountId?: number | null; linkedFeature?: string | null };
   try { b = await req.json(); } catch { return NextResponse.json({ ok: false, message: "Invalid request body." }, { status: 400 }); }
   const name = String(b.name ?? "").trim();
   if (!name) return NextResponse.json({ ok: false, message: "Name is required." }, { status: 422 });
@@ -34,15 +34,15 @@ export async function POST(req: Request) {
   // Stamp the active business so the row matches the scoped read on reload
   // (otherwise a business-scoped GET would never return the freshly-added head).
   const seg = scopeData(await getActiveScope(user));
-  const h = await prisma.expenseHead.create({ data: { tenantId: user.tenantId, ...seg, name: name.slice(0, 120), parentId, accountId: acc.accountId } });
+  const h = await prisma.expenseHead.create({ data: { tenantId: user.tenantId, ...seg, name: name.slice(0, 120), parentId, accountId: acc.accountId, linkedFeature: b.linkedFeature || null } });
   const trackBudget = h.trackBudget;
   await writeAudit(prisma, user, {
     action: "expense_head.create", entity: "ExpenseHead", entityId: h.id,
     summary: `${parentId ? "Expense head" : "Expense category"} "${h.name}" added`,
-    meta: { name: h.name, parentId: h.parentId, accountId: acc.accountId },
+    meta: { name: h.name, parentId: h.parentId, accountId: acc.accountId, linkedFeature: h.linkedFeature },
     ip: requestMeta(req).ip,
   });
-  const head: ExpenseHeadDto = { id: h.id, name: h.name, parentId: h.parentId, active: h.active, ...acc, trackBudget };
+  const head: ExpenseHeadDto = { id: h.id, name: h.name, parentId: h.parentId, active: h.active, ...acc, trackBudget, linkedFeature: h.linkedFeature };
   return NextResponse.json({ ok: true, head }, { status: 201 });
 }
 
@@ -52,7 +52,7 @@ export async function PATCH(req: Request) {
   if (!user) return NextResponse.json({ ok: false, message: "Not signed in." }, { status: 401 });
   const denied = await requirePermission(user, PERM, { req, entity: "ExpenseHead" });
   if (denied) return denied;
-  let b: { id?: number; name?: string; active?: boolean; accountId?: number | null; trackBudget?: boolean };
+  let b: { id?: number; name?: string; active?: boolean; accountId?: number | null; trackBudget?: boolean; linkedFeature?: string | null };
   try { b = await req.json(); } catch { return NextResponse.json({ ok: false, message: "Invalid request body." }, { status: 400 }); }
   const id = Number(b.id);
   const cur = await prisma.expenseHead.findFirst({ where: { id, tenantId: user.tenantId } });
@@ -61,16 +61,19 @@ export async function PATCH(req: Request) {
   const accountId = b.accountId === undefined ? undefined : (b.accountId ? (await resolveAccount(user.tenantId, b.accountId)).accountId : null);
   const h = await prisma.expenseHead.update({
     where: { id },
-    data: { name: b.name != null && b.name.trim() ? b.name.trim().slice(0, 120) : undefined, active: b.active != null ? !!b.active : undefined, accountId, trackBudget: b.trackBudget != null ? !!b.trackBudget : undefined },
+    data: {
+      name: b.name != null && b.name.trim() ? b.name.trim().slice(0, 120) : undefined, active: b.active != null ? !!b.active : undefined, accountId, trackBudget: b.trackBudget != null ? !!b.trackBudget : undefined,
+      linkedFeature: b.linkedFeature === undefined ? undefined : (b.linkedFeature || null),
+    },
   });
   const acc = await resolveAccount(user.tenantId, h.accountId);
   await writeAudit(prisma, user, {
     action: "expense_head.update", entity: "ExpenseHead", entityId: h.id,
     summary: `Expense head "${h.name}" updated`,
-    meta: { name: h.name, active: h.active, parentId: h.parentId, accountId: h.accountId },
+    meta: { name: h.name, active: h.active, parentId: h.parentId, accountId: h.accountId, linkedFeature: h.linkedFeature },
     ip: requestMeta(req).ip,
   });
-  const head: ExpenseHeadDto = { id: h.id, name: h.name, parentId: h.parentId, active: h.active, ...acc, trackBudget: h.trackBudget };
+  const head: ExpenseHeadDto = { id: h.id, name: h.name, parentId: h.parentId, active: h.active, ...acc, trackBudget: h.trackBudget, linkedFeature: h.linkedFeature };
   return NextResponse.json({ ok: true, head });
 }
 

@@ -50,7 +50,7 @@ export function FuelEntryDetail() {
         <Button variant="outline" size="md" onClick={() => router.push("/masters/transport/fuel-management")}><ArrowLeft className="h-4 w-4" /> Back</Button>
       </div>
 
-      <SectionCard icon={Fuel} title="Fuel Entry Details">
+      <SectionCard icon={Fuel} title="Fuel Purchase Details">
         <div className="grid gap-3 sm:grid-cols-3">
           <ReadKV k="Date" v={detail.entryDate} />
           <ReadKV k="Vehicle" v={detail.vehicleNo} />
@@ -59,11 +59,35 @@ export function FuelEntryDetail() {
           <ReadKV k="Fuel Station" v={detail.fuelStationName ?? "—"} />
           <ReadKV k="Quantity" v={`${detail.quantity} ${detail.uom}`} />
           <ReadKV k="Rate" v={`₹${detail.rate}`} />
-          <ReadKV k="Amount" v={`₹${detail.amount.toLocaleString()}`} />
+          <ReadKV k="Fuel Amount" v={`₹${detail.amount.toLocaleString()}`} />
           <ReadKV k="Odometer" v={detail.odometer != null ? `${detail.odometer} KM` : "—"} />
           <ReadKV k="Invoice No." v={detail.invoiceNo ?? "—"} />
-          <ReadKV k="Payment Mode" v={detail.paymentMode ?? "—"} />
+          <ReadKV k="Supplier GSTIN" v={detail.supplierGstin ?? "—"} />
         </div>
+      </SectionCard>
+
+      <SectionCard icon={Fuel} title="Accounting & Payment">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <ReadKV k="GST" v={detail.gstApplicable ? `${detail.gstPct ?? 0}% (₹${detail.taxAmount.toLocaleString()})` : "Not applicable"} />
+          <ReadKV k="Other Costs" v={detail.otherCost > 0 ? `₹${detail.otherCost.toLocaleString()}` : "—"} />
+          <ReadKV k="Total Amount" v={`₹${detail.totalAmount.toLocaleString()}`} />
+          <ReadKV k="Posting" v={detail.postingType === "ap" ? "On Credit (Payable)" : "Pay Now"} />
+          <ReadKV k="Payment Mode" v={detail.paymentMode ?? "—"} />
+          {detail.bankName && <ReadKV k="Bank" v={`${detail.bankName}${detail.bankAccount ? ` · ${detail.bankAccount}` : ""}`} />}
+        </div>
+        {detail.lines.length > 0 && (
+          <div className="mt-3">
+            <p className="mb-1.5 text-2xs font-semibold text-muted">Additional Cost Lines</p>
+            <div className="space-y-1">
+              {detail.lines.map((l) => (
+                <div key={l.id} className="flex items-center justify-between rounded-lg bg-surface-2/40 px-3 py-1.5 text-sm">
+                  <span className="text-foreground">{l.headName ?? "—"}{l.description ? ` — ${l.description}` : ""}</span>
+                  <span className="font-semibold text-foreground">₹{l.amount.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </SectionCard>
 
       <SectionCard icon={Fuel} title="Fuel Efficiency">

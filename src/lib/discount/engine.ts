@@ -42,6 +42,7 @@ export interface EngineContext {
 
 export interface AppliedDiscount {
   id: number; code: string; name: string; discountType: string; discountBase: string;
+  method: string; value: number; // the configured calculation method + raw value — surfaced so callers (e.g. Direct Customer Dispatch's live preview) can show the customer *why* a discount applied, not just the resulting amount
   discountAmount: number;    // the discount in its display base (on MRP incl. tax, or material value)
   netReduction: number;      // the tax-INCLUSIVE reduction (so GST recomputes correctly)
   account: string; reduceTaxable: boolean; combinable: boolean; priority: number;
@@ -84,6 +85,8 @@ function checkApplicability(d: EngineDiscount, ctx: EngineContext): string | nul
   if (ch.length && !ch.includes(ctx.channel)) return `Not for ${ctx.channel}`;
   const pm = arr(a.paymentModes);
   if (pm.length && ctx.paymentMode && !pm.includes(ctx.paymentMode)) return `Not for ${ctx.paymentMode}`;
+  const cids = arr(a.customerIds);
+  if (cids.length && (!ctx.customerId || !cids.includes(String(ctx.customerId)))) return "Customer not eligible";
   const cg = arr(a.customerGroups);
   if (cg.length && (!ctx.customerGroup || !cg.includes(ctx.customerGroup))) return "Customer group not eligible";
   const ml = arr(a.membershipLevels);
@@ -146,6 +149,12 @@ function computeAmount(d: EngineDiscount, ctx: EngineContext): number {
       const unit = (getLine.amount || 0) / (getLine.qty || 1);
       amt = unit * (d.getQty || 1);
     }
+  } else if (d.method === "per_unit") {
+    // A fixed ₹ amount per unit quantity, multiplied by the TOTAL quantity
+    // across the whole bill (not scoped to specific products) — e.g. a
+    // customer-specific ₹5-per-unit discount on whatever they buy.
+    const totalQty = ctx.items.reduce((s, i) => s + (i.qty || 0), 0);
+    amt = totalQty * d.value;
   } else if (d.method === "flat" || type === "Flat Amount" || type === "Cash") {
     amt = d.value;
   } else if (d.method === "fixed_price" || type === "Fixed Selling Price") {
@@ -181,7 +190,7 @@ export function evaluateDiscounts(
     const discountAmount = computeAmount(d, ctx);
     if (discountAmount <= 0) { skipped.push({ id: d.id, code: d.code, name: d.name, reason: "No value for this cart" }); continue; }
     const netReduction = d.discountBase === "exclusive" ? r2(discountAmount * grossUp) : discountAmount;
-    candidates.push({ id: d.id, code: d.code, name: d.name, discountType: d.discountType, discountBase: d.discountBase, discountAmount, netReduction, account: d.discountAccount, reduceTaxable: d.reduceTaxable, combinable: d.combinable, priority: d.priority });
+    candidates.push({ id: d.id, code: d.code, name: d.name, discountType: d.discountType, discountBase: d.discountBase, method: d.method, value: d.value, discountAmount, netReduction, account: d.discountAccount, reduceTaxable: d.reduceTaxable, combinable: d.combinable, priority: d.priority });
   }
 
   // Priority engine: lower priority number wins; break ties by larger value.

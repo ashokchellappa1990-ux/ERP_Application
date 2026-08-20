@@ -66,6 +66,7 @@ export const SYSTEM_ACCOUNTS: SeedAccount[] = [
   { code: "4420", name: "Vehicle Rent Expense", type: "Expense", group: "Indirect Expense", normalBalance: "Debit" },
   { code: "3295", name: "Operating Charges Recovery", type: "Income", group: "Operating Income", normalBalance: "Credit" },
   { code: "4430", name: "Operating Expense — Dispatch", type: "Expense", group: "Indirect Expense", normalBalance: "Debit" },
+  { code: "4440", name: "Fuel Expense", type: "Expense", group: "Indirect Expense", normalBalance: "Debit" },
 ];
 
 // Convenient code constants used by the posting routines.
@@ -75,7 +76,7 @@ export const ACC = {
   CUSTOMER_ADVANCE: "2150", DEPOSIT_RECEIVED: "2160", SUPPLIER_ADVANCE: "1150", EMPLOYEE_ADVANCE: "1160", DEPOSIT_PAID: "1170",
   TRANSIT_PASS_RECOVERY: "3280", VEHICLE_RENT_RECOVERY: "3290",
   DISPATCH_CLEARING_LIABILITY: "2170", DRIVER_BATTA_EXPENSE: "4410", VEHICLE_RENT_EXPENSE: "4420",
-  OPERATING_CHARGES_RECOVERY: "3295", OPERATING_EXPENSE_DISPATCH: "4430",
+  OPERATING_CHARGES_RECOVERY: "3295", OPERATING_EXPENSE_DISPATCH: "4430", FUEL_EXPENSE: "4440",
 } as const;
 
 /** The Dr account for a direct purchase bill, by purchase type. */

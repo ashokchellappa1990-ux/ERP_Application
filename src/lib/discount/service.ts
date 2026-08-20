@@ -229,12 +229,13 @@ export async function recordUsage(s: Scope, u: { discountId: number; discountCod
 /** Options for the Applicability multi-selects — loaded from the live masters. */
 export async function listMasterOptions(s: Scope) {
   const t = { tenantId: s.tenantId }; // catalog masters are tenant-wide
-  const [cats, brands, groups, levels, products] = await Promise.all([
+  const [cats, brands, groups, levels, products, customers] = await Promise.all([
     prisma.product.findMany({ where: { ...t, category: { not: null } }, select: { category: true }, distinct: ["category"], take: 1000 }),
     prisma.product.findMany({ where: { ...t, brand: { not: null } }, select: { brand: true }, distinct: ["brand"], take: 1000 }),
     prisma.customer.findMany({ where: { ...t, customerGroup: { not: null } }, select: { customerGroup: true }, distinct: ["customerGroup"], take: 500 }),
     prisma.membershipLevel.findMany({ where: { ...t, status: "Active" }, select: { name: true }, orderBy: { name: "asc" } }).catch(() => [] as { name: string }[]),
     prisma.product.findMany({ where: t, select: { id: true, name: true, sku: true, retailPrice: true, gstRate: true, category: true, brand: true }, orderBy: { name: "asc" }, take: 2000 }),
+    prisma.customer.findMany({ where: t, select: { id: true, name: true, phone: true }, orderBy: { name: "asc" }, take: 2000 }),
   ]);
   const clean = (xs: (string | null)[]) => Array.from(new Set(xs.filter((x): x is string => !!x && x.trim().length > 0))).sort();
   return {
@@ -243,6 +244,7 @@ export async function listMasterOptions(s: Scope) {
     customerGroups: clean(groups.map((g) => g.customerGroup)),
     membershipLevels: clean(levels.map((l) => l.name)),
     products: products.map((p) => ({ value: String(p.id), label: p.sku ? `${p.name} · ${p.sku}` : p.name, name: p.name, rate: Number(p.retailPrice) || 0, gst: Number(p.gstRate) || 0, category: p.category ?? "", brand: p.brand ?? "" })),
+    customers: customers.map((c) => ({ value: String(c.id), label: c.phone ? `${c.name} · ${c.phone}` : c.name })),
   };
 }
 

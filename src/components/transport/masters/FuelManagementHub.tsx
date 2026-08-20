@@ -54,16 +54,16 @@ export function FuelManagementHub({ vehicleFilter, embedded }: { vehicleFilter?:
   return (
     <div className="space-y-5">
       {!embedded && (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 lg:flex-1">
             <div className="mb-1 flex items-center gap-2 text-xs text-muted"><span>Transport &amp; Vehicle Operations</span><span className="text-subtle">/</span><span className="font-medium text-foreground">Fuel Management</span></div>
             <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Fuel className="h-5 w-5 text-primary" /> Fuel Management</h1>
-            <p className="mt-0.5 text-sm text-muted">External fuel entries, internal tank issues, purchases and consumption — vehicle/driver/trip-centric, referencing existing masters by id only.</p>
+            <p className="mt-0.5 text-sm text-muted">Fuel Purchase (external, GL-posting vehicle expense), Fuel Issue (internal tank consumption), and Fuel Entry (tank stock replenishment) — vehicle/driver/trip-centric, referencing existing masters by id only.</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="md" onClick={() => router.push("/masters/transport/fuel-management/entry/new")}><Plus className="h-4 w-4" /> Fuel Entry</Button>
+          <div className="flex shrink-0 flex-nowrap gap-2">
+            <Button size="md" onClick={() => router.push("/masters/transport/fuel-management/entry/new")}><Plus className="h-4 w-4" /> Fuel Purchase</Button>
             <Button variant="outline" size="md" onClick={() => router.push("/masters/transport/fuel-management/issue/new")}><Plus className="h-4 w-4" /> Fuel Issue</Button>
-            <Button size="md" onClick={() => router.push("/masters/transport/fuel-management/purchase/new")}><Plus className="h-4 w-4" /> Fuel Purchase</Button>
+            <Button variant="outline" size="md" onClick={() => router.push("/masters/transport/fuel-management/purchase/new")}><Plus className="h-4 w-4" /> Fuel Entry (Tank)</Button>
           </div>
         </div>
       )}
@@ -85,7 +85,7 @@ export function FuelManagementHub({ vehicleFilter, embedded }: { vehicleFilter?:
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="inline-flex overflow-hidden rounded-md border border-border text-2xs">
-          {([["entry", "Fuel Entry"], ["issue", "Fuel Issue"], ["purchase", "Fuel Purchase"], ["stations", "Station / Tank"], ["adjustments", "Adjustments"]] as const).map(([k, lbl]) => (
+          {([["entry", "Fuel Purchase"], ["issue", "Fuel Issue"], ["purchase", "Fuel Entry (Tank)"], ["stations", "Station / Tank"], ["adjustments", "Adjustments"]] as const).map(([k, lbl]) => (
             <button key={k} onClick={() => setTab(k)} className={cn("px-3 py-1.5 font-semibold transition", tab === k ? "bg-primary text-white" : "bg-surface text-muted hover:text-foreground")}>{lbl}</button>
           ))}
         </div>
@@ -100,7 +100,7 @@ export function FuelManagementHub({ vehicleFilter, embedded }: { vehicleFilter?:
       {loading ? <div className="rounded-2xl border border-border bg-card p-10 shadow-sm"><AppLoader label="Loading…" size="sm" /></div> : (
         <>
           {tab === "entry" && (
-            <ListTable rows={entries} empty="No fuel entries yet." columns={["Entry No.", "Vehicle", "Driver", "Fuel Station", "Qty", "Amount", "Odometer", "Status", ""]}
+            <ListTable rows={entries} empty="No fuel purchases yet." columns={["Purchase No.", "Vehicle", "Driver", "Fuel Station", "Qty", "Total Amount", "Posting", "Odometer", "Status", ""]}
               renderRow={(r: FuelEntryRow) => (
                 <tr key={r.id} className="cursor-pointer border-b border-border/60 last:border-0 hover:bg-surface-2/20" onClick={() => router.push(`/masters/transport/fuel-management/entry/${r.id}`)}>
                   <td className="px-3 py-2 font-medium text-foreground">{r.entryNo}</td>
@@ -108,7 +108,8 @@ export function FuelManagementHub({ vehicleFilter, embedded }: { vehicleFilter?:
                   <td className="px-3 py-2 text-2xs text-muted">{r.driverName ?? "—"}</td>
                   <td className="px-3 py-2 text-2xs text-muted">{r.fuelStationName ?? "—"}</td>
                   <td className="px-3 py-2 text-2xs text-muted">{r.quantity} L</td>
-                  <td className="px-3 py-2 text-2xs text-muted">₹{r.amount.toLocaleString()}</td>
+                  <td className="px-3 py-2 text-2xs text-muted">₹{r.totalAmount.toLocaleString()}</td>
+                  <td className="px-3 py-2 text-2xs text-muted">{r.postingType === "ap" ? "On Credit" : "Paid"}</td>
                   <td className="px-3 py-2 text-2xs text-muted">{r.odometer ?? "—"}</td>
                   <td className="px-3 py-2 text-center"><Badge tone={TXN_TONE[r.status] ?? "neutral"}>{r.status}</Badge></td>
                   <td className="px-3 py-2 text-right"><button onClick={(e) => { e.stopPropagation(); router.push(`/masters/transport/fuel-management/entry/${r.id}`); }} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:text-primary"><Eye className="h-4 w-4" /></button></td>
@@ -132,7 +133,7 @@ export function FuelManagementHub({ vehicleFilter, embedded }: { vehicleFilter?:
               )} />
           )}
           {tab === "purchase" && (
-            <ListTable rows={purchases} empty="No fuel purchases yet." columns={["Purchase No.", "Date", "Supplier", "Tank", "Qty", "Amount", "Status"]}
+            <ListTable rows={purchases} empty="No fuel tank entries yet." columns={["Entry No.", "Date", "Supplier", "Tank", "Qty", "Amount", "Status"]}
               renderRow={(r: FuelPurchaseRow) => (
                 <tr key={r.id} className="border-b border-border/60 last:border-0 hover:bg-surface-2/20">
                   <td className="px-3 py-2 font-medium text-foreground">{r.purchaseNo}</td>

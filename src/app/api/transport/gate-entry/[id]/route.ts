@@ -62,7 +62,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       dispatchExecutionId: entry.dispatchExecutionId, dispatchType: entry.dispatchType, referenceNo: entry.referenceNo,
       arrivalTime: entry.arrivalTime ? entry.arrivalTime.toISOString() : null,
       securityOfficer: entry.securityOfficer, remarks: entry.remarks,
-      customerName: entry.customerName, deliveryAddress: entry.deliveryAddress,
+      customerId: entry.customerId, customerName: entry.customerName, deliveryAddress: entry.deliveryAddress,
       // Freeform capture wins over the linked master (the actual driver at the gate may differ).
       driverName: entry.driverName || driver?.name || null, driverMobile: entry.driverMobile || driver?.phone || null,
       driverLicenseNo: entry.driverLicenseNo, helperName: entry.helperName, helperMobile: entry.helperMobile,

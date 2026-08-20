@@ -66,6 +66,9 @@ function calcLine(l: Line) {
   return { gross, discAmount, taxable, taxAmount, net };
 }
 
+const DISC_METHOD_LABEL: Record<string, string> = { percentage: "Percentage", flat: "Fixed Value", per_unit: "Amount per Quantity", fixed_price: "Fixed Selling Price" };
+const discValueLabel = (method: string, value: number) => (method === "percentage" ? `${value}%` : method === "per_unit" ? `₹${value}/unit` : `₹${value}`);
+
 type PayCat = "full" | "partial" | "credit";
 type PostStage = "draft" | "dispatched" | "dc" | "invoiced";
 
@@ -280,6 +283,17 @@ export function DirectLoadDispatchForm() {
         if (!j.ok) return;
         const d = j.data;
         if (d.customerName) { setCustomerName(d.customerName); setCustomerQuery(d.customerName); }
+        if (d.customerId) setCustomerId(d.customerId);
+        else if (d.customerName) {
+          // Fallback for gate entries recorded before customerId was captured
+          // on Vehicle Gate Entry — best-effort exact-name match against the
+          // Customer Master so customer-specific discounts can still resolve.
+          try {
+            const cj = await fetch(`/api/masters/customers?q=${encodeURIComponent(d.customerName.trim())}`, { cache: "no-store" }).then((r) => r.json());
+            const exact = (cj.customers as CustomerHit[] | undefined)?.find((c) => c.name.trim().toLowerCase() === d.customerName.trim().toLowerCase());
+            if (exact) setCustomerId(exact.id);
+          } catch { /* best effort — leaves customerId unresolved, matching prior behavior */ }
+        }
         if (d.deliveryAddress) setDeliveryAddress(d.deliveryAddress);
         await applyGateEntry({
           id: d.id, gateEntryNo: d.gateEntryNo, vehicleId: d.vehicleId, vehicleNo: d.vehicleNo,
@@ -312,6 +326,86 @@ export function DirectLoadDispatchForm() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefillGateEntryId]);
+
+  // ---- Customer Discount — auto-detected from an Active Customer/Customer-
+  // Group Discount Master rule (src/lib/discount), the same engine POS/Sales
+  // Invoice uses. When no rule is configured for the customer, a manual
+  // fallback (Discount Applicable? -> Percentage/Fixed Value/Amount per Qty)
+  // lets the user apply an ad-hoc discount for just this dispatch instead.
+  // Either way, the resolved method+value is folded into each line's DISC %
+  // (only lines the user hasn't manually edited — touchedDiscRef), still
+  // freely overridable afterward like any other auto-filled field on this
+  // screen. Server-side, createDirectCustomerDispatch trusts whatever DISC %
+  // is sent — this is the single, authoritative point the discount is
+  // captured for Direct Customer Dispatch (buildPreparedSale skips
+  // re-applying it). ----
+  interface ResolvedDiscount { source: "auto" | "manual"; method: "percentage" | "flat" | "per_unit"; value: number; name?: string }
+  const touchedDiscRef = useRef<Set<string>>(new Set());
+  const discTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [autoDiscount, setAutoDiscount] = useState<ResolvedDiscount | null>(null);
+  const [discountChecked, setDiscountChecked] = useState(false);
+  const [manualApplicable, setManualApplicable] = useState(false);
+  const [manualMethod, setManualMethod] = useState<"percentage" | "flat" | "per_unit">("percentage");
+  const [manualValue, setManualValue] = useState<string>("");
+  const lineSig = lines.map((l) => `${l.productId}|${l.qty}|${l.rate}`).join(",");
+
+  // Check the Discount Master for an auto-applicable rule whenever the
+  // customer or priced items change.
+  useEffect(() => {
+    if (discTimer.current) clearTimeout(discTimer.current);
+    if (!customerId) { setAutoDiscount(null); setDiscountChecked(false); return; }
+    const priced = lines.filter((l) => l.productId && n(l.qty) > 0);
+    if (!priced.length) { setAutoDiscount(null); setDiscountChecked(false); return; }
+    discTimer.current = setTimeout(async () => {
+      try {
+        const billLines = priced.map((l) => { const c = calcLine(l); return { productId: l.productId!, qty: n(l.qty), amount: c.gross, taxable: c.gross }; });
+        const billAmount = r2(billLines.reduce((s, x) => s + x.amount, 0));
+        if (billAmount <= 0) return;
+        const j = await fetch("/api/discount/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "preview", customerId, channel: "Wholesale", billAmount, billTaxable: billAmount, lines: billLines }) }).then((r) => r.json());
+        const best = j.ok ? j.result?.applied?.[0] : null;
+        setAutoDiscount(best ? { source: "auto", method: best.method, value: Number(best.value) || 0, name: best.name } : null);
+      } catch { setAutoDiscount(null); }
+      finally { setDiscountChecked(true); }
+    }, 400);
+    return () => { if (discTimer.current) clearTimeout(discTimer.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerId, lineSig]);
+
+  // Whichever discount is in effect (an auto-detected rule wins; otherwise
+  // the manual override, when the user has switched it on) — computed once
+  // here so both the reference banner and the DISC % auto-fill agree.
+  const effectiveDiscount: ResolvedDiscount | null = autoDiscount ?? (manualApplicable && n(manualValue) > 0 ? { source: "manual", method: manualMethod, value: n(manualValue) } : null);
+  const pricedLines = lines.filter((l) => l.productId && n(l.qty) > 0);
+  const billForDiscount = r2(pricedLines.reduce((s, l) => s + calcLine(l).gross, 0));
+  const totalQtyForDiscount = pricedLines.reduce((s, l) => s + n(l.qty), 0);
+  const effectiveDiscountAmount = effectiveDiscount && billForDiscount > 0
+    ? r2(Math.min(billForDiscount, effectiveDiscount.method === "flat" ? effectiveDiscount.value
+      : effectiveDiscount.method === "per_unit" ? effectiveDiscount.value * totalQtyForDiscount
+      : billForDiscount * (effectiveDiscount.value / 100)))
+    : 0;
+
+  // Fold the effective discount into each untouched line's DISC % — same
+  // mechanism regardless of whether it came from an auto rule or the manual
+  // override, so the grid and the invoice always agree.
+  useEffect(() => {
+    if (!effectiveDiscount || billForDiscount <= 0 || effectiveDiscountAmount <= 0) return;
+    // Rounding this to 2 decimals (like a currency amount) loses enough
+    // precision that re-deriving the ₹ amount from it back in calcLine drifts
+    // off the configured value (e.g. ₹100/unit × 9 qty showed ₹899.73 instead
+    // of ₹900) — 6 decimals keeps the round-trip exact to the cent.
+    const effectivePct = Math.round((effectiveDiscountAmount / billForDiscount) * 100 * 1e6) / 1e6;
+    setLines((p) => p.map((l) => (touchedDiscRef.current.has(l.id) || !l.productId || n(l.qty) <= 0 ? l : { ...l, discPct: String(effectivePct) })));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveDiscount?.method, effectiveDiscount?.value, effectiveDiscount?.source, lineSig]);
+
+  // "No" explicitly selected (no auto rule, and the user declined a manual
+  // one) — DISC % is frozen at 0 and not editable, rather than left open for
+  // an accidental discount with no configured basis.
+  const discFrozen = discountChecked && !autoDiscount && !manualApplicable;
+  useEffect(() => {
+    if (!discFrozen) return;
+    setLines((p) => p.map((l) => (l.discPct === "" ? l : { ...l, discPct: "" })));
+  }, [discFrozen]);
 
   const custTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchCustomers = async (q: string) => {
@@ -761,32 +855,81 @@ export function DirectLoadDispatchForm() {
             ) : <div className="absolute z-20 mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted shadow-lg">No products matched.</div>)}
           </div>
         )}
+
+        {customerId != null && (
+          <div className="mb-3 rounded-lg border border-primary/20 bg-primary-subtle/30 px-3 py-2.5 text-2xs">
+            {autoDiscount ? (
+              <p className="flex items-center gap-1.5 font-semibold text-foreground">
+                <IndianRupee className="h-3.5 w-3.5 text-primary" />
+                Customer Discount — {DISC_METHOD_LABEL[autoDiscount.method] ?? autoDiscount.method}: {discValueLabel(autoDiscount.method, autoDiscount.value)}
+                {autoDiscount.name ? ` (${autoDiscount.name})` : ""} — applying ₹{effectiveDiscountAmount.toLocaleString()} automatically below.
+              </p>
+            ) : discountChecked ? (
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="mb-0 font-semibold text-foreground">Discount Applicable?</span>
+                  <div className="inline-flex overflow-hidden rounded-md border border-border text-2xs">
+                    <button type="button" onClick={() => setManualApplicable(true)} className={cn("px-2.5 py-1 font-semibold transition", manualApplicable ? "bg-primary text-white" : "bg-surface text-muted hover:text-foreground")}>Yes</button>
+                    <button type="button" onClick={() => { setManualApplicable(false); setManualValue(""); }} className={cn("px-2.5 py-1 font-semibold transition", !manualApplicable ? "bg-primary text-white" : "bg-surface text-muted hover:text-foreground")}>No</button>
+                  </div>
+                </div>
+                {!manualApplicable && <span className="pb-1.5 text-subtle">No discount rule is configured for this customer.</span>}
+                {manualApplicable && (
+                  <>
+                    <div>
+                      <label className="mb-1 block text-2xs font-semibold text-muted">Discount Type</label>
+                      <select value={manualMethod} onChange={(e) => setManualMethod(e.target.value as typeof manualMethod)} className={cn(inpSm, "h-8 w-44")}>
+                        <option value="percentage">Percentage</option>
+                        <option value="flat">Fixed Value (whole bill)</option>
+                        <option value="per_unit">Amount per Quantity</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-2xs font-semibold text-muted">{manualMethod === "percentage" ? "Discount %" : manualMethod === "per_unit" ? "₹ per Unit Qty" : "₹ Fixed Amount"}</label>
+                      <input type="number" min={0} value={manualValue} onChange={(e) => setManualValue(e.target.value)} className={cn(inpSm, "h-8 w-28")} />
+                    </div>
+                    {effectiveDiscount && (
+                      <p className="pb-1.5 font-semibold text-foreground">
+                        = ₹{effectiveDiscountAmount.toLocaleString()}{manualMethod === "per_unit" ? ` (₹${manualValue}/unit × ${totalQtyForDiscount} qty)` : ""} applied automatically below.
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            ) : null}
+          </div>
+        )}
+
         <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full min-w-[900px] table-fixed text-sm">
+          <table className="w-full min-w-[1150px] table-fixed text-sm">
             <colgroup>
-              <col className="w-auto min-w-[110px] max-w-[150px]" />
+              <col className="w-64" />
               {showBatchCols && <><col className="w-28" /><col className="w-32" /><col className="w-32" /></>}
-              <col className="w-24" />
-              <col className="w-16" />
-              <col className="w-24" />
+              <col className="w-20" />
+              <col className="w-20" />
               <col className="w-20" />
               <col className="w-24" />
-              <col className="w-16" />
-              <col className="w-24" />
-              <col className="w-28" />
+              <col className="w-20" />
+              <col className="w-20" />
+              <col className="w-20" />
+              <col className="w-20" />
+              <col className="w-20" />
+              <col className="w-20" />
               <col className="w-9" />
             </colgroup>
-            <thead><tr className="border-b border-border bg-surface-2 text-left text-2xs font-semibold uppercase tracking-wider text-subtle">
-              <th className="px-2 py-2">Product</th>
+            <thead><tr className="border-b border-border bg-surface-2 text-center text-2xs font-semibold uppercase tracking-wider text-subtle">
+              <th className="px-2 py-2 text-left">Product</th>
               {showBatchCols && <><th className="px-2 py-2">Batch No</th><th className="px-2 py-2">Mfg Date</th><th className="px-2 py-2">Exp Date</th></>}
-              <th className="px-2 py-2 text-right">Qty</th>
+              <th className="px-2 py-2">Qty</th>
               <th className="px-2 py-2">UOM</th>
-              <th className="px-2 py-2 text-right">Rate</th>
-              <th className="px-2 py-2 text-right">Disc %</th>
-              <th className="px-2 py-2 text-right">Taxable</th>
-              <th className="px-2 py-2 text-right">Tax %</th>
-              <th className="px-2 py-2 text-right">Tax Amt</th>
-              <th className="px-2 py-2 text-right">Net Amount</th>
+              <th className="px-2 py-2">Rate</th>
+              <th className="px-2 py-2">Total Amount</th>
+              <th className="px-2 py-2">Disc %</th>
+              <th className="px-2 py-2">Disc Amt</th>
+              <th className="px-2 py-2">Taxable</th>
+              <th className="px-2 py-2">Tax %</th>
+              <th className="px-2 py-2">Tax Amt</th>
+              <th className="px-2 py-2">Net Amount</th>
               <th className="px-2 py-2" />
             </tr></thead>
             <tbody>
@@ -795,9 +938,9 @@ export function DirectLoadDispatchForm() {
                 const needsBatch = l.batchTracked && !l.batchNo;
                 return (
                 <tr key={l.id} className="border-b border-border last:border-0 align-middle">
-                  <td className="px-2 py-1.5">
-                    <div className="truncate font-medium text-foreground">{l.productName || <span className="text-subtle">Search &amp; pick above</span>}</div>
-                    {l.sku ? <div className="text-2xs text-subtle">{l.sku}</div> : null}
+                  <td className="px-2 py-1.5" title={l.productName || undefined}>
+                    <div className="truncate text-sm font-medium text-foreground">{l.productName || <span className="text-subtle">Search &amp; pick above</span>}</div>
+                    {l.sku ? <div className="truncate text-2xs text-subtle">{l.sku}</div> : null}
                     {needsBatch && <div className="text-2xs font-semibold text-warning">Batch required</div>}
                   </td>
                   {showBatchCols && (
@@ -810,7 +953,16 @@ export function DirectLoadDispatchForm() {
                   <td className="px-2 py-1.5"><input type="number" value={l.qty} onChange={(e) => updLine(l.id, { qty: e.target.value.slice(0, 10) })} className={cn(inpSm, "w-full text-right")} /></td>
                   <td className="px-2 py-1.5 text-2xs text-muted">{l.uom || "—"}</td>
                   <td className="px-2 py-1.5"><input type="number" value={l.rate} onChange={(e) => updLine(l.id, { rate: e.target.value })} className={cn(inpSm, "w-full text-right")} /></td>
-                  <td className="px-2 py-1.5"><input type="number" value={l.discPct} onChange={(e) => updLine(l.id, { discPct: e.target.value })} placeholder="0" className={cn(inpSm, "w-full text-right")} /></td>
+                  <td className="px-2 py-1.5 text-right tabular-nums text-muted">{c.gross.toFixed(2)}</td>
+                  <td className="px-2 py-1.5">
+                    <input
+                      type="number" value={l.discPct} disabled={discFrozen}
+                      onChange={(e) => { touchedDiscRef.current.add(l.id); updLine(l.id, { discPct: e.target.value }); }}
+                      placeholder="0"
+                      className={cn(inpSm, "w-full text-right", discFrozen && "cursor-not-allowed bg-surface-2 text-subtle")}
+                    />
+                  </td>
+                  <td className="px-2 py-1.5 text-right tabular-nums text-muted">{c.discAmount.toFixed(2)}</td>
                   <td className="px-2 py-1.5 text-right tabular-nums text-muted">{c.taxable.toFixed(2)}</td>
                   <td className="px-2 py-1.5"><input type="number" value={l.taxPct} onChange={(e) => updLine(l.id, { taxPct: e.target.value })} placeholder="0" className={cn(inpSm, "w-full text-right")} /></td>
                   <td className="px-2 py-1.5 text-right tabular-nums text-muted">{c.taxAmount.toFixed(2)}</td>

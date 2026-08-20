@@ -10,6 +10,7 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import { cn } from "@/lib/cn";
 import { useFmt } from "@/components/settings/GeneralConfigProvider";
 import type { ExpenseHeadDto as Head, ExpenseAccountDto as Acct, PettyCashConfigDto as Cfg } from "@/lib/contracts/finance";
+import { LINKED_FEATURE_OPTS } from "@/lib/contracts/finance";
 
 const YEAR_FORMATS = [{ v: "fy_short", l: "FY 26-27" }, { v: "fy_full", l: "FY 2026-2027" }, { v: "cal_full", l: "2026" }, { v: "cal_short", l: "26" }];
 const RESET_FREQ = [{ v: "never", l: "Never (continuous)" }, { v: "monthly", l: "Monthly" }, { v: "financial_year", l: "Financial Year" }];
@@ -62,6 +63,10 @@ export default function PettyCashConfigPage() {
     setHeads((h) => h.map((x) => (x.id === id ? { ...x, trackBudget } : x)));
     await fetch("/api/finance/petty-cash/heads", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, trackBudget }) }).catch(() => {});
   }
+  async function setHeadLinkedFeature(id: number, linkedFeature: string | null) {
+    setHeads((h) => h.map((x) => (x.id === id ? { ...x, linkedFeature } : x)));
+    await fetch("/api/finance/petty-cash/heads", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, linkedFeature }) }).catch(() => {});
+  }
   async function deleteHead(id: number) {
     await fetch(`/api/finance/petty-cash/heads?id=${id}`, { method: "DELETE" }).catch(() => {});
     setHeads((h) => h.filter((x) => x.id !== id && x.parentId !== id));
@@ -101,7 +106,7 @@ export default function PettyCashConfigPage() {
           {/* Expense categories & heads */}
           <SectionCard icon={FolderTree} title="Expense Categories & Heads">
             <div className="space-y-3">
-              <p className="rounded-lg border border-border bg-surface-2/40 px-3 py-2 text-2xs text-muted">Map each expense head to its <span className="font-semibold text-foreground">GL account</span> (Accounts Head Mapping). When an expense voucher is submitted, its amount posts to the mapped account. Unmapped heads (⚠) post to <span className="font-medium">Indirect Expenses</span> by default.</p>
+              <p className="rounded-lg border border-border bg-surface-2/40 px-3 py-2 text-2xs text-muted">Map each expense head to its <span className="font-semibold text-foreground">GL account</span> (Accounts Head Mapping). When an expense voucher is submitted, its amount posts to the mapped account. Unmapped heads (⚠) post to <span className="font-medium">Indirect Expenses</span> by default. A head with a <span className="font-semibold text-foreground">Linked Feature</span> has its own dedicated screen (e.g. Fuel Purchase) — selecting it on a Petty Cash Voucher redirects there instead of accepting a generic line, so structured data (vehicle, odometer, etc.) isn't lost.</p>
               {categories.map((cat) => (
                 <div key={cat.id} className="rounded-xl border border-border bg-surface-2/30 p-3">
                   <div className="mb-2 flex items-center gap-2">
@@ -115,6 +120,10 @@ export default function PettyCashConfigPage() {
                         <select value={h.accountId ?? ""} onChange={(e) => setHeadAccount(h.id, e.target.value ? Number(e.target.value) : null)} title="Accounts head mapping — the GL account this head posts to" className={cn("h-8 w-44 shrink-0 rounded-md border bg-surface px-2 text-xs focus:border-primary focus:outline-none", h.accountId ? "border-border-strong text-foreground" : "border-warning/60 text-warning")}>
                           <option value="">⚠ Map account…</option>
                           {accounts.map((a) => <option key={a.id} value={a.id}>{a.code} · {a.name}</option>)}
+                        </select>
+                        <select value={h.linkedFeature ?? ""} onChange={(e) => setHeadLinkedFeature(h.id, e.target.value || null)} title="Linked Feature — if set, this head has its own dedicated entry screen; the Petty Cash Voucher form blocks picking it and redirects there instead" className={cn("h-8 w-40 shrink-0 rounded-md border bg-surface px-2 text-xs focus:border-primary focus:outline-none", h.linkedFeature ? "border-primary/40 text-primary" : "border-border-strong text-muted")}>
+                          <option value="">No linked feature</option>
+                          {LINKED_FEATURE_OPTS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
                         </select>
                         <button type="button" onClick={() => setHeadTrackBudget(h.id, !h.trackBudget)} title="Track this head against a budget (auto-loads into Budget Planning)" className={cn("inline-flex h-8 shrink-0 items-center gap-1 rounded-md border px-2 text-2xs font-semibold transition", h.trackBudget ? "border-primary/40 bg-primary-subtle text-primary" : "border-border bg-surface text-muted hover:text-foreground")}><Target className="h-3.5 w-3.5" /> Budget</button>
                         {showBudget && cfg.budgetScope === "head" && (

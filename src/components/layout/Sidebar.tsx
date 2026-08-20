@@ -13,22 +13,38 @@ import { canAccessRoute } from "@/lib/auth/permissions";
 import { THEMES } from "@/lib/themes";
 import { cn } from "@/lib/cn";
 
-/** Filter the nav to the features the user's permissions allow. */
+/** Filter the nav to the features the user's permissions allow. Recurses so a
+ * nested group (e.g. Tyre Management inside Transport & Vehicle Operations)
+ * survives filtering as long as any of its own (possibly nested) children do. */
+function filterNavItem(it: NavItem, perms: Set<string>): NavItem | null {
+  if (it.children) {
+    const kids = it.children.map((c) => filterNavItem(c, perms)).filter((x): x is NavItem => x !== null);
+    return kids.length ? { ...it, children: kids } : null;
+  }
+  return canAccessRoute(it.href ?? "", perms) ? it : null;
+}
 function filterNav(sections: NavSection[], perms: Set<string>): NavSection[] {
   return sections
-    .map((s) => ({
-      ...s,
-      items: s.items
-        .map((it): NavItem | null => {
-          if (it.children) {
-            const kids = it.children.filter((c) => canAccessRoute(c.href ?? "", perms));
-            return kids.length ? { ...it, children: kids } : null;
-          }
-          return canAccessRoute(it.href ?? "", perms) ? it : null;
-        })
-        .filter((x): x is NavItem => x !== null),
-    }))
+    .map((s) => ({ ...s, items: s.items.map((it) => filterNavItem(it, perms)).filter((x): x is NavItem => x !== null) }))
     .filter((s) => s.items.length > 0);
+}
+
+/** First reachable leaf href under an item — used for the collapsed rail's
+ * link target when the item (or its first child) is itself a group. */
+function firstLeafHref(item: NavItem): string | undefined {
+  if (item.href) return item.href;
+  for (const c of item.children ?? []) {
+    const href = firstLeafHref(c);
+    if (href) return href;
+  }
+  return undefined;
+}
+
+/** Whether an item's (possibly nested) descendants include the active route —
+ * used to auto-expand a parent and keep it highlighted when the active page
+ * is a grandchild inside a nested group. */
+function containsActivePath(item: NavItem, isActive: (href?: string) => boolean): boolean {
+  return !!item.children?.some((c) => isActive(c.href) || containsActivePath(c, isActive));
 }
 
 interface SidebarProps {
@@ -90,15 +106,14 @@ export function Sidebar({
     if (query) return new URLSearchParams(query).get("report") === currentReport;
     return true;
   };
-  const hasActiveChild = (item: NavItem) =>
-    !!item.children?.some((c) => isActive(c.href));
+  const hasActiveChild = (item: NavItem) => containsActivePath(item, isActive);
 
   // Expand parents that contain the active route by default.
   const [open, setOpen] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
     NAV_SECTIONS.forEach((s) =>
       s.items.forEach((i) => {
-        if (i.children && i.children.some((c) => isActive(c.href)))
+        if (i.children && containsActivePath(i, isActive))
           init[i.label] = true;
       })
     );
@@ -273,14 +288,13 @@ function ParentItem({
   onNavigate: () => void;
 }) {
   const Icon = item.icon;
-  const firstChild = item.children?.[0];
 
-  // Collapsed rail: behave as a link to the first child.
+  // Collapsed rail: behave as a link to the first reachable child.
   if (collapsed) {
     return (
       <li>
         <Link
-          href={firstChild?.href ?? "#"}
+          href={firstLeafHref(item) ?? "#"}
           onClick={onNavigate}
           title={item.label}
           className={cn(
@@ -319,27 +333,76 @@ function ParentItem({
       </button>
       {expanded && (
         <ul className="mt-0.5 space-y-0.5 pl-4">
-          {item.children!.map((child) => {
-            const active = isActive(child.href);
-            const ChildIcon = child.icon;
-            return (
-              <li key={child.label}>
-                <Link
-                  href={child.href ?? "#"}
-                  onClick={onNavigate}
-                  className={cn(
-                    "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition",
-                    active
-                      ? "nav-item-active font-medium text-white shadow-sm"
-                      : "text-menu-foreground/80 hover:bg-menu-hover hover:text-menu-foreground"
-                  )}
-                >
-                  <ChildIcon className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{child.label}</span>
-                </Link>
-              </li>
-            );
-          })}
+          {item.children!.map((child) =>
+            child.children ? (
+              <NestedParentItem key={child.label} item={child} isActive={isActive} onNavigate={onNavigate} />
+            ) : (
+              <LeafChild key={child.label} item={child} active={isActive(child.href)} onNavigate={onNavigate} />
+            )
+          )}
+        </ul>
+      )}
+    </li>
+  );
+}
+
+/* ------------------------------------------------- leaf child (nested) -- */
+function LeafChild({ item, active, onNavigate }: { item: NavItem; active: boolean; onNavigate: () => void }) {
+  const Icon = item.icon;
+  return (
+    <li>
+      <Link
+        href={item.href ?? "#"}
+        onClick={onNavigate}
+        className={cn(
+          "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition",
+          active
+            ? "nav-item-active font-medium text-white shadow-sm"
+            : "text-menu-foreground/80 hover:bg-menu-hover hover:text-menu-foreground"
+        )}
+      >
+        <Icon className="h-4 w-4 shrink-0" />
+        <span className="truncate">{item.label}</span>
+      </Link>
+    </li>
+  );
+}
+
+/* --------------------------------------------- nested parent (one more level) -- */
+function NestedParentItem({
+  item,
+  isActive,
+  onNavigate,
+}: {
+  item: NavItem;
+  isActive: (href?: string) => boolean;
+  onNavigate: () => void;
+}) {
+  const Icon = item.icon;
+  const activeChild = containsActivePath(item, isActive);
+  const [expanded, setExpanded] = useState(activeChild);
+
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => setExpanded((e) => !e)}
+        className={cn(
+          "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition",
+          activeChild
+            ? "bg-primary-subtle font-semibold text-primary"
+            : "text-menu-foreground/80 hover:bg-menu-hover hover:text-menu-foreground"
+        )}
+      >
+        <Icon className="h-4 w-4 shrink-0" />
+        <span className="flex-1 truncate text-left">{item.label}</span>
+        <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 transition-transform", expanded && "rotate-180")} />
+      </button>
+      {expanded && (
+        <ul className="mt-0.5 space-y-0.5 pl-4">
+          {item.children!.map((child) => (
+            <LeafChild key={child.label} item={child} active={isActive(child.href)} onNavigate={onNavigate} />
+          ))}
         </ul>
       )}
     </li>

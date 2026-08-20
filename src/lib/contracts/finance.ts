@@ -214,7 +214,17 @@ export type PettyCashPaymentInput = z.infer<typeof PettyCashPaymentInputSchema>;
 export type PettyCashCreateInput = z.infer<typeof PettyCashCreateSchema>;
 
 /* ---------------------------------------------------- petty-cash expense heads */
-export interface ExpenseHeadDto { id: number; name: string; parentId: number | null; active: boolean; accountId: number | null; accountCode: string | null; accountName: string | null; trackBudget: boolean }
+/** A head flagged with one of these has its own dedicated entry screen — the
+ * Petty Cash Voucher form blocks picking it and redirects there instead,
+ * since a generic expense line would lose that feature's structured data. */
+export const LINKED_FEATURE_OPTS = [
+  { value: "fuel_purchase", label: "Fuel Purchase", href: "/masters/transport/fuel-management/entry/new" },
+] as const;
+export type LinkedFeature = (typeof LINKED_FEATURE_OPTS)[number]["value"];
+export const linkedFeatureHref = (v: string | null | undefined) => LINKED_FEATURE_OPTS.find((f) => f.value === v)?.href ?? null;
+export const linkedFeatureLabel = (v: string | null | undefined) => LINKED_FEATURE_OPTS.find((f) => f.value === v)?.label ?? null;
+
+export interface ExpenseHeadDto { id: number; name: string; parentId: number | null; active: boolean; accountId: number | null; accountCode: string | null; accountName: string | null; trackBudget: boolean; linkedFeature: string | null }
 
 /** A selectable GL account for mapping an expense head. */
 export interface ExpenseAccountDto { id: number; code: string; name: string; group: string | null }
@@ -230,6 +240,7 @@ export const ExpenseHeadUpdateSchema = z.object({
   active: z.boolean().optional(),
   accountId: z.coerce.number().int().nullish(),
   trackBudget: z.boolean().optional(),
+  linkedFeature: z.string().max(40).nullish(),
 });
 export type ExpenseHeadCreateInput = z.infer<typeof ExpenseHeadCreateSchema>;
 export type ExpenseHeadUpdateInput = z.infer<typeof ExpenseHeadUpdateSchema>;

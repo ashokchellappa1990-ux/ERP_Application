@@ -8,6 +8,12 @@ import { writeAudit } from "@/lib/audit/log";
 import { fuelEntryInput, type FuelEntryRow } from "@/lib/contracts/fuelManagement";
 import { getLastKnownOdometer } from "@/lib/transport/fuelManagement";
 import { isVehicleUnderMaintenance } from "@/lib/transport/vehicleMaintenance";
+import { ACC } from "@/lib/accounting/accounts";
+import { postJournal } from "@/lib/accounting/post";
+import { recordBankMovement } from "@/lib/finance/bank";
+
+const isNonCashMode = (m?: string | null) => !!m && !m.toLowerCase().includes("cash");
+const r2 = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
 
 const PERM = "masters.transport";
 function num(v: Prisma.Decimal | null | undefined): number | null { return v == null ? null : Number(v); }
@@ -56,6 +62,7 @@ export async function GET(req: Request) {
     tripId: r.tripId, tripNo: r.tripId != null ? tMap.get(r.tripId) ?? null : null,
     fuelType: r.fuelType, fuelStationName: r.fuelStationName, quantity: num(r.quantity) ?? 0, rate: num(r.rate) ?? 0, amount: num(r.amount) ?? 0,
     odometer: num(r.odometer), status: r.status, createdByName: r.createdBy != null ? uMap.get(r.createdBy) ?? null : null, createdAt: r.createdAt.toISOString(),
+    totalAmount: num(r.totalAmount) ?? num(r.amount) ?? 0, postingType: r.postingType,
   }));
 
   // Dashboard summary — over the full scoped, non-cancelled set.
@@ -117,21 +124,86 @@ export async function POST(req: Request) {
     if (supplier) fuelStationName = supplier.name;
   }
 
-  const amount = b.quantity * b.rate;
-  const seg = await resolveWriteScope(user);
-  const created = await prisma.fuelEntry.create({
-    data: {
-      tenantId: user.tenantId, businessId: seg.businessId ?? undefined, branchId: seg.branchId ?? undefined,
-      entryNo: "TMP", entryDate: new Date(b.entryDate), vehicleId: b.vehicleId, driverId: b.driverId ?? null, tripId: b.tripId ?? null,
-      fuelType: b.fuelType, fuelStationId: b.fuelStationId ?? null, fuelStationName,
-      quantity: b.quantity, uom: b.uom, rate: b.rate, amount, odometer: b.odometer ?? null,
-      invoiceNo: b.invoiceNo ?? null, invoiceDate: b.invoiceDate ? new Date(b.invoiceDate) : null, paymentMode: b.paymentMode ?? null,
-      status: "Confirmed", remarks: b.remarks ?? null, createdBy: user.id,
-    },
-  });
-  const entryNo = `FE-${String(created.id).padStart(6, "0")}`;
-  await prisma.fuelEntry.update({ where: { id: created.id }, data: { entryNo } });
+  if (b.postingType === "paynow") {
+    if (!b.paymentMode) return NextResponse.json({ ok: false, message: "Payment mode is required." }, { status: 422 });
+    if (isNonCashMode(b.paymentMode) && !b.bankId) return NextResponse.json({ ok: false, message: "Select a bank account for a non-cash payment mode." }, { status: 422 });
+  }
 
-  await writeAudit(prisma, user, { action: "fuel_entry.create", entity: "FuelEntry", entityId: created.id, summary: `Fuel entry ${entryNo} — ${b.quantity}${b.uom} for vehicle ${vehicle.vehicleNo}`, businessId: seg.businessId ?? null, branchId: seg.branchId ?? null, ip: requestMeta(req).ip });
-  return NextResponse.json({ ok: true, id: created.id, entryNo, warnings, message: "Fuel entry recorded." }, { status: 201 });
+  const amount = r2(b.quantity * b.rate);
+  const taxAmount = b.gstApplicable ? r2(amount * ((b.gstPct ?? 0) / 100)) : 0;
+  const otherCost = r2(b.lines.reduce((s, l) => s + (Number(l.amount) || 0), 0));
+  const totalAmount = r2(amount + taxAmount + otherCost);
+  const seg = await resolveWriteScope(user);
+
+  // GL account resolution — Expense Head -> LedgerAccount.code, same lookup
+  // Petty Cash uses (src/app/api/finance/petty-cash/route.ts), so admins
+  // configure the mapping in one place for both. Falls back to a dedicated
+  // Fuel Expense account for the main line, Indirect Expenses for any
+  // additional cost line (e.g. helper conveyance) left unmapped.
+  const headIds = [...new Set([b.headId, ...b.lines.map((l) => l.headId)].filter((x): x is number => !!x))];
+  const headAccts = headIds.length ? await prisma.expenseHead.findMany({ where: { id: { in: headIds }, tenantId: user.tenantId }, select: { id: true, accountId: true, name: true } }) : [];
+  const acctIds = [...new Set(headAccts.map((h) => h.accountId).filter((x): x is number => !!x))];
+  const acctCodeById = new Map(
+    (acctIds.length ? await prisma.ledgerAccount.findMany({ where: { id: { in: acctIds }, tenantId: user.tenantId }, select: { id: true, code: true } }) : []).map((a) => [a.id, a.code]),
+  );
+  const headInfo = new Map(headAccts.map((h) => [h.id, { code: (h.accountId && acctCodeById.get(h.accountId)) || null, name: h.name }]));
+  const primaryCode = (b.headId && headInfo.get(b.headId)?.code) || ACC.FUEL_EXPENSE;
+  const expenseByCode: Record<string, number> = { [primaryCode]: amount };
+  for (const l of b.lines) {
+    const code = (l.headId && headInfo.get(l.headId)?.code) || ACC.INDIRECT_EXPENSE;
+    expenseByCode[code] = r2((expenseByCode[code] ?? 0) + (Number(l.amount) || 0));
+  }
+
+  const { id: createdId, entryNo } = await prisma.$transaction(async (tx) => {
+    const created = await tx.fuelEntry.create({
+      data: {
+        tenantId: user.tenantId, businessId: seg.businessId ?? undefined, branchId: seg.branchId ?? undefined,
+        entryNo: "TMP", entryDate: new Date(b.entryDate), vehicleId: b.vehicleId, driverId: b.driverId ?? null, tripId: b.tripId ?? null,
+        fuelType: b.fuelType, fuelStationId: b.fuelStationId ?? null, fuelStationName,
+        quantity: b.quantity, uom: b.uom, rate: b.rate, amount, odometer: b.odometer ?? null,
+        invoiceNo: b.invoiceNo ?? null, invoiceDate: b.invoiceDate ? new Date(b.invoiceDate) : null, paymentMode: b.paymentMode ?? null,
+        headId: b.headId ?? null, gstApplicable: b.gstApplicable, gstPct: b.gstPct ?? null, taxAmount, otherCost, totalAmount,
+        supplierGstin: b.supplierGstin ?? null, postingType: b.postingType,
+        bankId: b.bankId ?? null, bankName: b.bankName ?? null, bankAccount: b.bankAccount ?? null,
+        status: "Confirmed", remarks: b.remarks ?? null, createdBy: user.id,
+      },
+    });
+    const entryNo = `FP-${String(created.id).padStart(6, "0")}`;
+    await tx.fuelEntry.update({ where: { id: created.id }, data: { entryNo } });
+
+    if (b.lines.length) {
+      await tx.fuelEntryLine.createMany({
+        data: b.lines.map((l) => ({ tenantId: user.tenantId, fuelEntryId: created.id, headId: l.headId ?? null, headName: l.headId ? headInfo.get(l.headId)?.name ?? null : null, description: l.description ?? null, amount: Number(l.amount) || 0 })),
+      });
+    }
+
+    const jlines: { code: string; debit?: number; credit?: number; narration?: string }[] = Object.entries(expenseByCode).map(([code, amt]) => ({ code, debit: amt, narration: "Fuel expense" }));
+    if (taxAmount > 0) jlines.push({ code: ACC.INPUT_GST, debit: taxAmount, narration: "Input GST (ITC)" });
+
+    let entryIdJournal: number | null = null;
+    if (b.postingType === "ap") {
+      jlines.push({ code: ACC.PAYABLE, credit: totalAmount, narration: `Payable to ${fuelStationName || "fuel station"}` });
+      entryIdJournal = await postJournal(tx, {
+        tenantId: user.tenantId, businessId: seg.businessId ?? null, branchId: seg.branchId ?? null, voucherType: "PAYMENT", prefix: "FP",
+        date: b.entryDate, narration: `Fuel Purchase — ${entryNo} — ${vehicle.vehicleNo}`, sourceType: "FUEL_ENTRY", sourceId: created.id, refNo: entryNo, createdBy: user.id, lines: jlines,
+      });
+      await tx.payable.create({ data: { tenantId: user.tenantId, businessId: seg.businessId ?? null, branchId: seg.branchId ?? null, sourceType: "FUEL_ENTRY", sourceId: created.id, refNo: b.invoiceNo || entryNo, supplier: fuelStationName, docDate: b.entryDate, dueDate: null, totalAmount, paidAmount: 0, balanceAmount: totalAmount, status: "Open" } });
+    } else {
+      const nonCash = isNonCashMode(b.paymentMode);
+      jlines.push(nonCash ? { code: ACC.BANK, credit: totalAmount, narration: "Paid by bank" } : { code: ACC.CASH, credit: totalAmount, narration: "Paid by cash" });
+      entryIdJournal = await postJournal(tx, {
+        tenantId: user.tenantId, businessId: seg.businessId ?? null, branchId: seg.branchId ?? null, voucherType: "PAYMENT", prefix: "FP",
+        date: b.entryDate, narration: `Fuel Purchase — ${entryNo} — ${vehicle.vehicleNo}`, sourceType: "FUEL_ENTRY", sourceId: created.id, refNo: entryNo, createdBy: user.id, lines: jlines,
+      });
+      if (nonCash && b.bankId) {
+        await recordBankMovement(tx, { tenantId: user.tenantId, businessId: seg.businessId ?? null, branchId: seg.branchId ?? null, userId: user.id, userName: user.fullName ?? null },
+          { bankId: b.bankId, bankName: b.bankName ?? null, bankAccount: b.bankAccount ?? null, date: b.entryDate, direction: "out", amount: totalAmount, mode: b.paymentMode ?? null, reference: b.invoiceNo ?? null, sourceType: "FuelEntry", sourceId: created.id, sourceNo: entryNo, partyName: fuelStationName, journalId: entryIdJournal, narration: `Fuel Purchase ${entryNo}` });
+      }
+    }
+
+    return { id: created.id, entryNo };
+  }, { maxWait: 10_000, timeout: 30_000 });
+
+  await writeAudit(prisma, user, { action: "fuel_entry.create", entity: "FuelEntry", entityId: createdId, summary: `Fuel Purchase ${entryNo} — ${b.quantity}${b.uom} for vehicle ${vehicle.vehicleNo}, ₹${totalAmount}`, businessId: seg.businessId ?? null, branchId: seg.branchId ?? null, ip: requestMeta(req).ip });
+  return NextResponse.json({ ok: true, id: createdId, entryNo, totalAmount, warnings, message: "Fuel purchase recorded." }, { status: 201 });
 }

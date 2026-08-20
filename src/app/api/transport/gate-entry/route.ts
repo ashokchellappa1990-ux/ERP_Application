@@ -350,20 +350,23 @@ export async function POST(req: Request) {
   }
 
   let referenceNo = input.referenceNo ?? null;
+  let customerId: number | null = null;
   let customerName: string | null = null;
   let deliveryAddress: string | null = input.deliveryAddress ?? null;
   if (input.referenceType === "Sales Order" && input.salesOrderId) {
-    const so = await prisma.salesDocument.findFirst({ where: { id: input.salesOrderId, tenantId: user.tenantId, docType: "order" }, select: { docNo: true, customerName: true, deliveryAddress: true } });
+    const so = await prisma.salesDocument.findFirst({ where: { id: input.salesOrderId, tenantId: user.tenantId, docType: "order" }, select: { docNo: true, customerId: true, customerName: true, deliveryAddress: true } });
     if (!so) return NextResponse.json({ ok: false, message: "Selected Sales Order was not found." }, { status: 422 });
     referenceNo = so.docNo;
+    customerId = so.customerId;
     customerName = so.customerName;
     deliveryAddress = so.deliveryAddress;
   } else if (input.customerId) {
     // Direct Customer Dispatch — no source doc to derive from; the customer
-    // NAME is still re-resolved from the Customer Master (not client-trusted),
+    // ID/NAME are still re-resolved from the Customer Master (not client-trusted),
     // but deliveryAddress is legitimately free text here.
     const cust = await prisma.customer.findFirst({ where: { id: input.customerId, tenantId: user.tenantId }, select: { name: true } });
     if (!cust) return NextResponse.json({ ok: false, message: "Selected customer was not found." }, { status: 422 });
+    customerId = input.customerId;
     customerName = cust.name;
   }
 
@@ -420,7 +423,7 @@ export async function POST(req: Request) {
           securityOfficer: input.securityOfficer ?? undefined, remarks: input.remarks ?? undefined,
           gate: input.gate ?? undefined, location: location ?? undefined,
           referenceType: input.referenceType ?? undefined, salesOrderId: input.salesOrderId ?? undefined,
-          customerName: customerName ?? undefined, deliveryAddress: deliveryAddress ?? undefined,
+          customerId: customerId ?? undefined, customerName: customerName ?? undefined, deliveryAddress: deliveryAddress ?? undefined,
           transferRequestId: input.transferRequestId ?? undefined,
           sourceWarehouse: sourceWarehouse ?? undefined, destinationWarehouse: destinationWarehouse ?? undefined,
           transportMode: input.transportMode ?? undefined, vehicleType: input.vehicleType ?? undefined,

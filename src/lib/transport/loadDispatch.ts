@@ -5,6 +5,7 @@ import { writeAudit, type AuditActor } from "@/lib/audit/log";
 import { createDispatch, postDispatch, loadRequestForDispatch } from "@/lib/warehouse/dispatch";
 import { postMovement, consumeLots } from "@/lib/inventory/ledger";
 import { createSaleTx, type PreparedSale } from "@/lib/sales/createSale";
+import { evaluateForSale } from "@/lib/discount/service";
 import { getDispatchConfig } from "@/lib/settings/dispatchConfig";
 import { getAccountingConfig } from "@/lib/settings/accountingConfig";
 import type { AccountingConfigData } from "@/lib/settings/accountingConfigDefaults";
@@ -626,7 +627,7 @@ export async function generateDeliveryChallanForLoadDispatch(scope: ActiveScope,
     let saleId: number | null = null;
     if (cfg.fields.salesInvoicePostingMethod === "Automatic") {
       const acctCfg = await getAccountingConfig(user);
-      const prepared = await buildPreparedSale(scope.tenantId, doc, acctCfg, cfg);
+      const prepared = await buildPreparedSale(scope.tenantId, doc, acctCfg, cfg, scope.businessId ?? null);
       const sale = await createSaleTx(tx, prepared, { user: { id: user.id, tenantId: scope.tenantId }, seg: { businessId: scope.businessId ?? undefined, branchId: scope.branchId ?? undefined }, stamp: opts.stamp, channel: "B2B", series: "b2b", skipInventoryMovement: true });
       invoiceNo = sale.invoiceNo; saleId = sale.id;
     }
@@ -653,7 +654,7 @@ export async function postSalesInvoiceForLoadDispatch(scope: ActiveScope, user: 
   const acctCfg = await getAccountingConfig(user);
   const cfg = await getDispatchConfig(user);
   await prisma.$transaction(async (tx) => {
-    const prepared = await buildPreparedSale(scope.tenantId, doc, acctCfg, cfg);
+    const prepared = await buildPreparedSale(scope.tenantId, doc, acctCfg, cfg, scope.businessId ?? null);
     const sale = await createSaleTx(tx, prepared, { user: { id: user.id, tenantId: scope.tenantId }, seg: { businessId: scope.businessId ?? undefined, branchId: scope.branchId ?? undefined }, stamp: opts.stamp, channel: "B2B", series: "b2b", skipInventoryMovement: true });
     invoiceNo = sale.invoiceNo;
     await tx.loadDispatch.update({ where: { id: doc.id }, data: { saleId: sale.id, status: "Sales Invoice Posted" } });
@@ -696,15 +697,19 @@ interface PreparedSaleSourceDoc {
   // off, or Customer Receivable defers to the invoice — nothing to settle).
   dispatchClearingAmount: Prisma.Decimal; dispatchVoucherPosted: boolean;
 }
-async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc, cfg: AccountingConfigData, dispatchCfg: TransportConfigData): Promise<PreparedSale> {
+async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc, cfg: AccountingConfigData, dispatchCfg: TransportConfigData, businessId: number | null): Promise<PreparedSale> {
   const items = doc.items;
-  const needsGst = items.filter((it) => it.taxPct == null);
-  const productIds = Array.from(new Set(needsGst.map((i) => i.productId)));
-  const prods = productIds.length ? await prisma.product.findMany({ where: { id: { in: productIds }, tenantId }, select: { id: true, gstRate: true } }) : [];
+  // Fetched for every line (not just tax-missing ones) — category/brand are
+  // needed below to resolve any category/brand-scoped Discount Master rule,
+  // the same way prepareSale (src/lib/sales/createSale.ts) does for POS.
+  const productIds = Array.from(new Set(items.map((i) => i.productId)));
+  const prods = productIds.length ? await prisma.product.findMany({ where: { id: { in: productIds }, tenantId }, select: { id: true, gstRate: true, category: true, brand: true } }) : [];
   const gstById = new Map(prods.map((p) => [p.id, Number(String(p.gstRate ?? "0").replace(/[^0-9.]/g, "")) || 0]));
+  const metaById = new Map(prods.map((p) => [p.id, { category: p.category ?? undefined, brand: p.brand ?? undefined }]));
   // GSTIN isn't captured on LoadDispatch itself — read it from the customer
   // master so the posted invoice isn't missing it on the B2B invoice list.
-  const customer = doc.partyId ? await prisma.customer.findFirst({ where: { id: doc.partyId, tenantId }, select: { gstin: true } }) : null;
+  // customerGroup is read here too, for the Discount Engine call below.
+  const customer = doc.partyId ? await prisma.customer.findFirst({ where: { id: doc.partyId, tenantId }, select: { gstin: true, customerGroup: true } }) : null;
 
   let subtotal = 0, itemDiscount = 0, taxableValue = 0, taxTotal = 0, itemCount = 0;
   const lines: Prisma.SaleLineUncheckedCreateWithoutSaleInput[] = items.map((it) => {
@@ -726,6 +731,57 @@ async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc, c
       cost: num(it.cost),
     };
   });
+
+  // Central Discount Engine — same automatic Customer/Customer-Group rule
+  // resolution POS/Sales Invoice uses (src/lib/discount/service.ts). Applied
+  // as an additional bill-level reduction, folded proportionally into every
+  // line's taxable/tax value — mirrors prepareSale's own engine-fold logic
+  // (src/lib/sales/createSale.ts:203-248) so GL posting is identical either
+  // way. Never blocks a dispatch/invoice from posting on failure.
+  // Direct Customer Dispatch is EXCLUDED here — its own per-line DISC % is
+  // already resolved (auto-filled + user-editable, live-previewed against
+  // this same engine) at dispatch-creation time in createDirectCustomerDispatch
+  // and stored on each LoadDispatchItem, so `hasStoredTax` above already
+  // reflects it; applying the engine again here would double the discount.
+  let engineDiscount = 0; let engineNetReduction = 0;
+  const engineApplied: PreparedSale["engineApplied"] = [];
+  if (doc.partyId && doc.sourceRefType !== "DIRECT") {
+    try {
+      const res = await evaluateForSale(
+        { tenantId, businessId },
+        {
+          billAmount: r2(taxableValue + taxTotal), billTaxable: r2(taxableValue),
+          items: items.map((it) => { const m = metaById.get(it.productId); return { productId: it.productId, category: m?.category, brand: m?.brand, qty: num(it.dispatchedQty), amount: r2(num(it.rate) * num(it.dispatchedQty)), taxable: num(it.taxableValue) }; }),
+          customerId: doc.partyId, customerGroup: customer?.customerGroup ?? undefined, channel: "Wholesale", date: doc.dispatchDate,
+        },
+      );
+      const blended = taxableValue > 0 ? (taxableValue + taxTotal) / taxableValue : 1;
+      let cap = r2(taxableValue + taxTotal);
+      for (const a of res.applied) {
+        const red = r2(Math.min(a.netReduction, cap));
+        if (red <= 0) continue;
+        engineApplied.push({ id: a.id, code: a.code, name: a.name, discountAmount: r2(a.discountAmount), taxableReduction: r2(red / blended), account: a.account });
+        engineDiscount = r2(engineDiscount + a.discountAmount);
+        engineNetReduction = r2(engineNetReduction + red);
+        cap = r2(cap - red);
+      }
+    } catch (err) { console.error("[discount-engine] load-dispatch evaluate failed (invoice still posts)", err); }
+  }
+  // Same fold technique as prepareSale: lowers each line's taxable value so
+  // GST recomputes on the discounted (material) value, instead of posting as
+  // a separate post-tax bill reduction.
+  const inclusiveBase = r2(taxableValue + taxTotal);
+  const engRatio = inclusiveBase > 0 ? Math.min(1, engineNetReduction / inclusiveBase) : 0;
+  if (engRatio > 0) {
+    for (const ln of lines) {
+      ln.taxableValue = r2(num(ln.taxableValue) * (1 - engRatio));
+      ln.taxAmount = r2(num(ln.taxAmount) * (1 - engRatio));
+      ln.value = r2(num(ln.value) * (1 - engRatio));
+    }
+    taxableValue = r2(taxableValue * (1 - engRatio));
+    taxTotal = r2(taxTotal * (1 - engRatio));
+  }
+
   // Rent + Transit Pass fold straight into the total — see the interface
   // comment above for why Driver Batta never does. Each also needs its own GL
   // credit line (Operating Income) or postSalesJournal's Dr/Cr won't balance,
@@ -808,7 +864,7 @@ async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc, c
     promoId: null, promoCode: null, promoDiscount: 0, promoTaxableReduced: 0,
     membershipDiscount: 0, membershipLevelId: null, membershipDiscountCode: "",
     giftVoucherId: null, giftVoucherNo: null, giftVoucherAmount: 0,
-    engineDiscount: 0, engineApplied: [],
+    engineDiscount, engineApplied,
     otherIncome, clearingSettlement, receivableAlreadyBooked, cogsAlreadyBooked, receivableRoundOff,
   };
 }

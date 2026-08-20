@@ -47,7 +47,7 @@ export async function GET() {
   };
   const headRows: ExpenseHeadDto[] = heads.map((h) => {
     const a = h.accountId ? acctById.get(h.accountId) : null;
-    return { id: h.id, name: h.name, parentId: h.parentId, active: h.active, accountId: h.accountId ?? null, accountCode: a?.code ?? null, accountName: a?.name ?? null, trackBudget: h.trackBudget };
+    return { id: h.id, name: h.name, parentId: h.parentId, active: h.active, accountId: h.accountId ?? null, accountCode: a?.code ?? null, accountName: a?.name ?? null, trackBudget: h.trackBudget, linkedFeature: h.linkedFeature ?? null };
   });
   const accounts: ExpenseAccountDto[] = accts.map((a) => ({ id: a.id, code: a.code, name: a.name, group: a.group ?? null }));
   return NextResponse.json({

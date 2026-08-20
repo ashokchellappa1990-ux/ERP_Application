@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Car, Plus, Pencil, Trash2, Search, X, Users, Wrench, Fuel } from "lucide-react";
+import { Car, Plus, Pencil, Trash2, Search, X, Users, Wrench, Fuel, Disc } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { AppLoader } from "@/components/ui/AppLoader";
@@ -10,6 +10,7 @@ import { vehicleInput, VEHICLE_TYPE_OPTS, VEHICLE_OWNER_TYPE_OPTS, VEHICLE_BODY_
 import { VehicleDriverAssignmentList } from "@/components/transport/masters/VehicleDriverAssignmentList";
 import { VehicleMaintenanceHub } from "@/components/transport/masters/VehicleMaintenanceHub";
 import { FuelManagementHub } from "@/components/transport/masters/FuelManagementHub";
+import { TyreHistory } from "@/components/transport/masters/tyre/TyreHistory";
 
 interface Row extends VehicleInput { id: number }
 interface CompanyOption { id: number; name: string }
@@ -33,6 +34,7 @@ export function VehicleMasterList() {
   const [assignedFor, setAssignedFor] = useState<{ id: number; label: string } | null>(null);
   const [maintenanceFor, setMaintenanceFor] = useState<{ id: number; label: string } | null>(null);
   const [fuelFor, setFuelFor] = useState<{ id: number; label: string } | null>(null);
+  const [tyreFor, setTyreFor] = useState<{ id: number; label: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -91,6 +93,7 @@ export function VehicleMasterList() {
                     <button onClick={() => setAssignedFor({ id: r.id, label: r.vehicleNo })} title="View Assigned Drivers" className="grid h-8 w-8 place-items-center rounded-md border border-transparent text-muted transition hover:border-info/30 hover:bg-info-subtle hover:text-info"><Users className="h-4 w-4" /></button>
                     <button onClick={() => setMaintenanceFor({ id: r.id, label: r.vehicleNo })} title="View Maintenance History" className="grid h-8 w-8 place-items-center rounded-md border border-transparent text-muted transition hover:border-warning/30 hover:bg-warning-subtle hover:text-warning"><Wrench className="h-4 w-4" /></button>
                     <button onClick={() => setFuelFor({ id: r.id, label: r.vehicleNo })} title="View Fuel History" className="grid h-8 w-8 place-items-center rounded-md border border-transparent text-muted transition hover:border-info/30 hover:bg-info-subtle hover:text-info"><Fuel className="h-4 w-4" /></button>
+                    <button onClick={() => setTyreFor({ id: r.id, label: r.vehicleNo })} title="View Tyre History" className="grid h-8 w-8 place-items-center rounded-md border border-transparent text-muted transition hover:border-primary/30 hover:bg-primary-subtle hover:text-primary"><Disc className="h-4 w-4" /></button>
                     <button onClick={() => setModal({ mode: "edit", id: r.id })} title="Edit" className="grid h-8 w-8 place-items-center rounded-md border border-primary/30 bg-primary-subtle text-primary transition hover:bg-primary hover:text-white"><Pencil className="h-4 w-4" /></button>
                     <button onClick={() => remove(r)} title="Delete" className="grid h-8 w-8 place-items-center rounded-md border border-transparent text-muted transition hover:border-danger/30 hover:bg-danger-subtle hover:text-danger"><Trash2 className="h-4 w-4" /></button>
                   </div></td>
@@ -137,6 +140,19 @@ export function VehicleMasterList() {
             </div>
             <div className="max-h-[70vh] overflow-y-auto p-5">
               <FuelManagementHub embedded vehicleFilter={fuelFor.id} />
+            </div>
+          </div>
+        </div>
+      )}
+      {tyreFor && (
+        <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/40 p-4" onClick={() => setTyreFor(null)}>
+          <div className="max-h-[85vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-border bg-surface-2 px-5 py-3.5">
+              <h2 className="text-sm font-bold text-foreground">Tyre History · {tyreFor.label}</h2>
+              <button onClick={() => setTyreFor(null)} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-surface hover:text-foreground"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="max-h-[70vh] overflow-y-auto p-5">
+              <TyreHistory embedded vehicleFilter={tyreFor.id} />
             </div>
           </div>
         </div>

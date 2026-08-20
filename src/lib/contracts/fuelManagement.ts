@@ -45,6 +45,16 @@ export interface TankRow {
 }
 
 /* --------------------------------------------------------------- entry */
+// "Fuel Entry" in the UI is now labeled "Fuel Purchase" (vehicle-level,
+// external refuel, a real GL-posting expense document) — the model/table
+// name stays FuelEntry to avoid a data migration; only the UI label changed.
+const fuelEntryLine = z.object({
+  headId: z.coerce.number().int().positive().optional().nullable(),
+  description: z.string().trim().max(300).optional().nullable(),
+  amount: z.coerce.number().min(0).default(0),
+});
+export type FuelEntryLineInput = z.infer<typeof fuelEntryLine>;
+
 export const fuelEntryInput = z.object({
   entryDate: z.string().trim().min(1, "Date is required.").max(30),
   vehicleId: z.coerce.number().int().positive("Vehicle is required."),
@@ -62,6 +72,16 @@ export const fuelEntryInput = z.object({
   paymentMode: z.string().trim().max(30).optional().nullable(),
   remarks: z.string().trim().max(2000).optional().nullable(),
   overrideOdometerWarning: z.coerce.boolean().default(false),
+  // Accounting — Expense Head (GL account), GST, and Payment (AP vs Pay Now).
+  headId: z.coerce.number().int().positive().optional().nullable(),
+  gstApplicable: z.coerce.boolean().default(false),
+  gstPct: z.coerce.number().min(0).max(100).optional().nullable(),
+  supplierGstin: z.string().trim().max(20).optional().nullable(),
+  postingType: z.enum(["ap", "paynow"]).default("paynow"),
+  bankId: z.coerce.number().int().positive().optional().nullable(),
+  bankName: z.string().trim().max(160).optional().nullable(),
+  bankAccount: z.string().trim().max(60).optional().nullable(),
+  lines: z.array(fuelEntryLine).default([]),
 });
 export type FuelEntryInput = z.infer<typeof fuelEntryInput>;
 
@@ -70,13 +90,18 @@ export interface FuelEntryRow {
   driverId: number | null; driverName: string | null; tripId: number | null; tripNo: string | null;
   fuelType: string; fuelStationName: string | null; quantity: number; rate: number; amount: number;
   odometer: number | null; status: string; createdByName: string | null; createdAt: string;
+  totalAmount: number; postingType: string;
 }
+export interface FuelEntryLineOut { id: number; headId: number | null; headName: string | null; description: string | null; amount: number }
 export interface FuelEntryDetail extends FuelEntryRow {
   uom: string; invoiceNo: string | null; invoiceDate: string | null; paymentMode: string | null; remarks: string | null;
   fuelStationId: number | null;
   efficiency: number | null; distanceSincePrev: number | null;
   updatedByName: string | null; updatedAt: string;
   cancelledByName: string | null; cancelledAt: string | null; cancellationReason: string | null;
+  headId: number | null; gstApplicable: boolean; gstPct: number | null; taxAmount: number; otherCost: number;
+  supplierGstin: string | null; bankId: number | null; bankName: string | null; bankAccount: string | null;
+  lines: FuelEntryLineOut[];
 }
 
 /* --------------------------------------------------------------- issue */
