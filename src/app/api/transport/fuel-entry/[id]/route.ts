@@ -19,7 +19,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const r = await prisma.fuelEntry.findFirst({ where: { id: Number(params.id), tenantId: user.tenantId } });
   if (!r) return NextResponse.json({ ok: false, message: "Fuel entry not found." }, { status: 404 });
 
-  const [vehicle, tank, driver, trip, createdByUser, updatedByUser, cancelledByUser, eff, lineRows, paymentRows] = await Promise.all([
+  const [vehicle, tank, driver, trip, createdByUser, updatedByUser, cancelledByUser, eff, lineRows, paymentRows, headRow] = await Promise.all([
     r.vehicleId != null ? prisma.vehicleMaster.findFirst({ where: { id: r.vehicleId }, select: { vehicleNo: true } }) : null,
     r.tankId != null ? prisma.fuelTank.findFirst({ where: { id: r.tankId }, select: { tankName: true } }) : null,
     r.driverId != null ? prisma.driverMaster.findFirst({ where: { id: r.driverId }, select: { name: true } }) : null,
@@ -30,6 +30,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     r.vehicleId != null ? computeEfficiency(user.tenantId, r.vehicleId, num(r.odometer), num(r.quantity) ?? 0, { excludeFuelEntryId: r.id }) : Promise.resolve({ efficiency: null, distanceSincePrev: null }),
     prisma.fuelEntryLine.findMany({ where: { tenantId: user.tenantId, fuelEntryId: r.id }, orderBy: { id: "asc" } }),
     prisma.fuelEntryPayment.findMany({ where: { tenantId: user.tenantId, fuelEntryId: r.id }, orderBy: { id: "asc" } }),
+    r.headId != null ? prisma.expenseHead.findFirst({ where: { id: r.headId }, select: { name: true } }) : null,
   ]);
 
   let attachments: FuelEntryAttachmentInput[] = [];
@@ -47,7 +48,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     fuelStationId: r.fuelStationId, efficiency: eff.efficiency, distanceSincePrev: eff.distanceSincePrev,
     updatedByName: updatedByUser?.fullName ?? null, updatedAt: r.updatedAt.toISOString(),
     cancelledByName: cancelledByUser?.fullName ?? null, cancelledAt: r.cancelledAt?.toISOString() ?? null, cancellationReason: r.cancellationReason,
-    headId: r.headId, gstApplicable: r.gstApplicable, gstPct: num(r.gstPct), taxAmount: num(r.taxAmount) ?? 0, otherCost: num(r.otherCost) ?? 0,
+    headId: r.headId, headName: headRow?.name ?? null, gstApplicable: r.gstApplicable, gstPct: num(r.gstPct), taxAmount: num(r.taxAmount) ?? 0, otherCost: num(r.otherCost) ?? 0,
     supplierGstin: r.supplierGstin, bankId: r.bankId, bankName: r.bankName, bankAccount: r.bankAccount,
     lines: lineRows.map((l) => ({ id: l.id, headId: l.headId, headName: l.headName, description: l.description, amount: num(l.amount) ?? 0 })),
     payments: paymentRows.map((p) => ({ id: p.id, mode: p.mode, amount: num(p.amount) ?? 0, reference: p.reference })),

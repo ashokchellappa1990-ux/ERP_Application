@@ -126,7 +126,7 @@ export interface FuelEntryDetail extends FuelEntryRow {
   efficiency: number | null; distanceSincePrev: number | null;
   updatedByName: string | null; updatedAt: string;
   cancelledByName: string | null; cancelledAt: string | null; cancellationReason: string | null;
-  headId: number | null; gstApplicable: boolean; gstPct: number | null; taxAmount: number; otherCost: number;
+  headId: number | null; headName: string | null; gstApplicable: boolean; gstPct: number | null; taxAmount: number; otherCost: number;
   supplierGstin: string | null; bankId: number | null; bankName: string | null; bankAccount: string | null;
   lines: FuelEntryLineOut[]; payments: FuelEntryPaymentOut[]; attachments: FuelEntryAttachmentInput[];
 }

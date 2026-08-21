@@ -86,7 +86,7 @@ export interface DiscountRow {
   maxDiscount: number; minDiscount: number; priority: number; status: string;
   startDate: string; endDate: string; minBill: number; usageCount: number;
   totalGiven: number; combinable: boolean; requiresApproval: boolean;
-  approvedByName: string; createdByName: string;
+  approvedByName: string; createdByName: string; customerNames: string; productNames: string;
 }
 
 export interface DiscountDetail extends DiscountRow {

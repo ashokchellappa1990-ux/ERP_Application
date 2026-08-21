@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import {
   LayoutDashboard, Percent, FlaskConical, History, BarChart3, ScrollText, Settings2,
   Plus, Search, Pencil, Trash2, CheckCircle2, XCircle, Save, X, Play, TrendingUp,
-  IndianRupee, CalendarClock, Clock, type LucideIcon,
+  IndianRupee, CalendarClock, Clock, SlidersHorizontal, type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -119,9 +119,59 @@ function DashboardTab() {
 const Empty = () => <p className="py-8 text-center text-sm text-muted">No data yet — create & apply discounts to see insights.</p>;
 
 /* ---------------------------------------------------------- discount list */
+// User-customizable columns — Discount (name), Status & Actions always show;
+// everything else here can be toggled on/off, persisted per-browser.
+const TOGGLE_COLS = [
+  { key: "type", label: "Type" },
+  { key: "customer", label: "Customer" },
+  { key: "product", label: "Product" },
+  { key: "value", label: "Value" },
+  { key: "priority", label: "Priority" },
+  { key: "period", label: "Period" },
+  { key: "used", label: "Used" },
+] as const;
+type ColKey = (typeof TOGGLE_COLS)[number]["key"];
+const COLS_STORAGE_KEY = "discount-list-columns";
+
+function ColumnPicker({ cols, onToggle }: { cols: Set<ColKey>; onToggle: (k: ColKey) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <Button variant="outline" onClick={() => setOpen((o) => !o)}><SlidersHorizontal className="h-4 w-4" /> Columns</Button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-lg border border-border bg-card p-3 shadow-xl">
+            <p className="mb-2 text-2xs font-bold uppercase tracking-wide text-subtle">Visible Columns</p>
+            <div className="space-y-1.5">
+              {TOGGLE_COLS.map((c) => (
+                <label key={c.key} className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
+                  <input type="checkbox" checked={cols.has(c.key)} onChange={() => onToggle(c.key)} className="h-4 w-4 accent-primary" />
+                  {c.label}
+                </label>
+              ))}
+            </div>
+            <p className="mt-2 border-t border-border pt-2 text-2xs text-subtle">Discount, Status &amp; Actions always show.</p>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function DiscountsTab({ say }: { say: (m: string) => void }) {
   const [rows, setRows] = useState<DiscountRow[] | null>(null);
   const [q, setQ] = useState(""); const [status, setStatus] = useState("All");
+  const [cols, setCols] = useState<Set<ColKey>>(new Set(TOGGLE_COLS.map((c) => c.key)));
+  useEffect(() => {
+    try { const saved = JSON.parse(localStorage.getItem(COLS_STORAGE_KEY) ?? "null"); if (Array.isArray(saved)) setCols(new Set(saved)); } catch { /* ignore */ }
+  }, []);
+  const toggleCol = (k: ColKey) => setCols((prev) => {
+    const next = new Set(prev); if (next.has(k)) next.delete(k); else next.add(k);
+    try { localStorage.setItem(COLS_STORAGE_KEY, JSON.stringify(Array.from(next))); } catch { /* ignore */ }
+    return next;
+  });
+
   const load = useCallback(() => {
     const p = new URLSearchParams({ status, q }); setRows(null);
     fetch(`${API}/list?${p}`, { cache: "no-store" }).then((r) => r.json()).then((j) => setRows(j.ok ? j.rows : [])).catch(() => setRows([]));
@@ -130,6 +180,7 @@ function DiscountsTab({ say }: { say: (m: string) => void }) {
 
   const changeStatus = async (id: number, st: string) => { const j = await post({ action: "setStatus", id, status: st }); say(j.message || "Updated"); load(); };
   const del = async (id: number) => { if (!confirm("Delete this discount?")) return; const j = await post({ action: "delete", id }); say(j.message || "Deleted"); load(); };
+  const colSpan = 3 + cols.size;
 
   return (
     <div className="space-y-4">
@@ -138,25 +189,38 @@ function DiscountsTab({ say }: { say: (m: string) => void }) {
           <div className="relative min-w-[220px]"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, code, type…" className={cn(inp, "pl-9")} /></div>
           <select value={status} onChange={(e) => setStatus(e.target.value)} className={cn(inp, "w-auto")}>{["All", ...DISCOUNT_STATUSES].map((s) => <option key={s}>{s}</option>)}</select>
         </div>
-        <Link href="/masters/discount/new"><Button><Plus className="h-4 w-4" /> Create Discount</Button></Link>
+        <div className="flex items-center gap-2">
+          <ColumnPicker cols={cols} onToggle={toggleCol} />
+          <Link href="/masters/discount/new"><Button><Plus className="h-4 w-4" /> Create Discount</Button></Link>
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead><tr className="border-b border-border bg-surface-2 text-left text-2xs font-semibold uppercase tracking-wider text-subtle">
-              <th className="px-4 py-3">Discount</th><th className="px-4 py-3">Type</th><th className="px-4 py-3 text-center">Value</th><th className="px-4 py-3 text-center">Priority</th><th className="px-4 py-3">Period</th><th className="px-4 py-3 text-right">Used</th><th className="px-4 py-3 text-center">Status</th><th className="px-4 py-3 text-right">Actions</th>
+              <th className="px-4 py-3">Discount</th>
+              {cols.has("type") && <th className="px-4 py-3">Type</th>}
+              {cols.has("customer") && <th className="px-4 py-3">Customer</th>}
+              {cols.has("product") && <th className="px-4 py-3">Product</th>}
+              {cols.has("value") && <th className="px-4 py-3 text-center">Value</th>}
+              {cols.has("priority") && <th className="px-4 py-3 text-center">Priority</th>}
+              {cols.has("period") && <th className="px-4 py-3">Period</th>}
+              {cols.has("used") && <th className="px-4 py-3 text-right">Used</th>}
+              <th className="px-4 py-3 text-center">Status</th><th className="px-4 py-3 text-right">Actions</th>
             </tr></thead>
             <tbody>
-              {rows === null && <tr><td colSpan={8} className="px-4 py-10"><AppLoader label="Loading discounts…" size="sm" /></td></tr>}
+              {rows === null && <tr><td colSpan={colSpan} className="px-4 py-10"><AppLoader label="Loading discounts…" size="sm" /></td></tr>}
               {rows?.map((d) => (
                 <tr key={d.id} className="border-b border-border last:border-0 transition hover:bg-primary-subtle/30">
                   <td className="px-4 py-3"><div className="flex items-center gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-gradient text-white shadow-sm"><Percent className="h-4 w-4" /></span><div className="min-w-0"><div className="truncate font-semibold text-foreground">{d.name}</div><div className="text-2xs text-subtle">{d.code}{d.combinable ? " · combinable" : ""}</div></div></div></td>
-                  <td className="px-4 py-3 text-muted">{d.discountType}</td>
-                  <td className="px-4 py-3 text-center"><span className="rounded-full bg-primary-subtle px-2 py-0.5 text-xs font-bold text-primary">{d.method === "percentage" ? `${d.value}%` : d.method === "fixed_price" ? `₹${d.value} SP` : inr(d.value)}</span></td>
-                  <td className="px-4 py-3 text-center text-muted">{d.priority}</td>
-                  <td className="px-4 py-3 text-2xs text-muted">{d.startDate || "—"} → {d.endDate || "—"}</td>
-                  <td className="px-4 py-3 text-right font-medium text-foreground">{d.usageCount.toLocaleString("en-IN")}</td>
+                  {cols.has("type") && <td className="px-4 py-3 text-muted">{d.discountType}</td>}
+                  {cols.has("customer") && <td className="px-4 py-3 text-2xs text-muted"><span className="block max-w-[200px] truncate" title={d.customerNames}>{d.customerNames || "—"}</span></td>}
+                  {cols.has("product") && <td className="px-4 py-3 text-2xs text-muted"><span className="block max-w-[200px] truncate" title={d.productNames}>{d.productNames || "—"}</span></td>}
+                  {cols.has("value") && <td className="px-4 py-3 text-center"><span className="rounded-full bg-primary-subtle px-2 py-0.5 text-xs font-bold text-primary">{d.method === "percentage" ? `${d.value}%` : d.method === "fixed_price" ? `₹${d.value} SP` : inr(d.value)}</span></td>}
+                  {cols.has("priority") && <td className="px-4 py-3 text-center text-muted">{d.priority}</td>}
+                  {cols.has("period") && <td className="px-4 py-3 text-2xs text-muted">{d.startDate || "—"} → {d.endDate || "—"}</td>}
+                  {cols.has("used") && <td className="px-4 py-3 text-right font-medium text-foreground">{d.usageCount.toLocaleString("en-IN")}</td>}
                   <td className="px-4 py-3 text-center"><Badge tone={STATUS_TONE[d.status] ?? "neutral"}>{d.status}</Badge></td>
                   <td className="px-4 py-3"><div className="flex items-center justify-end gap-1">
                     {d.status !== "Active" ? <button onClick={() => changeStatus(d.id, "Active")} title="Activate" className="grid h-8 w-8 place-items-center rounded-md border border-success/30 bg-success/10 text-success transition hover:bg-success hover:text-white"><CheckCircle2 className="h-4 w-4" /></button>
@@ -166,7 +230,7 @@ function DiscountsTab({ say }: { say: (m: string) => void }) {
                   </div></td>
                 </tr>
               ))}
-              {rows?.length === 0 && <tr><td colSpan={8} className="px-4 py-10 text-center text-sm text-muted">No discounts yet. Click <b>Create Discount</b> to add the first rule.</td></tr>}
+              {rows?.length === 0 && <tr><td colSpan={colSpan} className="px-4 py-10 text-center text-sm text-muted">No discounts yet. Click <b>Create Discount</b> to add the first rule.</td></tr>}
             </tbody>
           </table>
         </div>

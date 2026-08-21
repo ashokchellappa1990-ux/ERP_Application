@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Save, Tag, Info } from "lucide-react";
@@ -15,8 +15,32 @@ import { cn } from "@/lib/cn";
 
 const EDITOR_TABS = ["Basics", "Eligibility", "Validity", "Combination", "Approval", "GST & Accounting"];
 type Form = Record<string, unknown>;
-const blank = (): Form => ({ name: "", category: "Standard", discountType: "Percentage", method: "percentage", applyLevel: "bill", value: 0, maxDiscount: 0, minDiscount: 0, priority: 100, status: "Draft", minBill: 0, maxBill: 0, minQty: 0, buyQty: 0, getQty: 0, gstTiming: "after", discountBase: "inclusive", reduceTaxable: true, combinable: false, requiresApproval: false, applicability: { channels: [], paymentModes: [], categories: [], brands: [], products: [], customerIds: [], customerGroups: [], membershipLevels: [] }, eligibility: {}, validity: { days: [] }, combination: { maxDiscounts: 3, canCombineWith: [] }, approval: {} });
+const blank = (): Form => ({ name: "", category: "Standard", discountType: "Customer", method: "percentage", applyLevel: "line", value: 0, maxDiscount: 0, minDiscount: 0, priority: 100, status: "Active", minBill: 0, maxBill: 0, minQty: 0, buyQty: 0, getQty: 0, gstTiming: "after", discountBase: "inclusive", reduceTaxable: true, combinable: false, requiresApproval: false, applicability: { setupMode: "customer", nameAuto: true, channels: [], paymentModes: [], categories: [], brands: [], products: [], customerIds: [], customerGroups: [], membershipLevels: [] }, eligibility: {}, validity: { days: [] }, combination: { maxDiscounts: 3, canCombineWith: [] }, approval: {}, ...datesForMode("customer") });
 const normalize = (d: DiscountDetail): Form => ({ ...d, applicability: d.applicability ?? {}, eligibility: d.eligibility ?? {}, validity: d.validity ?? { days: [] }, combination: d.combination ?? { maxDiscounts: 3, canCombineWith: [] }, approval: d.approval ?? {} });
+
+// Setup Type — a simplified-mode preset that hides fields not needed for the
+// common "discount for this customer" case, defaulting the rest sensibly.
+// "advanced" is the full, unrestricted configuration (previously the only
+// mode) — renamed here for clarity, behavior unchanged.
+const SETUP_MODES = [
+  { value: "customer", label: "Customer Based" },
+  { value: "customer_product", label: "Customer & Product Based" },
+  { value: "advanced", label: "Advanced (All Fields)" },
+] as const;
+type SetupMode = (typeof SETUP_MODES)[number]["value"];
+const SETUP_MODE_HELP: Record<SetupMode, string> = {
+  customer: "Simplified setup for a discount targeted at one or more specific customers. Only the fields needed for that are shown — everything else is set to a sensible default.",
+  customer_product: "Same as Customer Based, plus a Products picker so the discount only applies to selected products for the selected customer(s).",
+  advanced: "Full configuration — every field is shown and editable, exactly as before.",
+};
+function datesForMode(mode: string): { startDate?: string; endDate?: string } {
+  if (mode === "advanced") return {};
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const start = new Date();
+  const end = new Date(start);
+  end.setFullYear(end.getFullYear() + 25);
+  return { startDate: iso(start), endDate: iso(end) };
+}
 
 /** Full-page create / edit screen (standard app layout — replaces the drawer). */
 export function DiscountEditorPage({ id }: { id?: string }) {
@@ -24,6 +48,7 @@ export function DiscountEditorPage({ id }: { id?: string }) {
   const isNew = !id;
   const [tab, setTab] = useState(0);
   const [f, setF] = useState<Form | null>(isNew ? blank() : null);
+  const [mode, setMode] = useState<SetupMode>("customer");
   const [accounts, setAccounts] = useState<AccountRef[]>([]);
   const [opts, setOpts] = useState<{ categories: string[]; brands: string[]; products: Option[]; customerGroups: string[]; membershipLevels: string[]; customers: Option[] } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -32,13 +57,66 @@ export function DiscountEditorPage({ id }: { id?: string }) {
   const setNest = (grp: string, k: string, v: unknown) => setF((p) => ({ ...(p as Form), [grp]: { ...(((p as Form)[grp] as Record<string, unknown>) ?? {}), [k]: v } }));
   const g = (grp: string) => ((f?.[grp] as Record<string, unknown>) ?? {});
 
+  // Switching Setup Type re-applies its defaults and clears the hidden
+  // targeting fields that mode doesn't use, so stale values from a previous
+  // mode can't silently keep restricting the discount.
+  function applyModeDefaults(next: SetupMode) {
+    setMode(next);
+    setF((p) => {
+      const prev = { ...(p as Form) };
+      const prevApp = (prev.applicability as Record<string, unknown>) ?? {};
+      const app: Record<string, unknown> = { ...prevApp, setupMode: next };
+      if (next === "advanced") return { ...prev, applicability: app };
+      app.channels = []; app.paymentModes = []; app.categories = []; app.brands = []; app.customerGroups = []; app.membershipLevels = [];
+      if (next === "customer") app.products = [];
+      return {
+        ...prev, applicability: app,
+        discountType: "Customer", status: "Active", discountBase: "inclusive", applyLevel: "line",
+        method: prev.method || "percentage", maxDiscount: 0, minDiscount: 0,
+        ...datesForMode(next),
+      };
+    });
+  }
+
   useEffect(() => { fetch(`${API}/meta`, { cache: "no-store" }).then((r) => r.json()).then((j) => j.ok && setAccounts(j.accounts)); }, []);
   useEffect(() => { fetch(`${API}/options`, { cache: "no-store" }).then((r) => r.json()).then((j) => j.ok && setOpts({ categories: j.categories, brands: j.brands, products: j.products, customerGroups: j.customerGroups, membershipLevels: j.membershipLevels, customers: j.customers })); }, []);
   const asOpts = (xs?: string[]): Option[] => (xs ?? []).map((x) => ({ value: x, label: x }));
-  useEffect(() => { if (id) fetch(`${API}/detail?id=${id}`, { cache: "no-store" }).then((r) => r.json()).then((j) => { if (j.ok && j.discount) setF(normalize(j.discount)); }); }, [id]);
+
+  // Auto-generate the Discount Name from the selected Customer(s) (+ Product(s)
+  // in Customer & Product Based mode) — e.g. "CUSTOMER1 - JALLY 20MM (3/4)".
+  // A per-discount "Auto Generate / Manual" toggle controls this; Auto is the
+  // default. In Auto, the Name field regenerates live and is locked from
+  // direct typing; switching to Manual unlocks it and stops overwriting it.
+  const [nameAuto, setNameAutoState] = useState(true);
+  const labelName = (label: string) => label.split(" · ")[0]?.trim() || label;
+  const custIdsKey = ((g("applicability").customerIds as string[] | undefined) ?? []).join(",");
+  const prodIdsKey = ((g("applicability").products as string[] | undefined) ?? []).join(",");
+  const generatedName = (() => {
+    if (!opts) return "";
+    const custNames = (custIdsKey ? custIdsKey.split(",") : []).map((cid) => labelName(opts.customers.find((c) => c.value === cid)?.label ?? "")).filter(Boolean);
+    if (!custNames.length) return "";
+    const prodNames = mode === "customer_product" ? (prodIdsKey ? prodIdsKey.split(",") : []).map((pid) => labelName(opts.products.find((p) => p.value === pid)?.label ?? "")).filter(Boolean) : [];
+    return [custNames.join(", "), ...(prodNames.length ? [prodNames.join(", ")] : [])].join(" - ");
+  })();
+  useEffect(() => {
+    if (!f || mode === "advanced" || !nameAuto || !generatedName) return;
+    if (String(f.name ?? "") !== generatedName) set("name", generatedName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generatedName, mode, nameAuto]);
+  function setNameAuto(auto: boolean) {
+    setNameAutoState(auto);
+    setNest("applicability", "nameAuto", auto);
+    if (auto && generatedName) set("name", generatedName);
+  }
+  useEffect(() => { if (id) fetch(`${API}/detail?id=${id}`, { cache: "no-store" }).then((r) => r.json()).then((j) => { if (j.ok && j.discount) { setF(normalize(j.discount)); const app = j.discount.applicability as Record<string, unknown> | undefined; const m = app?.setupMode; setMode(m === "customer" || m === "customer_product" ? m : "advanced"); setNameAutoState(app?.nameAuto !== false); } }); }, [id]);
 
   async function save() {
-    setBusy(true); setErr("");
+    setErr("");
+    if (mode !== "advanced" && !((g("applicability").customerIds as string[] | undefined) ?? []).length) {
+      setErr("Please select at least one Customer — required for this Setup Type.");
+      return;
+    }
+    setBusy(true);
     const j = await post({ action: "save", id: id ?? undefined, ...(f as Form) });
     setBusy(false);
     if (j.ok) router.push("/masters/discount?tab=discounts");
@@ -81,23 +159,49 @@ export function DiscountEditorPage({ id }: { id?: string }) {
           const numF = (label: string, key: string) => <F label={label}><input type="number" className={inp} value={Number(f[key] ?? 0)} onChange={(e) => set(key, Number(e.target.value))} /></F>;
           return (
             <div className="space-y-6">
+              <Section title="Setup Type">
+                <div className="inline-flex overflow-hidden rounded-md border border-border text-xs">
+                  {SETUP_MODES.map((m) => (
+                    <button key={m.value} type="button" onClick={() => applyModeDefaults(m.value)} className={cn("px-3.5 py-2 font-semibold transition", mode === m.value ? "bg-primary text-white" : "bg-surface text-muted hover:text-foreground")}>{m.label}</button>
+                  ))}
+                </div>
+                <p className="mt-2 text-2xs text-muted">{SETUP_MODE_HELP[mode]}</p>
+              </Section>
+
               <Section title="General">
                 <Grid>
-                  <F label="Discount Name *" full><input className={inp} value={String(f.name)} onChange={(e) => set("name", e.target.value)} placeholder="Diwali 10% Off" /></F>
+                  <F label="Discount Name *" full>
+                    {mode !== "advanced" && (
+                      <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                        <div className="inline-flex overflow-hidden rounded-md border border-border text-2xs">
+                          <button type="button" onClick={() => setNameAuto(true)} className={cn("px-3 py-1.5 font-semibold transition", nameAuto ? "bg-primary text-white" : "bg-surface text-muted hover:text-foreground")}>Auto Generate</button>
+                          <button type="button" onClick={() => setNameAuto(false)} className={cn("px-3 py-1.5 font-semibold transition", !nameAuto ? "bg-primary text-white" : "bg-surface text-muted hover:text-foreground")}>Manual Input</button>
+                        </div>
+                        <span className="text-2xs text-muted">{nameAuto ? "Generated from the Customer(s)" + (mode === "customer_product" ? " and Product(s)" : "") + " selected below, e.g. \"CUSTOMER1 - JALLY 20MM (3/4)\"." : "Type your own name below."}</span>
+                      </div>
+                    )}
+                    <input className={inp} value={String(f.name)} onChange={(e) => set("name", e.target.value)} placeholder="Diwali 10% Off" disabled={mode !== "advanced" && nameAuto} />
+                  </F>
                   <F label="Discount Code"><input className={inp} value={String(f.code ?? "")} onChange={(e) => set("code", e.target.value)} placeholder="Auto-generated if blank" /></F>
                   <F label="Category"><Sel v={String(f.category)} opts={[...DISCOUNT_CATEGORIES]} on={(v) => set("category", v)} /></F>
-                  <F label="Status"><Sel v={String(f.status)} opts={[...DISCOUNT_STATUSES]} on={(v) => set("status", v)} /></F>
-                  <F label="Priority (lower wins)"><input type="number" className={inp} value={Number(f.priority)} onChange={(e) => set("priority", Number(e.target.value))} /></F>
-                  <F label="Start Date"><input type="date" className={inp} value={String(f.startDate ?? "")} onChange={(e) => set("startDate", e.target.value)} /></F>
-                  <F label="End Date"><input type="date" className={inp} value={String(f.endDate ?? "")} onChange={(e) => set("endDate", e.target.value)} /></F>
+                  {mode === "advanced" && <F label="Status"><Sel v={String(f.status)} opts={[...DISCOUNT_STATUSES]} on={(v) => set("status", v)} /></F>}
+                  {mode === "advanced" && <F label="Priority (lower wins)"><input type="number" className={inp} value={Number(f.priority)} onChange={(e) => set("priority", Number(e.target.value))} /></F>}
+                  {mode === "advanced" && <F label="Start Date"><input type="date" className={inp} value={String(f.startDate ?? "")} onChange={(e) => set("startDate", e.target.value)} /></F>}
+                  {mode === "advanced" && <F label="End Date"><input type="date" className={inp} value={String(f.endDate ?? "")} onChange={(e) => set("endDate", e.target.value)} /></F>}
                   <F label="Description" full><textarea className={cn(inp, "h-20 py-2")} value={String(f.description ?? "")} onChange={(e) => set("description", e.target.value)} /></F>
                 </Grid>
               </Section>
 
               <Section title="Type & Value">
                 <div className="space-y-4">
-                  <F label="Discount Type" full><Sel v={String(f.discountType)} opts={[...DISCOUNT_TYPES]} on={chooseType} /></F>
-                  <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary-subtle/40 px-3 py-2 text-2xs text-foreground"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" /><span>{meta.desc}</span></div>
+                  {mode === "advanced" ? (
+                    <>
+                      <F label="Discount Type" full><Sel v={String(f.discountType)} opts={[...DISCOUNT_TYPES]} on={chooseType} /></F>
+                      <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary-subtle/40 px-3 py-2 text-2xs text-foreground"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" /><span>{meta.desc}</span></div>
+                    </>
+                  ) : (
+                    <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary-subtle/40 px-3 py-2 text-2xs text-foreground"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" /><span>Discount Type is fixed to &quot;Customer&quot; for this Setup Type.</span></div>
+                  )}
 
                   {meta.form === "external" ? (
                     <div className="rounded-lg border border-border bg-surface px-4 py-4 text-sm text-muted">This discount is delivered by its own module — create & manage the offer there. The billing engine validates and applies it automatically at POS. No value setup is needed here.</div>
@@ -131,11 +235,11 @@ export function DiscountEditorPage({ id }: { id?: string }) {
                           <option value="per_unit">Amount per Quantity</option>
                         </select>
                       </F>
-                      {f.method !== "per_unit" && baseSel}
-                      {f.method === "percentage" && applySel}
+                      {mode === "advanced" && f.method !== "per_unit" && baseSel}
+                      {mode === "advanced" && f.method === "percentage" && applySel}
                       {numF(f.method === "percentage" ? "Discount %" : f.method === "per_unit" ? "Discount Amount per Unit Qty (₹)" : "Discount Amount (₹)", "value")}
-                      {numF("Maximum Discount (₹)", "maxDiscount")}
-                      {f.method !== "per_unit" && numF("Minimum Discount (₹)", "minDiscount")}
+                      {mode === "advanced" && numF("Maximum Discount (₹)", "maxDiscount")}
+                      {mode === "advanced" && f.method !== "per_unit" && numF("Minimum Discount (₹)", "minDiscount")}
                       {f.method === "per_unit" && <p className="col-span-full text-2xs text-muted">Calculated as this amount × the total quantity billed to the customer — e.g. ₹5/unit × 12 units = ₹60 off.</p>}
                     </Grid>
                   ) : (
@@ -146,15 +250,15 @@ export function DiscountEditorPage({ id }: { id?: string }) {
 
               <Section title="Applicability">
                 <div className="space-y-4">
-                  <Chips label="Sales Channels" opts={[...CHANNELS]} sel={g("applicability").channels as string[]} on={(v) => setNest("applicability", "channels", v)} />
-                  <Chips label="Payment Modes" opts={[...PAYMENT_MODES]} sel={g("applicability").paymentModes as string[]} on={(v) => setNest("applicability", "paymentModes", v)} />
+                  {mode === "advanced" && <Chips label="Sales Channels" opts={[...CHANNELS]} sel={g("applicability").channels as string[]} on={(v) => setNest("applicability", "channels", v)} />}
+                  {mode === "advanced" && <Chips label="Payment Modes" opts={[...PAYMENT_MODES]} sel={g("applicability").paymentModes as string[]} on={(v) => setNest("applicability", "paymentModes", v)} />}
                   {!opts ? <div className="py-6"><AppLoader label="Loading masters…" size="sm" /></div> : <Grid>
-                    <MultiSelect label="Product Categories" options={asOpts(opts.categories)} value={g("applicability").categories as string[]} onChange={(v) => setNest("applicability", "categories", v)} placeholder="All categories" />
-                    <MultiSelect label="Brands" options={asOpts(opts.brands)} value={g("applicability").brands as string[]} onChange={(v) => setNest("applicability", "brands", v)} placeholder="All brands" />
-                    <MultiSelect label="Products" options={opts.products} value={g("applicability").products as string[]} onChange={(v) => setNest("applicability", "products", v)} placeholder="All products" />
+                    {mode === "advanced" && <MultiSelect label="Product Categories" options={asOpts(opts.categories)} value={g("applicability").categories as string[]} onChange={(v) => setNest("applicability", "categories", v)} placeholder="All categories" />}
+                    {mode === "advanced" && <MultiSelect label="Brands" options={asOpts(opts.brands)} value={g("applicability").brands as string[]} onChange={(v) => setNest("applicability", "brands", v)} placeholder="All brands" />}
+                    {(mode === "advanced" || mode === "customer_product") && <MultiSelect label="Products" options={opts.products} value={g("applicability").products as string[]} onChange={(v) => setNest("applicability", "products", v)} placeholder="All products" />}
                     <MultiSelect label="Customers" options={opts.customers} value={g("applicability").customerIds as string[]} onChange={(v) => setNest("applicability", "customerIds", v)} placeholder="All customers" />
-                    <MultiSelect label="Customer Groups" options={asOpts(opts.customerGroups)} value={g("applicability").customerGroups as string[]} onChange={(v) => setNest("applicability", "customerGroups", v)} placeholder="All customer groups" />
-                    <MultiSelect label="Membership Levels" options={asOpts(opts.membershipLevels)} value={g("applicability").membershipLevels as string[]} onChange={(v) => setNest("applicability", "membershipLevels", v)} placeholder="All levels" />
+                    {mode === "advanced" && <MultiSelect label="Customer Groups" options={asOpts(opts.customerGroups)} value={g("applicability").customerGroups as string[]} onChange={(v) => setNest("applicability", "customerGroups", v)} placeholder="All customer groups" />}
+                    {mode === "advanced" && <MultiSelect label="Membership Levels" options={asOpts(opts.membershipLevels)} value={g("applicability").membershipLevels as string[]} onChange={(v) => setNest("applicability", "membershipLevels", v)} placeholder="All levels" />}
                   </Grid>}
                   <p className="text-2xs text-muted">Leave a field empty to apply to <b>all</b>. Use <b>Select all</b> to target every option. Categories, brands, products, customers, customer groups &amp; levels are loaded live from your masters.</p>
                 </div>

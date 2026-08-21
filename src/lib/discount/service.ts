@@ -66,13 +66,19 @@ async function nextCode(s: Scope): Promise<string> {
 }
 
 /* ---------------------------------------------------------------- rows -- */
-const toRow = (d: Prisma.DiscountMasterGetPayload<object>): DiscountRow => ({
+const toRow = (d: Prisma.DiscountMasterGetPayload<object>, custNameMap?: Map<number, string>, prodNameMap?: Map<number, string>): DiscountRow => ({
   id: d.id, code: d.code, name: d.name, description: d.description ?? "", category: d.category,
   discountType: d.discountType, method: d.method, applyLevel: d.applyLevel, value: num(d.value),
   maxDiscount: num(d.maxDiscount), minDiscount: num(d.minDiscount), priority: d.priority, status: d.status,
   startDate: iso(d.startDate), endDate: iso(d.endDate), minBill: num(d.minBill), usageCount: d.usageCount,
   totalGiven: num(d.totalGiven), combinable: d.combinable, requiresApproval: d.requiresApproval,
   approvedByName: d.approvedByName ?? "", createdByName: d.createdByName ?? "",
+  customerNames: custNameMap
+    ? (parse<{ customerIds?: string[] }>(d.applicabilityJson, {}).customerIds ?? []).map((id) => custNameMap.get(Number(id))).filter((x): x is string => !!x).join(", ")
+    : "",
+  productNames: prodNameMap
+    ? (parse<{ products?: string[] }>(d.applicabilityJson, {}).products ?? []).map((id) => prodNameMap.get(Number(id))).filter((x): x is string => !!x).join(", ")
+    : "",
 });
 
 const toDetail = (d: Prisma.DiscountMasterGetPayload<object>): DiscountDetail => ({
@@ -90,7 +96,15 @@ export async function listDiscounts(s: Scope, opts: { status?: string; q?: strin
   if (opts.type && opts.type !== "All") where.discountType = opts.type;
   if (opts.q) where.OR = [{ code: { contains: opts.q } }, { name: { contains: opts.q } }, { discountType: { contains: opts.q } }];
   const rows = await prisma.discountMaster.findMany({ where, orderBy: [{ priority: "asc" }, { id: "desc" }], take: 500 });
-  return rows.map(toRow);
+  const custIds = Array.from(new Set(rows.flatMap((d) => parse<{ customerIds?: string[] }>(d.applicabilityJson, {}).customerIds ?? []).map((id) => Number(id)).filter((n) => !Number.isNaN(n))));
+  const prodIds = Array.from(new Set(rows.flatMap((d) => parse<{ products?: string[] }>(d.applicabilityJson, {}).products ?? []).map((id) => Number(id)).filter((n) => !Number.isNaN(n))));
+  const [custRows, prodRows] = await Promise.all([
+    custIds.length ? prisma.customer.findMany({ where: { id: { in: custIds } }, select: { id: true, name: true } }) : [],
+    prodIds.length ? prisma.product.findMany({ where: { id: { in: prodIds } }, select: { id: true, name: true } }) : [],
+  ]);
+  const custNameMap = new Map(custRows.map((c) => [c.id, c.name]));
+  const prodNameMap = new Map(prodRows.map((p) => [p.id, p.name]));
+  return rows.map((d) => toRow(d, custNameMap, prodNameMap));
 }
 
 export async function getDiscount(s: Scope, id: number): Promise<DiscountDetail | null> {

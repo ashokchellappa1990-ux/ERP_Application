@@ -10,12 +10,14 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import { AppLoader } from "@/components/ui/AppLoader";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
-import type { FuelIssueDetail as FuelIssueDetailT } from "@/lib/contracts/fuelManagement";
+import { TRANSFER_TYPE_OPTS, type FuelIssueDetail as FuelIssueDetailT } from "@/lib/contracts/fuelManagement";
 
 const TXN_TONE: Record<string, "neutral" | "success" | "danger"> = { Draft: "neutral", Confirmed: "success", Cancelled: "danger" };
 const inp = "h-9 w-full rounded-md border border-border-strong bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none";
 const lbl = "mb-1 block text-2xs font-semibold text-muted";
 
+/** Fuel Issue's own view page — mirrors FuelIssueForm.tsx's section layout
+ * and fields exactly (Basic Details / Quantity & Cost), rendered read-only. */
 export function FuelIssueDetail() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
@@ -50,33 +52,49 @@ export function FuelIssueDetail() {
         <Button variant="outline" size="md" onClick={() => router.push("/masters/transport/fuel-management")}><ArrowLeft className="h-4 w-4" /> Back</Button>
       </div>
 
-      <SectionCard icon={Fuel} title="Fuel Issue Details">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <ReadKV k="Date" v={detail.issueDate} />
-          <ReadKV k={detail.transferType === "tank_tank" ? "From Tank" : "Tank"} v={detail.tankName} />
+      <SectionCard icon={Fuel} title="Basic Details">
+        <div className="mb-3">
+          <label className={lbl}>Transfer Type</label>
+          <div className="inline-flex overflow-hidden rounded-md border border-border text-2xs">
+            {(TRANSFER_TYPE_OPTS).map((tt) => (
+              <span key={tt} className={cn("px-3 py-2 font-semibold", detail.transferType === tt ? "bg-primary text-white" : "bg-surface text-muted")}>
+                {tt === "tank_vehicle" ? "Tank to Vehicle" : "Tank to Tank"}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <RO label="Date *" value={detail.issueDate} />
+          <RO label={detail.transferType === "tank_tank" ? "From Tank *" : "Fuel Tank *"} value={detail.tankName} />
           {detail.transferType === "tank_tank" ? (
-            <ReadKV k="To Tank" v={detail.toTankName ?? "—"} />
+            <RO label="To Tank *" value={detail.toTankName ?? "—"} />
           ) : (
             <>
-              <ReadKV k="Vehicle" v={detail.vehicleNo ?? "—"} />
-              <ReadKV k="Driver" v={detail.driverName ?? "—"} />
-              <ReadKV k="Trip Reference" v={detail.tripNo ?? "—"} />
-              <ReadKV k="Odometer" v={detail.odometer != null ? `${detail.odometer} KM` : "—"} />
-              <ReadKV k="Dispenser" v={detail.dispenser ?? "—"} />
-              <ReadKV k="Operator" v={detail.operator ?? "—"} />
+              <RO label="Vehicle *" value={detail.vehicleNo ?? "—"} />
+              <RO label="Driver" value={detail.driverName ?? "— None —"} />
+              <RO label="Trip (optional)" value={detail.tripNo ?? "— None —"} />
+              <RO label="Odometer Reading (KM)" value={detail.odometer != null ? `${detail.odometer}` : "—"} />
+              <RO label="Dispenser/Pump" value={detail.dispenser ?? "—"} />
+              <RO label="Operator" value={detail.operator ?? "—"} />
             </>
           )}
-          <ReadKV k="Quantity" v={`${detail.quantity} L`} />
-          <ReadKV k="Rate" v={`₹${detail.rate}`} />
-          <ReadKV k="Amount" v={`₹${detail.amount.toLocaleString()}`} />
         </div>
+      </SectionCard>
+
+      <SectionCard icon={Fuel} title="Quantity & Cost">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <RO label="Fuel Quantity (L) *" value={`${detail.quantity}`} />
+          <RO label="Rate (₹/L)" value={`${detail.rate}`} />
+          <RO label="Remarks" value={detail.remarks ?? "—"} />
+        </div>
+        <div className="mt-3 flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-sm"><span className="text-muted">Total Amount</span><span className="font-bold text-foreground">₹{detail.amount.toFixed(2)}</span></div>
       </SectionCard>
 
       {detail.transferType !== "tank_tank" && (
         <SectionCard icon={Fuel} title="Fuel Efficiency">
           <div className="grid gap-3 sm:grid-cols-2">
-            <ReadKV k="Distance Since Previous Fill" v={detail.distanceSincePrev != null ? `${detail.distanceSincePrev} KM` : "Insufficient data"} />
-            <ReadKV k="Efficiency" v={detail.efficiency != null ? `${detail.efficiency} KM/L` : "Insufficient data"} />
+            <RO label="Distance Since Previous Fill" value={detail.distanceSincePrev != null ? `${detail.distanceSincePrev} KM` : "Insufficient data"} />
+            <RO label="Efficiency" value={detail.efficiency != null ? `${detail.efficiency} KM/L` : "Insufficient data"} />
           </div>
         </SectionCard>
       )}
@@ -91,11 +109,17 @@ export function FuelIssueDetail() {
           )}
         </SectionCard>
       )}
-      {detail.cancelledAt && <SectionCard icon={Ban} title="Cancellation"><ReadKV k="Cancelled" v={`${detail.cancelledByName ?? "—"} · ${new Date(detail.cancelledAt).toLocaleString()}${detail.cancellationReason ? ` — ${detail.cancellationReason}` : ""}`} /></SectionCard>}
+      {detail.cancelledAt && <SectionCard icon={Ban} title="Cancellation"><RO label="Cancelled" value={`${detail.cancelledByName ?? "—"} · ${new Date(detail.cancelledAt).toLocaleString()}${detail.cancellationReason ? ` — ${detail.cancellationReason}` : ""}`} /></SectionCard>}
     </div>
   );
 }
 
-function ReadKV({ k, v }: { k: string; v: string }) {
-  return <div><p className="text-2xs font-semibold text-muted">{k}</p><p className="text-sm text-foreground">{v}</p></div>;
+/** Read-only field styled to match the add page's input boxes exactly. */
+function RO({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <label className={lbl}>{label}</label>
+      <div className={cn(inp, "flex items-center bg-surface-2/40 text-foreground")}>{value}</div>
+    </div>
+  );
 }

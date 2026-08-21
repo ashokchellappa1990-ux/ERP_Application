@@ -122,22 +122,31 @@ function checkEligibility(d: EngineDiscount, ctx: EngineContext): string | null 
   return null;
 }
 
-/** Value of a discount for the current cart, capped by min/max and the bill. */
-function computeAmount(d: EngineDiscount, ctx: EngineContext): number {
+/**
+ * Value of a discount for the current cart, capped by min/max and the bill.
+ * `excludeProductIds`, when given, removes those product lines from every
+ * basis this computes (scoped or bill-wide) — used so a generic Customer
+ * discount doesn't also discount a line a more specific Customer+Product
+ * discount already covered (see the auto-combine logic in evaluateDiscounts).
+ */
+function computeAmount(d: EngineDiscount, ctx: EngineContext, excludeProductIds?: Set<string>): number {
   const a = d.applicability || {};
   const cats = arr(a.categories), brands = arr(a.brands), prods = arr(a.products);
   const scoped = cats.length || brands.length || prods.length || d.applyLevel === "line";
   // "exclusive" computes on the material value (pre-tax); "inclusive" on the MRP incl. tax.
   const exclusive = d.discountBase === "exclusive";
   const itemBase = (it: EngineItem) => (exclusive ? (it.taxable ?? it.amount) : it.amount);
+  const notExcluded = (it: EngineItem) => !excludeProductIds || excludeProductIds.size === 0 || it.productId == null || !excludeProductIds.has(String(it.productId));
+  const matchScope = (it: EngineItem) =>
+    (!cats.length && !brands.length && !prods.length) ||
+    (cats.length && it.category && cats.includes(it.category)) ||
+    (brands.length && it.brand && brands.includes(it.brand)) ||
+    (prods.length && it.productId != null && prods.includes(String(it.productId)));
   const base = scoped
-    ? ctx.items.filter((it) =>
-        (!cats.length && !brands.length && !prods.length) ||
-        (cats.length && it.category && cats.includes(it.category)) ||
-        (brands.length && it.brand && brands.includes(it.brand)) ||
-        (prods.length && it.productId != null && prods.includes(String(it.productId))))
-        .reduce((s, i) => s + (itemBase(i) || 0), 0)
-    : (exclusive ? (ctx.billTaxable ?? ctx.billAmount) : ctx.billAmount);
+    ? ctx.items.filter((it) => matchScope(it) && notExcluded(it)).reduce((s, i) => s + (itemBase(i) || 0), 0)
+    : (excludeProductIds && excludeProductIds.size
+        ? ctx.items.filter(notExcluded).reduce((s, i) => s + (itemBase(i) || 0), 0)
+        : (exclusive ? (ctx.billTaxable ?? ctx.billAmount) : ctx.billAmount));
 
   let amt = 0;
   const type = d.discountType;
@@ -150,16 +159,15 @@ function computeAmount(d: EngineDiscount, ctx: EngineContext): number {
       amt = unit * (d.getQty || 1);
     }
   } else if (d.method === "per_unit") {
-    // A fixed ₹ amount per unit quantity, multiplied by the TOTAL quantity
-    // across the whole bill (not scoped to specific products) — e.g. a
-    // customer-specific ₹5-per-unit discount on whatever they buy.
-    const totalQty = ctx.items.reduce((s, i) => s + (i.qty || 0), 0);
+    // A fixed ₹ amount per unit quantity — scoped to matching products (if
+    // any are configured), otherwise the whole bill's quantity.
+    const totalQty = ctx.items.filter((it) => matchScope(it) && notExcluded(it)).reduce((s, i) => s + (i.qty || 0), 0);
     amt = totalQty * d.value;
   } else if (d.method === "flat" || type === "Flat Amount" || type === "Cash") {
     amt = d.value;
   } else if (d.method === "fixed_price" || type === "Fixed Selling Price") {
-    // markdown from current line value to a fixed selling price per unit
-    amt = ctx.items.reduce((s, i) => s + Math.max(0, (i.amount || 0) - d.value * (i.qty || 0)), 0);
+    // markdown from current line value to a fixed selling price per unit — scoped to matching products.
+    amt = ctx.items.filter((it) => matchScope(it) && notExcluded(it)).reduce((s, i) => s + Math.max(0, (i.amount || 0) - d.value * (i.qty || 0)), 0);
   } else {
     // percentage (default) — of the scoped base
     amt = base * (d.value / 100);
@@ -171,6 +179,8 @@ function computeAmount(d: EngineDiscount, ctx: EngineContext): number {
   return r2(amt);
 }
 
+const isCustomerType = (d: EngineDiscount) => d.discountType === "Customer" || d.discountType === "Customer Group";
+
 /** Evaluate a candidate set and resolve the applied discount(s). */
 export function evaluateDiscounts(
   discounts: EngineDiscount[],
@@ -179,25 +189,64 @@ export function evaluateDiscounts(
 ): EngineResult {
   const maxDiscounts = opts.maxDiscounts ?? 3;
   const skipped: SkippedDiscount[] = [];
-  const candidates: AppliedDiscount[] = [];
 
   // Gross-up factor to convert an exclusive (material-value) discount into its
   // tax-INCLUSIVE reduction, so the recomputed GST + payable are correct.
   const grossUp = ctx.billTaxable && ctx.billTaxable > 0 ? ctx.billAmount / ctx.billTaxable : 1;
+  const toApplied = (d: EngineDiscount, discountAmount: number): AppliedDiscount => {
+    const netReduction = d.discountBase === "exclusive" ? r2(discountAmount * grossUp) : discountAmount;
+    return { id: d.id, code: d.code, name: d.name, discountType: d.discountType, discountBase: d.discountBase, method: d.method, value: d.value, discountAmount, netReduction, account: d.discountAccount, reduceTaxable: d.reduceTaxable, combinable: d.combinable, priority: d.priority };
+  };
+
+  const eligible: EngineDiscount[] = [];
   for (const d of discounts) {
     const reason = checkValidity(d, ctx) || checkApplicability(d, ctx) || checkEligibility(d, ctx);
     if (reason) { skipped.push({ id: d.id, code: d.code, name: d.name, reason }); continue; }
-    const discountAmount = computeAmount(d, ctx);
-    if (discountAmount <= 0) { skipped.push({ id: d.id, code: d.code, name: d.name, reason: "No value for this cart" }); continue; }
-    const netReduction = d.discountBase === "exclusive" ? r2(discountAmount * grossUp) : discountAmount;
-    candidates.push({ id: d.id, code: d.code, name: d.name, discountType: d.discountType, discountBase: d.discountBase, method: d.method, value: d.value, discountAmount, netReduction, account: d.discountAccount, reduceTaxable: d.reduceTaxable, combinable: d.combinable, priority: d.priority });
+    eligible.push(d);
   }
-
-  // Priority engine: lower priority number wins; break ties by larger value.
-  candidates.sort((a, b) => (a.priority - b.priority) || (b.discountAmount - a.discountAmount));
 
   const applied: AppliedDiscount[] = [];
   let remaining = ctx.billAmount; // tax-inclusive payable remaining
+  const handled = new Set<number>();
+
+  // A Customer/Customer Group discount scoped to specific product(s) and a
+  // generic one (no product restriction) for the same customer are
+  // complementary, not competing — the specific rule covers its product(s),
+  // the generic one covers everything else. Only kick in when BOTH kinds are
+  // present; otherwise a lone Customer rule falls through untouched to the
+  // standard priority/combinable engine below (no behavior change).
+  const custSpecific = eligible.filter((d) => isCustomerType(d) && arr(d.applicability?.products).length > 0);
+  const custGeneric = eligible.filter((d) => isCustomerType(d) && arr(d.applicability?.products).length === 0);
+  if (custSpecific.length > 0 && custGeneric.length > 0) {
+    const claimed = new Set<string>();
+    for (const d of custSpecific) {
+      handled.add(d.id);
+      const amt = computeAmount(d, ctx);
+      if (amt <= 0) { skipped.push({ id: d.id, code: d.code, name: d.name, reason: "No value for this cart" }); continue; }
+      const c = toApplied(d, amt); applied.push(c); remaining -= c.netReduction;
+      for (const pid of arr(d.applicability?.products)) claimed.add(pid);
+    }
+    let pickedGeneric = false;
+    for (const d of [...custGeneric].sort((a, b) => a.priority - b.priority)) {
+      handled.add(d.id);
+      if (pickedGeneric) { skipped.push({ id: d.id, code: d.code, name: d.name, reason: "Superseded by a higher-priority customer discount" }); continue; }
+      const amt = computeAmount(d, ctx, claimed);
+      if (amt <= 0) { skipped.push({ id: d.id, code: d.code, name: d.name, reason: claimed.size ? "Fully covered by a more specific customer discount" : "No value for this cart" }); continue; }
+      const c = toApplied(d, amt); applied.push(c); remaining -= c.netReduction; pickedGeneric = true;
+    }
+  }
+
+  // Standard candidates: every discount not already resolved above.
+  const candidates: AppliedDiscount[] = [];
+  for (const d of eligible) {
+    if (handled.has(d.id)) continue;
+    const discountAmount = computeAmount(d, ctx);
+    if (discountAmount <= 0) { skipped.push({ id: d.id, code: d.code, name: d.name, reason: "No value for this cart" }); continue; }
+    candidates.push(toApplied(d, discountAmount));
+  }
+  // Priority engine: lower priority number wins; break ties by larger value.
+  candidates.sort((a, b) => (a.priority - b.priority) || (b.discountAmount - a.discountAmount));
+
   for (const c of candidates) {
     if (applied.length === 0) { applied.push(c); remaining -= c.netReduction; continue; }
     const canStack = c.combinable && applied.every((x) => x.combinable) && applied.length < maxDiscounts;
