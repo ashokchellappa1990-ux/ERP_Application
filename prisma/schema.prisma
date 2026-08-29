@@ -10763,3 +10763,183 @@ model ProcessingConfiguration {
   @@unique([tenantId, businessId, branchId])
   @@map("processing_configurations")
 }
+
+/**
+ * ============================================================ Vehicle
+ * Document & Compliance — additive over VehicleMaster (referenced by
+ * vehicleId only, no vehicle data duplicated). VehicleMaster's own
+ * registrationCertNo/insuranceNo/.../ValidUpto fields stay untouched as a
+ * legacy quick-glance snapshot; this module is the authoritative,
+ * multi-document, versioned, attachment-backed source of truth.
+ */
+
+// Configurable document types (RC, Insurance, Fitness, PUC, ... plus any the
+// user adds) — never hardcoded; seeded once via migration, fully editable.
+model VehicleDocumentType {
+  id                     Int     @id @default(autoincrement())
+  tenantId               Int
+  businessId             Int?
+  code                   String  @db.VarChar(30)
+  name                   String  @db.VarChar(120)
+  description            String? @db.Text
+  applicableVehicleTypes String? @db.Text // comma-separated VehicleMaster.vehicleType values; empty = all types
+  mandatory              Boolean @default(false) // default mandatory-ness when no per-vehicle-type override exists (see VehicleDocumentMandatory)
+  expiryRequired         Boolean @default(true)
+  renewalRequired        Boolean @default(true)
+  alertEnabled           Boolean @default(true)
+  defaultAlertDays       Int     @default(30)
+  isSystem               Boolean @default(false) // seeded record — still editable/deletable, just flagged for UI grouping
+  status                 String  @default("Active") @db.VarChar(16)
+
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedBy Int?
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+  @@map("vehicle_document_type")
+}
+
+// Per-vehicle-type mandatory override — e.g. Tipper requires RC/Insurance/
+// Fitness/PUC/Permit/Road Tax while another vehicle type needs a different
+// set. Absence of a row for (vehicleType, documentTypeId) falls back to the
+// document type's own `mandatory` default.
+model VehicleDocumentMandatory {
+  id             Int     @id @default(autoincrement())
+  tenantId       Int
+  businessId     Int?
+  vehicleType    String  @db.VarChar(60)
+  documentTypeId Int
+  mandatory      Boolean @default(true)
+
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedBy Int?
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, vehicleType, documentTypeId])
+  @@map("vehicle_document_mandatory")
+}
+
+// One row per document HELD (current or historical) — renewing never
+// overwrites a row; it creates a new one and links back via previousDocId,
+// preserving full version history per Rule 9/10.
+model VehicleDocument {
+  id             Int  @id @default(autoincrement())
+  tenantId       Int
+  businessId     Int?
+  branchId       Int?
+  vehicleId      Int
+  documentTypeId Int
+
+  documentNo       String?   @db.VarChar(80)
+  issueDate        DateTime?
+  expiryDate       DateTime?
+  issuingAuthority String?   @db.VarChar(150)
+  placeOfIssue     String?   @db.VarChar(150)
+
+  renewalRequired        Boolean @default(true)
+  renewalFrequencyMonths Int?
+
+  cost             Decimal   @default(0) @db.Decimal(14, 2)
+  tax              Decimal   @default(0) @db.Decimal(14, 2)
+  otherCharges     Decimal   @default(0) @db.Decimal(14, 2)
+  totalCost        Decimal   @default(0) @db.Decimal(14, 2)
+  paymentDate      DateTime?
+  paymentReference String?   @db.VarChar(80)
+
+  remarks String? @db.Text
+
+  // Version chain — this row's predecessor (null for the very first version).
+  previousDocId Int?
+  versionNo     Int  @default(1)
+
+  status String @default("Active") @db.VarChar(16) // Active | Replaced | Cancelled
+
+  createdBy          Int?
+  createdAt          DateTime  @default(now())
+  updatedBy          Int?
+  updatedAt          DateTime  @updatedAt
+  cancelledBy        Int?
+  cancelledAt        DateTime?
+  cancellationReason String?   @db.Text
+
+  @@index([tenantId, vehicleId])
+  @@index([tenantId, documentTypeId])
+  @@index([tenantId, status])
+  @@index([tenantId, expiryDate])
+  @@map("vehicle_document")
+}
+
+model VehicleDocumentAttachment {
+  id                Int      @id @default(autoincrement())
+  tenantId          Int
+  vehicleDocumentId Int
+  fileName          String   @db.VarChar(255)
+  fileUrl           String   @db.VarChar(500)
+  fileType          String?  @db.VarChar(60)
+  size              Int?
+  uploadedBy        Int?
+  uploadedAt        DateTime @default(now())
+
+  @@index([tenantId, vehicleDocumentId])
+  @@map("vehicle_document_attachment")
+}
+
+// Renewal workflow — Pending -> Initiated -> In Progress -> Submitted ->
+// Verified -> Completed (or Rejected/Cancelled). Completing a renewal creates
+// a brand-new VehicleDocument row (see newDocumentId) rather than editing the
+// old one, per Rule 9/10.
+model VehicleDocumentRenewal {
+  id                Int  @id @default(autoincrement())
+  tenantId          Int
+  businessId        Int?
+  branchId          Int?
+  vehicleDocumentId Int // the document being renewed
+
+  status        String   @default("Pending") @db.VarChar(16)
+  initiatedDate DateTime @default(now())
+
+  newDocumentNo    String?   @db.VarChar(80)
+  newIssueDate     DateTime?
+  newExpiryDate    DateTime?
+  renewalDate      DateTime?
+  renewalCost      Decimal   @default(0) @db.Decimal(14, 2)
+  tax              Decimal   @default(0) @db.Decimal(14, 2)
+  otherCharges     Decimal   @default(0) @db.Decimal(14, 2)
+  totalCost        Decimal   @default(0) @db.Decimal(14, 2)
+  issuingAuthority String?   @db.VarChar(150)
+  remarks          String?   @db.Text
+
+  newDocumentId Int? // set once Completed — the newly created VehicleDocument row
+
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedBy Int?
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, vehicleDocumentId])
+  @@index([tenantId, status])
+  @@map("vehicle_document_renewal")
+}
+
+// Single scoped-JSON-blob settings row (branch -> business -> tenant default
+// override ladder, same convention as ProcessingConfiguration above).
+model VehicleComplianceConfig {
+  id         Int  @id @default(autoincrement())
+  tenantId   Int
+  businessId Int?
+  branchId   Int?
+
+  checkEnabled     Boolean @default(false) // Section 22 — off by default so existing Trip/Sales/Purchase flows are never affected unless explicitly turned on
+  enforcementMode  String  @default("warning") @db.VarChar(10) // "warning" | "block"
+  alertDaysJson    String  @default("[90,60,30,15,7,1,0]") @db.Text // configurable alert periods, Section 11
+  expiringSoonDays Int     @default(30) // configurable "Expiring Soon" threshold, Section 10
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, businessId, branchId])
+  @@map("vehicle_compliance_config")
+}

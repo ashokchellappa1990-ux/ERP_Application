@@ -25,7 +25,7 @@ const req = (key: string) => (fieldMust(SCREEN, key) ? " *" : "");
 const n = (v: unknown) => Number(v) || 0;
 const r2 = (v: number) => Math.round((Number(v) || 0) * 100) / 100;
 
-interface CustomerHit { id: number; name: string; phone: string; address: string }
+interface CustomerHit { id: number; name: string; phone: string; address: string; creditAllowed?: boolean }
 interface ProductHit {
   id: number; name: string; sku?: string; uom?: string; price?: number; gst?: number;
   batchTracked?: boolean; invBatch?: boolean; invMfg?: boolean; invExpiry?: boolean;
@@ -222,7 +222,7 @@ export function DirectLoadDispatchForm() {
   );
 
   // ---- Payment Collection (mirrors B2bInvoiceForm) ----
-  const [payCat, setPayCat] = useState<PayCat>("credit");
+  const [payCat, setPayCat] = useState<PayCat>("full");
   const [amtPaid, setAmtPaid] = useState("");
   const [payMode, setPayMode] = useState("Bank Transfer");
   const [bank, setBank] = useState<BankValue>(emptyBank);
@@ -283,15 +283,23 @@ export function DirectLoadDispatchForm() {
         if (!j.ok) return;
         const d = j.data;
         if (d.customerName) { setCustomerName(d.customerName); setCustomerQuery(d.customerName); }
-        if (d.customerId) setCustomerId(d.customerId);
-        else if (d.customerName) {
+        if (d.customerId) {
+          setCustomerId(d.customerId);
+          // Resolve the customer's Credit Allowed flag so Payment Collection
+          // defaults correctly (Credit Due vs Full Collection) even though
+          // the gate entry only carries the id, not the full customer record.
+          try {
+            const cj = await fetch(`/api/masters/customers/${d.customerId}`, { cache: "no-store" }).then((r) => r.json());
+            if (cj.ok) setPayCat(cj.customer.creditAllowed ? "credit" : "full");
+          } catch { /* best effort — leaves the neutral "full" default */ }
+        } else if (d.customerName) {
           // Fallback for gate entries recorded before customerId was captured
           // on Vehicle Gate Entry — best-effort exact-name match against the
           // Customer Master so customer-specific discounts can still resolve.
           try {
             const cj = await fetch(`/api/masters/customers?q=${encodeURIComponent(d.customerName.trim())}`, { cache: "no-store" }).then((r) => r.json());
             const exact = (cj.customers as CustomerHit[] | undefined)?.find((c) => c.name.trim().toLowerCase() === d.customerName.trim().toLowerCase());
-            if (exact) setCustomerId(exact.id);
+            if (exact) { setCustomerId(exact.id); setPayCat(exact.creditAllowed ? "credit" : "full"); }
           } catch { /* best effort — leaves customerId unresolved, matching prior behavior */ }
         }
         if (d.deliveryAddress) setDeliveryAddress(d.deliveryAddress);
@@ -446,6 +454,10 @@ export function DirectLoadDispatchForm() {
   const pickCustomer = (hit: CustomerHit) => {
     setCustomerId(hit.id); setCustomerName(hit.name); setCustomerQuery(hit.name); setCustomerHits(null);
     setDeliveryAddress(hit.address ?? "");
+    // Default Payment Collection from the Customer Master's Credit Allowed
+    // setting — Credit Due if the customer is on credit, Full Collection
+    // otherwise. The user can still change it manually afterward.
+    setPayCat(hit.creditAllowed ? "credit" : "full");
     matchGateEntryForCustomer(hit.name);
   };
 

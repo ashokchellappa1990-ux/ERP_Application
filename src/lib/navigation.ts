@@ -302,6 +302,7 @@ export const NAV_SECTIONS: NavSection[] = [
           { label: "Vehicle Trip Management", href: "/masters/transport/vehicle-trip", icon: Waypoints },
           { label: "Vehicle Maintenance", href: "/masters/transport/vehicle-maintenance", icon: Wrench },
           { label: "Fuel Management", href: "/masters/transport/fuel-management", icon: Fuel },
+          { label: "Vehicle Document & Compliance", href: "/masters/transport/vehicle-document", icon: ShieldCheck },
           {
             label: "Tyre Management",
             icon: CircleDot,

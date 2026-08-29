@@ -36,7 +36,7 @@ interface Line { key: string; id: number; name: string; sku: string; hsn: string
   // Single-use UNIQUE QR codes scanned onto this line. One code per unit; each valid
   // scan appends a code and increments qty by one. Sent to /api/sales/invoice.
   qrCodes?: string[] }
-interface Cust { id: number; name: string; gstin: string; phone: string; email?: string; contactPerson?: string; address?: string; city?: string; state: string; pincode?: string }
+interface Cust { id: number; name: string; gstin: string; phone: string; email?: string; contactPerson?: string; address?: string; city?: string; state: string; pincode?: string; creditAllowed?: boolean }
 interface Attach { fileName: string; fileUrl: string; fileType: string | null; size: number }
 type DiscLevel = "item" | "bill";
 type PayCat = "full" | "partial" | "credit";
@@ -105,7 +105,7 @@ export function B2bInvoiceForm() {
   const [tcsInput, setTcsInput] = useState("");
   const [tcsMode, setTcsMode] = useState<"pct" | "val">("pct");
 
-  const [payCat, setPayCat] = useState<PayCat>("credit");
+  const [payCat, setPayCat] = useState<PayCat>("full");
   const [amtPaid, setAmtPaid] = useState("");
   const [payMode, setPayMode] = useState("Bank Transfer");
   const [bank, setBank] = useState(emptyBank);
@@ -163,7 +163,8 @@ export function B2bInvoiceForm() {
       if (!j.ok) { setError(j.message || "Could not load the sales order."); return; }
       const o = j.order;
       const c = o.customer;
-      setCust({ id: c.id, name: c.name, gstin: c.gstin, phone: c.phone, email: c.email, contactPerson: c.contactPerson, address: c.address, city: c.city, state: c.state, pincode: c.pincode });
+      setCust({ id: c.id, name: c.name, gstin: c.gstin, phone: c.phone, email: c.email, contactPerson: c.contactPerson, address: c.address, city: c.city, state: c.state, pincode: c.pincode, creditAllowed: c.creditAllowed });
+      setPayCat(c.creditAllowed ? "credit" : "full");
       setCustQuery("");
       setSoNumber(o.soNumber);
       setInterState(!!o.interState);
@@ -281,7 +282,7 @@ export function B2bInvoiceForm() {
     try {
       const res = await fetch("/api/masters/customers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...newCust, gstin: newCust.gstin.trim().toUpperCase() }) });
       const j = await res.json().catch(() => ({}));
-      if (j.ok) { setCust(j.customer); setAddingCust(false); setNewCust({ ...EMPTY_CUST }); setCustErr({}); }
+      if (j.ok) { setCust(j.customer); setPayCat(j.customer.creditAllowed ? "credit" : "full"); setAddingCust(false); setNewCust({ ...EMPTY_CUST }); setCustErr({}); }
       else { if (j.errors) setCustErr(j.errors); flash(j.message || "Could not save customer."); }
     } catch { flash("Could not reach the server. Please try again."); }
   }
@@ -436,7 +437,7 @@ export function B2bInvoiceForm() {
                 </div>
                 {custQuery && custHits.length > 0 && (
                   <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-border bg-card shadow-lg">
-                    {custHits.map((c) => <button key={c.id} onClick={() => { setCust(c); setCustQuery(""); }} className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-primary-subtle/40"><span className="font-medium text-foreground">{c.name}</span><span className="font-mono text-2xs text-subtle">{c.gstin || c.phone}</span></button>)}
+                    {custHits.map((c) => <button key={c.id} onClick={() => { setCust(c); setPayCat(c.creditAllowed ? "credit" : "full"); setCustQuery(""); }} className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-primary-subtle/40"><span className="font-medium text-foreground">{c.name}</span><span className="font-mono text-2xs text-subtle">{c.gstin || c.phone}</span></button>)}
                   </div>
                 )}
               </div>
