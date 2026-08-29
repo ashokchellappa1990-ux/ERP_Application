@@ -6,6 +6,8 @@ import { requirePermission } from "@/lib/auth/guard";
 import type { TaxInvoiceData } from "@/lib/print/taxInvoiceHtml";
 import type { WeightSlipData } from "@/lib/print/weightSlipHtml";
 import type { TaxInvoiceT3Data } from "@/lib/print/taxInvoiceT3Html";
+import { getDispatchConfig } from "@/lib/settings/dispatchConfig";
+import { roundInvoiceTotal } from "@/lib/settings/transportConfigDefaults";
 
 const PERM = "warehouse.transfer";
 const num = (v: unknown) => (v == null ? 0 : Number(v));
@@ -165,7 +167,12 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const totalTax = doc.items.reduce((s, it) => s + num(it.taxAmount), 0);
     const royaltyPass = num(transportCost?.otherCharges);
     const rawTotal = subtotal + totalTax + royaltyPass;
-    const total = Math.round(rawTotal);
+    // Round the same configured way (nearest ₹10 by default) as the
+    // transaction screen / Load & Dispatch view, so the printed DC never
+    // disagrees with what was actually shown there — instead of the naive
+    // Math.round (nearest rupee) this used before.
+    const dispatchCfg = await getDispatchConfig(user);
+    const { total, roundOff } = roundInvoiceTotal(dispatchCfg, rawTotal);
     deliveryNote = {
       business,
       invoiceNo: deliveryChallan.dcNo, billDateTime: fmtDateTime(deliveryChallan.createdAt),
@@ -183,7 +190,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       }),
       totalTax, sgstPct: halfPct, sgstAmount: totalTax / 2, cgstPct: halfPct, cgstAmount: totalTax / 2,
       royaltyPassLabel: "Royalty Pass", royaltyPass,
-      roundOff: total - rawTotal, total,
+      roundOff, total,
     };
   }
 

@@ -1223,3 +1223,380 @@ prisma:error pool timeout: failed to retrieve a connection from pool after 10008
  ○ Compiling /sales/invoice/new ...
  ✓ Compiled /sales/invoice/new in 1198ms (1242 modules)
  GET /sales/invoice/new 200 in 1563ms
+ ○ Compiling /masters/transport/transport-company ...
+ ✓ Compiled /masters/transport/transport-company in 1379ms (1401 modules)
+ ✓ Compiled /icon.png in 341ms (807 modules)
+ GET /icon.png?5a285dc6c8e9056e 200 in 474ms
+ ✓ Compiled /api/transport/masters/transport-company in 378ms (962 modules)
+ GET /api/transport/masters/transport-company 200 in 1616ms
+ GET /api/transport/masters/transport-company 200 in 1625ms
+ ○ Compiling /masters/transport/driver ...
+ ✓ Compiled /masters/transport/driver in 925ms (1605 modules)
+ ✓ Compiled /api/transport/masters/driver in 277ms (974 modules)
+ GET /api/transport/masters/transport-company 200 in 1150ms
+ GET /api/transport/masters/transport-company 200 in 1150ms
+ GET /api/transport/masters/driver 200 in 1203ms
+ GET /api/transport/masters/driver 200 in 1202ms
+ ○ Compiling /masters/transport/vehicle ...
+ ✓ Compiled /masters/transport/vehicle in 732ms (1638 modules)
+ ✓ Compiled /api/transport/masters/vehicle in 259ms (993 modules)
+ GET /api/transport/masters/transport-company 200 in 1190ms
+ GET /api/transport/masters/transport-company 200 in 1217ms
+ GET /api/transport/masters/vehicle 200 in 1273ms
+ GET /api/transport/masters/vehicle 200 in 1276ms
+ ○ Compiling /system/areas ...
+ ✓ Compiled /system/areas in 892ms (1430 modules)
+ ✓ Compiled /icon.png in 139ms (809 modules)
+ GET /icon.png?5a285dc6c8e9056e 200 in 281ms
+ ✓ Compiled /api/system/areas in 300ms (964 modules)
+ GET /api/system/areas? 200 in 1421ms
+ GET /api/system/areas? 200 in 1438ms
+ GET / 200 in 1812ms
+ ✓ Compiled /api/website/config in 315ms (768 modules)
+ ✓ Compiled (770 modules)
+ GET /api/website/config 200 in 867ms
+ GET /api/website/config 200 in 849ms
+ GET /api/settings/theme 200 in 1120ms
+ GET /api/settings/theme 200 in 1107ms
+ ○ Compiling /api/transport/gate-entry ...
+ ✓ Compiled /api/transport/gate-entry in 654ms (851 modules)
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 2529ms
+ ✓ Compiled /api/transport/gate-entry/[id]/hover-detail in 359ms (853 modules)
+ GET /api/transport/gate-entry/107/hover-detail 200 in 1407ms
+ GET /api/transport/gate-entry/106/hover-detail 200 in 1108ms
+ GET /api/transport/gate-entry/107/hover-detail 200 in 1440ms
+ GET /api/transport/gate-entry/106/hover-detail 200 in 1166ms
+ ○ Compiling /warehouse/transfer/load-dispatch/[id] ...
+ ✓ Compiled /warehouse/transfer/load-dispatch/[id] in 2.5s (1599 modules)
+ GET /api/transport/gate-entry/104/hover-detail 200 in 1211ms
+ GET /api/transport/gate-entry/104/hover-detail 200 in 1254ms
+ GET /api/transport/gate-entry/103/hover-detail 200 in 1230ms
+ GET /api/transport/gate-entry/103/hover-detail 200 in 1254ms
+ GET /api/transport/gate-entry/102/hover-detail 200 in 1240ms
+ GET /api/transport/gate-entry/102/hover-detail 200 in 615ms
+ GET /api/transport/gate-entry/105/hover-detail 200 in 638ms
+ GET /api/transport/gate-entry/105/hover-detail 200 in 581ms
+ ✓ Compiled /api/warehouse/load-dispatch/[id] in 364ms (943 modules)
+ ✓ Compiled (954 modules)
+ GET /api/settings/dispatch-config 200 in 1828ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1866ms
+ GET /api/transport/masters/route?status=Active 200 in 1872ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1916ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1919ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 471ms
+ GET /api/transport/masters/route?status=Active 200 in 522ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 523ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 645ms
+ GET /api/settings/dispatch-config 200 in 369ms
+ ○ Compiling /api/warehouse/load-dispatch/[id]/transport-cost ...
+ ✓ Compiled /api/warehouse/load-dispatch/[id]/transport-cost in 577ms (956 modules)
+ GET /api/warehouse/load-dispatch/28 200 in 1378ms
+ GET /api/warehouse/load-dispatch/28 200 in 3271ms
+ ○ Compiling /api/settings/accounting-config ...
+ ✓ Compiled /api/settings/accounting-config in 598ms (958 modules)
+ ✓ Compiled (963 modules)
+ GET /api/settings/accounting-config 200 in 2871ms
+ GET /api/settings/accounting-config 200 in 2905ms
+ GET /api/transport/post-weighment?gateEntryId=106 200 in 2975ms
+ GET /api/transport/pre-weighment?gateEntryId=106 200 in 3001ms
+ GET /api/warehouse/load-dispatch/28/transport-cost 200 in 3990ms
+ GET /api/settings/accounting-config 200 in 588ms
+ GET /api/settings/accounting-config 200 in 627ms
+ ○ Compiling /warehouse/transfer/load-dispatch/print ...
+ ✓ Compiled /warehouse/transfer/load-dispatch/print in 919ms (1640 modules)
+ ○ Compiling /api/warehouse/load-dispatch/[id]/print-data ...
+ ✓ Compiled /api/warehouse/load-dispatch/[id]/print-data in 559ms (976 modules)
+ GET /api/warehouse/load-dispatch/28/print-data 200 in 3746ms
+ GET /api/warehouse/load-dispatch/28/print-data 200 in 3783ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 599ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 601ms
+ GET /api/transport/masters/route?status=Active 200 in 601ms
+ GET /api/settings/dispatch-config 200 in 636ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 848ms
+ GET /api/warehouse/load-dispatch/28 200 in 1040ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 505ms
+ GET /api/transport/masters/route?status=Active 200 in 583ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 445ms
+ GET /api/warehouse/load-dispatch/28 200 in 771ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 884ms
+ GET /api/settings/dispatch-config 200 in 527ms
+ GET /api/settings/accounting-config 200 in 522ms
+ GET /api/warehouse/load-dispatch/28/transport-cost 200 in 640ms
+ GET /api/transport/pre-weighment?gateEntryId=106 200 in 512ms
+ GET /api/transport/post-weighment?gateEntryId=106 200 in 474ms
+ GET /api/settings/accounting-config 200 in 902ms
+ GET /api/settings/accounting-config 200 in 714ms
+ GET /api/settings/accounting-config 200 in 774ms
+ ○ Compiling /api/settings/invoice-template ...
+ ✓ Compiled /api/settings/invoice-template in 567ms (973 modules)
+ GET /api/settings/invoice-template?type=B2B_T3 200 in 1494ms
+ GET /api/settings/invoice-template?type=B2B_T3 200 in 1492ms
+ GET /api/warehouse/load-dispatch/28/print-data 200 in 2497ms
+ GET /api/warehouse/load-dispatch/28/print-data 200 in 2598ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 584ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 595ms
+ GET /api/settings/dispatch-config 200 in 596ms
+ GET /api/transport/masters/route?status=Active 200 in 654ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 667ms
+ GET /api/warehouse/load-dispatch/28 200 in 805ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 520ms
+ GET /api/transport/masters/route?status=Active 200 in 493ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 531ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 596ms
+ GET /api/settings/dispatch-config 200 in 462ms
+ GET /api/warehouse/load-dispatch/28 200 in 1152ms
+ GET /api/warehouse/load-dispatch/28/transport-cost 200 in 647ms
+ GET /api/transport/pre-weighment?gateEntryId=106 200 in 602ms
+ GET /api/transport/post-weighment?gateEntryId=106 200 in 622ms
+ GET /api/settings/accounting-config 200 in 566ms
+ GET /api/settings/accounting-config 200 in 903ms
+ GET /api/settings/accounting-config 200 in 289ms
+ GET /api/settings/accounting-config 200 in 317ms
+ ○ Compiling /warehouse/transfer/load-dispatch ...
+ ✓ Compiled /warehouse/transfer/load-dispatch in 697ms (1650 modules)
+ ○ Compiling /api/warehouse/load-dispatch ...
+ ✓ Compiled /api/warehouse/load-dispatch in 522ms (1012 modules)
+ GET /api/warehouse/load-dispatch? 200 in 1376ms
+ GET / 200 in 3223ms
+ ○ Compiling /api/website/config ...
+ ✓ Compiled /login in 5.2s (768 modules)
+ ✓ Compiled (790 modules)
+ GET /api/website/config 200 in 8725ms
+ GET /api/website/config 200 in 8767ms
+ GET /api/settings/theme 200 in 9236ms
+ GET /api/settings/theme 200 in 9265ms
+ GET /api/website/config 200 in 191ms
+ GET /api/website/config 200 in 251ms
+ ○ Compiling /api/auth/login ...
+ ✓ Compiled /api/auth/login in 932ms (875 modules)
+ POST /api/auth/login 200 in 2997ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 585ms (888 modules)
+ ✓ Compiled /api/settings/document-fields in 352ms (890 modules)
+ ✓ Compiled (896 modules)
+ GET /api/system/scope 200 in 1298ms
+ GET /api/settings/general 200 in 1379ms
+ GET /api/settings/general 200 in 1399ms
+ GET /api/settings/document-fields 200 in 1426ms
+ GET /api/settings/document-fields 200 in 963ms
+ GET /api/auth/me 200 in 1461ms
+ GET /api/system/scope 200 in 191ms
+ GET /api/auth/me 200 in 313ms
+ ✓ Compiled /api/dashboard/[section] in 365ms (900 modules)
+ ✓ Compiled (905 modules)
+ GET /api/company-setup 200 in 1676ms
+ GET /api/company-setup 200 in 1811ms
+ GET /api/dashboard/health 200 in 1628ms
+ GET /api/dashboard/header 200 in 1865ms
+ GET /api/dashboard/charts 200 in 2024ms
+ GET /api/dashboard/pending 200 in 538ms
+ GET /api/dashboard/activity 200 in 512ms
+ GET /api/dashboard/kpis 200 in 2670ms
+ GET /api/dashboard/insights 200 in 1058ms
+ GET /api/dashboard/notifications 200 in 1347ms
+ GET /api/company-setup 200 in 1244ms
+ GET /api/dashboard/header 200 in 1331ms
+ GET /api/dashboard/pending 200 in 611ms
+ GET /api/dashboard/health 200 in 830ms
+ GET /api/dashboard/charts 200 in 1219ms
+ GET /api/dashboard/activity 200 in 384ms
+ GET /api/dashboard/notifications 200 in 810ms
+ GET /api/dashboard/insights 200 in 570ms
+ GET /api/dashboard/kpis 200 in 1765ms
+ GET /api/company-setup 200 in 497ms
+ ○ Compiling /api/transport/gate-entry ...
+ ✓ Compiled /api/transport/gate-entry in 819ms (902 modules)
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 2324ms
+ ○ Compiling /api/transport/gate-entry/[id]/hover-detail ...
+ ✓ Compiled /api/transport/gate-entry/[id]/hover-detail in 521ms (904 modules)
+ GET /api/transport/gate-entry/106/hover-detail 200 in 1160ms
+ GET /api/transport/gate-entry/107/hover-detail 200 in 1381ms
+ GET /api/transport/gate-entry/106/hover-detail 200 in 1215ms
+ GET /api/transport/gate-entry/105/hover-detail 200 in 1134ms
+ GET /api/transport/gate-entry/105/hover-detail 200 in 1206ms
+ GET /api/transport/gate-entry/107/hover-detail 200 in 1458ms
+ GET /api/transport/gate-entry/108/hover-detail 200 in 619ms
+ GET /api/transport/gate-entry/108/hover-detail 200 in 635ms
+ ○ Compiling /warehouse/transfer/load-dispatch/[id] ...
+ ✓ Compiled /warehouse/transfer/load-dispatch/[id] in 877ms (991 modules)
+ ✓ Compiled /api/warehouse/load-dispatch/[id] in 321ms (993 modules)
+ ✓ Compiled (1004 modules)
+ GET /api/settings/dispatch-config 200 in 1297ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1362ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1373ms
+ GET /api/transport/masters/route?status=Active 200 in 1397ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1503ms
+ GET /api/warehouse/load-dispatch/30 200 in 1539ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 338ms
+ GET /api/warehouse/load-dispatch/30 200 in 460ms
+ GET /api/transport/masters/route?status=Active 200 in 410ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 464ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 417ms
+ GET /api/settings/dispatch-config 200 in 392ms
+ ✓ Compiled /api/transport/post-weighment in 498ms (1006 modules)
+ ✓ Compiled (1013 modules)
+ GET /api/settings/accounting-config 200 in 1541ms
+ GET /api/settings/accounting-config 200 in 1735ms
+ GET /api/transport/pre-weighment?gateEntryId=108 200 in 1679ms
+ GET /api/transport/post-weighment?gateEntryId=108 200 in 1709ms
+ GET /api/warehouse/load-dispatch/30/transport-cost 200 in 1926ms
+ GET /api/settings/accounting-config 200 in 267ms
+ GET /api/settings/accounting-config 200 in 270ms
+ ✓ Compiled /warehouse/transfer/load-dispatch/print in 322ms (897 modules)
+ ✓ Compiled /api/warehouse/load-dispatch/[id]/print-data in 239ms (881 modules)
+ GET /api/warehouse/load-dispatch/30/print-data 200 in 1406ms
+ GET /api/warehouse/load-dispatch/30/print-data 200 in 1454ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 432ms
+ GET /api/transport/masters/route?status=Active 200 in 464ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 474ms
+ GET /api/settings/dispatch-config 200 in 512ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 539ms
+ GET /api/warehouse/load-dispatch/30 200 in 618ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 291ms
+ GET /api/transport/masters/route?status=Active 200 in 344ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 366ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 463ms
+ GET /api/warehouse/load-dispatch/30 200 in 567ms
+ GET /api/settings/dispatch-config 200 in 401ms
+ GET /api/settings/accounting-config 200 in 371ms
+ GET /api/warehouse/load-dispatch/30/transport-cost 200 in 506ms
+ GET /api/transport/pre-weighment?gateEntryId=108 200 in 388ms
+ GET /api/transport/post-weighment?gateEntryId=108 200 in 385ms
+ GET /api/settings/accounting-config 200 in 377ms
+ GET /api/settings/accounting-config 200 in 187ms
+ GET /api/settings/accounting-config 200 in 192ms
+ ✓ Compiled /api/settings/invoice-template in 347ms (870 modules)
+ GET /api/settings/invoice-template?type=B2B_T3 200 in 871ms
+ GET /api/settings/invoice-template?type=B2B_T3 200 in 872ms
+ GET /api/warehouse/load-dispatch/30/print-data 200 in 1973ms
+ GET /api/warehouse/load-dispatch/30/print-data 200 in 1964ms
+ ✓ Compiled in 981ms (1329 modules)
+ ✓ Compiled in 205ms (685 modules)
+ ✓ Compiled in 408ms (685 modules)
+ ✓ Compiled in 373ms (685 modules)
+ GET /warehouse/transfer/load-dispatch/print?id=30&kind=dc 200 in 1960ms
+ ✓ Compiled /api/warehouse/load-dispatch/[id]/print-data in 418ms (766 modules)
+ GET /api/warehouse/load-dispatch/30/print-data 401 in 597ms
+ ✓ Compiled /api/settings/dispatch-config in 276ms (846 modules)
+ ✓ Compiled (857 modules)
+ GET /api/settings/dispatch-config 200 in 1387ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1407ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1436ms
+ GET /api/transport/masters/route?status=Active 200 in 1455ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1512ms
+ GET /api/warehouse/load-dispatch/30 200 in 1602ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 281ms
+ GET /api/transport/masters/route?status=Active 200 in 257ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 339ms
+ GET /api/warehouse/load-dispatch/30 200 in 565ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 537ms
+ GET /api/settings/dispatch-config 200 in 400ms
+ ✓ Compiled /api/transport/post-weighment in 372ms (859 modules)
+ ✓ Compiled (866 modules)
+ GET /api/settings/accounting-config 200 in 772ms
+ GET /api/settings/accounting-config 200 in 1039ms
+ GET /api/transport/post-weighment?gateEntryId=108 200 in 857ms
+ GET /api/transport/pre-weighment?gateEntryId=108 200 in 975ms
+ GET /api/warehouse/load-dispatch/30/transport-cost 200 in 1162ms
+ GET /api/settings/accounting-config 200 in 189ms
+ GET /api/settings/accounting-config 200 in 211ms
+ ✓ Compiled /api/warehouse/load-dispatch/[id]/print-data in 300ms (868 modules)
+ GET /api/warehouse/load-dispatch/30/print-data 200 in 1523ms
+ GET /api/warehouse/load-dispatch/30/print-data 200 in 1524ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 316ms
+ GET /api/transport/masters/route?status=Active 200 in 316ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 340ms
+ GET /api/settings/dispatch-config 200 in 388ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 434ms
+ GET /api/warehouse/load-dispatch/30 200 in 458ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 305ms
+ GET /api/transport/masters/route?status=Active 200 in 303ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 305ms
+ GET /api/settings/dispatch-config 200 in 342ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 496ms
+ GET /api/warehouse/load-dispatch/30 200 in 578ms
+ GET /api/settings/accounting-config 200 in 362ms
+ GET /api/transport/pre-weighment?gateEntryId=108 200 in 360ms
+ GET /api/transport/post-weighment?gateEntryId=108 200 in 328ms
+ GET /api/settings/accounting-config 200 in 342ms
+ GET /api/warehouse/load-dispatch/30/transport-cost 200 in 651ms
+ GET /api/settings/accounting-config 200 in 256ms
+ GET /api/settings/accounting-config 200 in 319ms
+ ○ Compiling /warehouse/transfer/load-dispatch ...
+ ✓ Compiled /warehouse/transfer/load-dispatch in 603ms (876 modules)
+ ✓ Compiled /api/warehouse/load-dispatch in 306ms (908 modules)
+ GET /api/warehouse/load-dispatch? 200 in 1356ms
+ ✓ Compiled /transport/gate-entry in 340ms (901 modules)
+ ✓ Compiled /api/transport/gate-entry in 219ms (904 modules)
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 1187ms
+ ✓ Compiled /api/transport/gate-entry/[id]/hover-detail in 218ms (906 modules)
+ GET /api/transport/gate-entry/108/hover-detail 200 in 1070ms
+ GET /api/transport/gate-entry/108/hover-detail 200 in 1096ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 366ms
+ GET /api/transport/masters/route?status=Active 200 in 365ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 432ms
+ GET /api/warehouse/load-dispatch/30 200 in 559ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 337ms
+ GET /api/settings/dispatch-config 200 in 358ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 424ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 422ms
+ GET /api/transport/masters/route?status=Active 200 in 320ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 348ms
+ GET /api/warehouse/load-dispatch/30 200 in 606ms
+ GET /api/settings/dispatch-config 200 in 401ms
+ GET /api/settings/accounting-config 200 in 396ms
+ GET /api/transport/pre-weighment?gateEntryId=108 200 in 369ms
+ GET /api/transport/post-weighment?gateEntryId=108 200 in 400ms
+ GET /api/settings/accounting-config 200 in 375ms
+ GET /api/warehouse/load-dispatch/30/transport-cost 200 in 466ms
+ GET /api/settings/accounting-config 200 in 246ms
+ GET /api/settings/accounting-config 200 in 272ms
+ ✓ Compiled in 661ms (685 modules)
+ ✓ Compiled /api/settings/dispatch-config in 1358ms (1274 modules)
+ ✓ Compiled (1487 modules)
+ GET /api/settings/dispatch-config 200 in 1885ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1896ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1919ms
+ GET /api/transport/masters/route?status=Active 200 in 1994ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1995ms
+ GET /api/warehouse/load-dispatch/30 200 in 2101ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 245ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 310ms
+ GET /api/transport/masters/route?status=Active 200 in 350ms
+ ⨯ Failed to generate static paths for /warehouse/transfer/load-dispatch/[id]:
+TypeError: __webpack_require__.C is not a function
+    at D:\Old_LapTop_Backup_2\Retail_POS\.next\server\app\(app)\warehouse\transfer\load-dispatch\[id]\page.js:963:21
+    at Object.<anonymous> (D:\Old_LapTop_Backup_2\Retail_POS\.next\server\app\(app)\warehouse\transfer\load-dispatch\[id]\page.js:968:3)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/cjs/loader:1943:10)
+    at Module.load (node:internal/modules/cjs/loader:1533:32)
+    at Module._load (node:internal/modules/cjs/loader:1335:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:152:16) {
+  type: 'TypeError'
+}
+ GET /api/transport/masters/loading-bay?status=Active 200 in 392ms
+ ✓ Compiled /api/warehouse/load-dispatch/[id]/transport-cost in 142ms (804 modules)
+ GET /api/warehouse/load-dispatch/30 200 in 537ms
+ GET /api/settings/dispatch-config 200 in 376ms
+ ✓ Compiled /api/transport/post-weighment in 157ms (807 modules)
+ ✓ Compiled (811 modules)
+ GET /api/settings/accounting-config 200 in 799ms
+ GET /api/settings/accounting-config 200 in 888ms
+ GET /api/warehouse/load-dispatch/30/transport-cost 200 in 1030ms
+ GET /api/transport/pre-weighment?gateEntryId=108 200 in 924ms
+ GET /api/transport/post-weighment?gateEntryId=108 200 in 915ms
+ GET /api/settings/accounting-config 200 in 265ms
+ GET /api/settings/accounting-config 200 in 267ms
+ ✓ Compiled in 1743ms (1496 modules)
+ GET /api/warehouse/load-dispatch/30 200 in 933ms
+ ✓ Compiled in 597ms (1496 modules)
+ ✓ Compiled in 0ms (811 modules)
+ ✓ Compiled in 0ms (811 modules)
+ ✓ Compiled in 0ms (811 modules)
+ GET /api/warehouse/load-dispatch/30 200 in 2035ms
+ GET /warehouse/transfer/load-dispatch/30 200 in 432ms
+ ✓ Compiled /api/warehouse/load-dispatch/[id]/transit-pass-no in 450ms (813 modules)
+ PATCH /api/warehouse/load-dispatch/30/transit-pass-no 401 in 928ms

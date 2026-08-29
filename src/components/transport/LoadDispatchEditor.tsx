@@ -99,6 +99,12 @@ export function LoadDispatchEditor({ id }: { id: number }) {
   const [transitPassQtyInput, setTransitPassQtyInput] = useState("0");
   const [transitPassRefNoInput, setTransitPassRefNoInput] = useState("");
   const [driverBattaModeInput, setDriverBattaModeInput] = useState<"Adjustment" | "Payment">("Adjustment");
+  // Post-completion Transit Pass Number edit — the pass is often only issued
+  // after the vehicle actually leaves, so this stays editable via its own
+  // endpoint even once the rest of the dispatch is locked (Dispatched onward).
+  const [editingPassNo, setEditingPassNo] = useState(false);
+  const [passNoDraft, setPassNoDraft] = useState("");
+  const [savingPassNo, setSavingPassNo] = useState(false);
 
   const [items, setItems] = useState<EditableItem[]>([]);
   const [scanCode, setScanCode] = useState("");
@@ -160,6 +166,13 @@ export function LoadDispatchEditor({ id }: { id: number }) {
   }, [id, applyDataToForm]);
 
   useEffect(() => { load(); }, [load]);
+
+  async function saveTransitPassNo() {
+    setSavingPassNo(true);
+    const j = await fetch(`/api/warehouse/load-dispatch/${id}/transit-pass-no`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ transitPassRefNo: passNoDraft }) }).then((r) => r.json()).catch(() => ({}));
+    setSavingPassNo(false);
+    if (j.ok) { toast.success(j.message || "Saved."); setEditingPassNo(false); load(); } else toast.error(j.message || "Could not save.");
+  }
 
   useEffect(() => {
     (async () => {
@@ -668,6 +681,22 @@ export function LoadDispatchEditor({ id }: { id: number }) {
                   <span className="shrink-0 text-2xs text-subtle">Transit Pass Number</span>
                   <input type="text" value={transitPassRefNoInput} onChange={(e) => setTransitPassRefNoInput(e.target.value)} placeholder="e.g. TP-00123" className={cn(inp, "h-8 w-40 text-right")} />
                 </div>
+              )
+            ) : x.status !== "Cancelled" ? (
+              editingPassNo ? (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="shrink-0 text-2xs text-subtle">Transit Pass Number</span>
+                  <div className="flex items-center gap-1.5">
+                    <input type="text" autoFocus value={passNoDraft} onChange={(e) => setPassNoDraft(e.target.value)} placeholder="e.g. TP-00123" className={cn(inp, "h-8 w-32 text-right")} />
+                    <Button size="sm" onClick={saveTransitPassNo} disabled={savingPassNo}>{savingPassNo ? "…" : "Save"}</Button>
+                    <button type="button" onClick={() => setEditingPassNo(false)} className="text-2xs font-semibold text-muted hover:text-foreground">Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <p className="flex items-center justify-between text-2xs text-subtle">
+                  <span>Transit Pass No: {x.transitPassRefNo || "—"}</span>
+                  <button type="button" onClick={() => { setPassNoDraft(x.transitPassRefNo ?? ""); setEditingPassNo(true); }} className="font-semibold text-primary hover:underline">{x.transitPassRefNo ? "Modify" : "Add"}</button>
+                </p>
               )
             ) : (
               x.transitPassRefNo && <p className="text-2xs text-subtle">Transit Pass No: {x.transitPassRefNo}</p>
