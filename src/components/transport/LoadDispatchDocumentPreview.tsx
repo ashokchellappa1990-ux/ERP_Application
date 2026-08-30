@@ -58,18 +58,23 @@ export function LoadDispatchDocumentPreview() {
           if (!dataRes.taxInvoiceT3) { setErrorMsg("No Sales Invoice has been posted for this dispatch yet."); return; }
           let t3 = dataRes.taxInvoiceT3 as TaxInvoiceT3Data;
 
-          // "Show Transit Pass" (B2B_T3 Invoice Template setting) — when off,
-          // drop the line and re-derive Sub Total/Round Off/Total without it
-          // (rounded the same configured way as everywhere else) so the
-          // printed figures still tally. The actual posted Sale total this
-          // was charged/GL-recorded at is never touched — print-layer only.
-          if (tplRes?.ok && tplRes.template.showTransitPass === false) {
-            const transitPassAmt = (t3.otherCharges ?? []).find((o) => o.label === "Transit Pass")?.amount ?? 0;
-            if (transitPassAmt) {
-              const rawTotal = t3.subTotal - transitPassAmt;
+          // "Show Vehicle Rent" / "Show Transit Pass" (B2B_T3 Invoice Template
+          // settings) — when either is off, drop that line and re-derive Sub
+          // Total/Round Off/Total without it (rounded the same configured way
+          // as everywhere else) so the printed figures still tally. The
+          // actual posted Sale total this was charged/GL-recorded at is never
+          // touched — print-layer only.
+          const hiddenLabels = [
+            tplRes?.ok && tplRes.template.showVehicleRent === false ? "Vehicle Rent" : null,
+            tplRes?.ok && tplRes.template.showTransitPass === false ? "Transit Pass" : null,
+          ].filter((x): x is string => x != null);
+          if (hiddenLabels.length) {
+            const hiddenTotal = (t3.otherCharges ?? []).filter((o) => hiddenLabels.includes(o.label)).reduce((s, o) => s + o.amount, 0);
+            if (hiddenTotal) {
+              const rawTotal = t3.subTotal - hiddenTotal;
               const dispatchCfg = dispatchCfgRes?.ok ? (dispatchCfgRes.config as TransportConfigData) : null;
               const { total, roundOff } = dispatchCfg ? roundInvoiceTotal(dispatchCfg, rawTotal) : { total: rawTotal, roundOff: 0 };
-              t3 = { ...t3, otherCharges: (t3.otherCharges ?? []).filter((o) => o.label !== "Transit Pass"), subTotal: rawTotal, roundOff, total };
+              t3 = { ...t3, otherCharges: (t3.otherCharges ?? []).filter((o) => !hiddenLabels.includes(o.label)), subTotal: rawTotal, roundOff, total };
             }
           }
 

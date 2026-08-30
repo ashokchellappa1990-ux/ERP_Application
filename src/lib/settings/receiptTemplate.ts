@@ -21,6 +21,8 @@ export interface ReceiptTemplate {
   contactNumber: string;
   /** B2B_T3 only — print the Transit Pass recovery line on the Tax Invoice. */
   showTransitPass?: boolean;
+  /** B2B_T3 only — print the Vehicle Rent recovery line on the Tax Invoice. */
+  showVehicleRent?: boolean;
   /** TOKEN only — the Pre Load Weight Slip's scannable code. */
   tokenCodeType?: "qrcode" | "barcode";
   /** TOKEN only — business name font size and whether row values print bold. */
@@ -46,6 +48,7 @@ export const DEFAULT_RECEIPT: ReceiptTemplate = {
   showContact: false,
   contactNumber: "",
   showTransitPass: true,
+  showVehicleRent: true,
   tokenCodeType: "qrcode",
   tokenBrandFontSize: "normal",
   tokenBoldValues: false,

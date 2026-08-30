@@ -92,7 +92,7 @@ export default function InvoiceTemplatePage() {
     : type === "B2B_T3"
     ? buildTaxInvoiceT3Html({
         ...TAX_INVOICE_T3_SAMPLE, qrCodeImage: qrCodeImage || null, signatureImage: signatureImage || null, termsNote: tpl.footerNote || TAX_INVOICE_T3_SAMPLE.termsNote,
-        otherCharges: tpl.showTransitPass === false ? (TAX_INVOICE_T3_SAMPLE.otherCharges ?? []).filter((o) => o.label !== "Transit Pass") : TAX_INVOICE_T3_SAMPLE.otherCharges,
+        otherCharges: (TAX_INVOICE_T3_SAMPLE.otherCharges ?? []).filter((o) => !((tpl.showTransitPass === false && o.label === "Transit Pass") || (tpl.showVehicleRent === false && o.label === "Vehicle Rent"))),
       }, { title: tpl.title, footerNote: tpl.footerNote })
     : buildTaxInvoiceHtml(TAX_INVOICE_SAMPLE, { title: tpl.title, footerNote: tpl.footerNote }));
   const isSlip = type === "WEIGHT_SLIP" || type === "TOKEN";
@@ -203,10 +203,16 @@ export default function InvoiceTemplatePage() {
           )}
           {type === "B2B_T3" && (
             <Section title="Charges">
-              <HeaderToggle
-                label="Show Transit Pass" desc="Print the Transit Pass recovery line in the totals box. When off, Sub Total/Round Off/Total are recalculated without it — the actual amount charged/posted to the customer is unaffected either way."
-                checked={tpl.showTransitPass !== false} onChange={() => set("showTransitPass", !(tpl.showTransitPass !== false))}
-              />
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                <HeaderToggle
+                  label="Show Vehicle Rent" desc="Print the Vehicle Rent recovery line in the totals box. When off, Sub Total/Round Off/Total are recalculated without it — the actual amount charged/posted to the customer is unaffected either way."
+                  checked={tpl.showVehicleRent !== false} onChange={() => set("showVehicleRent", !(tpl.showVehicleRent !== false))}
+                />
+                <HeaderToggle
+                  label="Show Transit Pass" desc="Print the Transit Pass recovery line in the totals box. When off, Sub Total/Round Off/Total are recalculated without it — the actual amount charged/posted to the customer is unaffected either way."
+                  checked={tpl.showTransitPass !== false} onChange={() => set("showTransitPass", !(tpl.showTransitPass !== false))}
+                />
+              </div>
             </Section>
           )}
           {type === "B2B_T3" && (

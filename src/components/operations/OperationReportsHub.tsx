@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FileBarChart, ChevronRight, Truck } from "lucide-react";
+import { FileBarChart, ChevronRight, Truck, Receipt, ClipboardList } from "lucide-react";
 
 const REPORTS = [
   {
@@ -9,6 +9,18 @@ const REPORTS = [
     icon: Truck,
     title: "Raw Material Report",
     desc: "Inbound quarry / supplier receipts — vehicle, weighment, product and destination detail, with Product/Vehicle/Supplier/Driver summaries.",
+  },
+  {
+    href: "/operations/reports/sales",
+    icon: Receipt,
+    title: "Sales Report",
+    desc: "Per-invoice sales for a date range — Cash/Credit split, vehicle & delivery detail, grouped by date with a Product Sales Summary.",
+  },
+  {
+    href: "/operations/reports/daily-statement",
+    icon: ClipboardList,
+    title: "Daily Statement Report",
+    desc: "Sales KPIs, account breakdown, Product Sales Summary, Expenses Summary, and Cash/Credit bill detail for a day.",
   },
 ] as const;
 

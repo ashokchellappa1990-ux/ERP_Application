@@ -229,6 +229,7 @@ export function RawMaterialReport() {
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+            <h3 className="border-l-4 border-primary bg-primary-subtle/40 px-5 py-3 text-sm font-bold text-foreground">Raw Material Report — Detail</h3>
             <div className={cn("overflow-auto", TABLE_MAX_H)}>
               <table className="w-full min-w-[1500px] border-separate border-spacing-0 text-sm">
                 <thead className="sticky top-0 z-10">
@@ -318,7 +319,7 @@ export function RawMaterialReport() {
       {printOpen && data && (
         <PrintOptionsModal
           onClose={() => setPrintOpen(false)} company={company} subtitle={subtitle} from={from} to={to}
-          columns={visibleCols} rows={rows} footTotals={footTotals} data={data}
+          columns={visibleCols} rows={rows} footTotals={footTotals} data={data} groupBy={groupBy}
         />
       )}
     </div>
@@ -396,9 +397,10 @@ function SummaryTable({ title, items }: { title: string; items: SummaryItem[] })
  * sections are included, before opening the browser print window (page
  * number / page total via CSS @page margin boxes, an "overall total" line
  * per section, same Save-as-PDF flow as the rest of the app). */
-function PrintOptionsModal({ onClose, company, subtitle, from, to, columns, rows, footTotals, data }: {
+function PrintOptionsModal({ onClose, company, subtitle, from, to, columns, rows, footTotals, data, groupBy }: {
   onClose: () => void; company: Company | null; subtitle: string; from: string; to: string;
   columns: { key: keyof RawMaterialReportRow; label: string; money?: boolean }[]; rows: RawMaterialReportRow[]; footTotals: Record<string, number>; data: ReportData;
+  groupBy: "" | keyof RawMaterialReportRow;
 }) {
   const [showCompany, setShowCompany] = useState(true);
   const [showGstin, setShowGstin] = useState(true);
@@ -407,17 +409,37 @@ function PrintOptionsModal({ onClose, company, subtitle, from, to, columns, rows
 
   function buildTable(title: string, cols: { key: string; label: string; money?: boolean }[], data2: Record<string, unknown>[], totals?: Record<string, number>) {
     const th = cols.map((c) => `<th style="text-align:${c.money ? "right" : "left"}">${esc(c.label)}</th>`).join("");
-    const tr = data2.map((r) => `<tr>${cols.map((c) => `<td style="text-align:${c.money ? "right" : "left"}">${esc(r[c.key])}</td>`).join("")}</tr>`).join("");
+    const tr = data2.map((r) => `<tr class="${r.__subtotal ? "subtotal" : ""}">${cols.map((c) => `<td style="text-align:${c.money ? "right" : "left"}">${esc(r[c.key])}</td>`).join("")}</tr>`).join("");
     const tfoot = totals ? `<tr class="tot">${cols.map((c, i) => i === 0 ? `<td><b>Overall Total</b></td>` : `<td style="text-align:${c.money ? "right" : "left"}">${c.key in totals ? `<b>${esc(totals[c.key].toFixed(2))}</b>` : ""}</td>`).join("")}</tr>` : "";
     return `<h2>${esc(title)}</h2><table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody><tfoot>${tfoot}</tfoot></table>`;
+  }
+
+  // Mirrors the on-screen Group By behavior — when a grouping is active, the
+  // printed main table gets the same subtotal rows inserted after each group
+  // (not just a single overall total at the very end).
+  function buildMainRows(): Record<string, unknown>[] {
+    const cell = (r: RawMaterialReportRow, c: { key: keyof RawMaterialReportRow; money?: boolean }) => (c.money ? Number(r[c.key]).toFixed(2) : (r[c.key] ?? "—"));
+    if (!groupBy) return rows.map((r, i) => ({ sno: i + 1, ...Object.fromEntries(columns.map((c) => [c.key, cell(r, c)])) }));
+    const order: string[] = []; const buckets = new Map<string, RawMaterialReportRow[]>();
+    for (const r of rows) { const k = String(r[groupBy] ?? "—"); if (!buckets.has(k)) { buckets.set(k, []); order.push(k); } buckets.get(k)!.push(r); }
+    const out: Record<string, unknown>[] = [];
+    let sno = 0;
+    for (const k of order) {
+      const grs = buckets.get(k)!;
+      for (const r of grs) { sno += 1; out.push({ sno, ...Object.fromEntries(columns.map((c) => [c.key, cell(r, c)])) }); }
+      out.push({
+        __subtotal: true, sno: "",
+        ...Object.fromEntries(columns.map((c, i) => [c.key, c.money && SUMMED_COLS.has(c.key) ? grs.reduce((s, r) => s + Number(r[c.key]), 0).toFixed(2) : (i === 0 ? `Subtotal — ${k} (${grs.length})` : "")])),
+      });
+    }
+    return out;
   }
 
   function doPrint() {
     const parts: string[] = [];
     if (sections.main) {
       const exportCols = [{ key: "sno", label: "S.No" }, ...columns];
-      const exportRows = rows.map((r, i) => ({ sno: i + 1, ...Object.fromEntries(columns.map((c) => [c.key, c.money ? Number(r[c.key]).toFixed(2) : (r[c.key] ?? "—")])) }));
-      parts.push(buildTable("Raw Material Report — Detail", exportCols, exportRows, footTotals));
+      parts.push(buildTable("Raw Material Report — Detail", exportCols, buildMainRows(), footTotals));
     }
     if (sections.product) parts.push(buildTable("Product Details", [{ key: "name", label: "Product" }, { key: "trips", label: "Trips", money: true }, { key: "nw", label: "Net Weight (NW)", money: true }, { key: "uom", label: "UOM" }], data.summary.productDetails.map((i) => ({ ...i, trips: i.trips, nw: i.nw.toFixed(2) }))));
     if (sections.vehicle) parts.push(buildTable("Vehicle Details", [{ key: "name", label: "Vehicle" }, { key: "trips", label: "Trips", money: true }, { key: "nw", label: "Net Weight (NW)", money: true }, { key: "uom", label: "UOM" }], data.summary.vehicleDetails.map((i) => ({ ...i, nw: i.nw.toFixed(2) }))));
@@ -440,11 +462,12 @@ function PrintOptionsModal({ onClose, company, subtitle, from, to, columns, rows
       .cometa{color:#555;font-size:11px}
       h1{font-size:16px;margin:0 0 2px;color:#6d28d9}
       p.sub{color:#555;margin:0 0 14px;font-size:11px}
-      h2{font-size:13px;margin:18px 0 6px;color:#6d28d9;border-left:4px solid #6d28d9;padding-left:6px}
+      h2{font-size:13px;margin:18px 0 6px;color:#6d28d9;background:#f3f0ff;border-left:4px solid #6d28d9;padding:6px 8px}
       table{border-collapse:collapse;width:100%;font-size:10.5px;margin-bottom:6px}
       th,td{border:1px solid #ccc;padding:4px 6px}
       th{background:#f2f4f7}
       tr.tot td{background:#f8fafc;font-weight:bold}
+      tr.subtotal td{background:#ede9fe;font-weight:bold}
       @media print{button{display:none}}
     </style></head><body>
     ${header}

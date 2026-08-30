@@ -93,12 +93,19 @@ export async function GET(req: Request) {
     if (details === "crusher" && label !== "Quarry To Crusher (Plant)") continue;
     if (details === "stock" && label !== "Quarry To Stock") continue;
     for (const l of g.lines) {
+      // tareWeight/grossWeight/netWeight are always captured in Kg (the
+      // weighbridge's native unit) regardless of the product line's own
+      // commercial uom — convert to match whenever that uom is Ton, same
+      // convention used for the Tax Invoice/Delivery Note weight lines.
+      const uom = l.uom ?? "Ton";
+      const isTon = uom.toLowerCase() === "ton";
+      const div = isTon ? 1000 : 1;
       rows.push({
         id: `${g.id}-${l.id}`, date: g.grnDate, branch: (g.branchId != null ? branchMap.get(g.branchId) : null) ?? "—",
         passNo: g.grnNo, inTime: gate?.arrivalTime ? tstr(gate.arrivalTime) : null, outTime: g.gateEntryId != null ? tstr(exitMap.get(g.gateEntryId) ?? null) : null,
         vehicleNo: g.vehicleNo ?? "—", supplierName: g.supplier ?? "—", productName: l.productName,
-        ew: num(g.tareWeight ?? g.emptyWeight), lw: num(g.grossWeight), nw: num(g.netWeight ?? l.qty),
-        uom: l.uom ?? "Ton", price: num(l.rate), details: label, transport: g.transporterName ?? "—", transportRate: 0,
+        ew: r2(num(g.tareWeight ?? g.emptyWeight) / div), lw: r2(num(g.grossWeight) / div), nw: g.netWeight != null ? r2(num(g.netWeight) / div) : num(l.qty),
+        uom, price: num(l.rate), details: label, transport: g.transporterName ?? "—", transportRate: 0,
         driverName: gate?.driverName ?? "—", createdByName: (g.createdBy != null ? userMap.get(g.createdBy) : null) ?? "—", modifiedByName: "—",
       });
     }
