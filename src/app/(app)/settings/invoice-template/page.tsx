@@ -90,7 +90,10 @@ export default function InvoiceTemplatePage() {
     : type === "TOKEN"
     ? buildTokenSlipHtml(TOKEN_SLIP_SAMPLE, { title: tpl.title, footerNote: tpl.footerNote, tokenCodeType: tpl.tokenCodeType, tokenBrandFontSize: tpl.tokenBrandFontSize, tokenBoldValues: tpl.tokenBoldValues }, typeof window !== "undefined" ? window.location.origin : "")
     : type === "B2B_T3"
-    ? buildTaxInvoiceT3Html({ ...TAX_INVOICE_T3_SAMPLE, qrCodeImage: qrCodeImage || null, signatureImage: signatureImage || null, termsNote: tpl.footerNote || TAX_INVOICE_T3_SAMPLE.termsNote }, { title: tpl.title, footerNote: tpl.footerNote })
+    ? buildTaxInvoiceT3Html({
+        ...TAX_INVOICE_T3_SAMPLE, qrCodeImage: qrCodeImage || null, signatureImage: signatureImage || null, termsNote: tpl.footerNote || TAX_INVOICE_T3_SAMPLE.termsNote,
+        otherCharges: tpl.showTransitPass === false ? (TAX_INVOICE_T3_SAMPLE.otherCharges ?? []).filter((o) => o.label !== "Transit Pass") : TAX_INVOICE_T3_SAMPLE.otherCharges,
+      }, { title: tpl.title, footerNote: tpl.footerNote })
     : buildTaxInvoiceHtml(TAX_INVOICE_SAMPLE, { title: tpl.title, footerNote: tpl.footerNote }));
   const isSlip = type === "WEIGHT_SLIP" || type === "TOKEN";
   const previewHtmlNoAutoPrint = isCustomDesign ? stripAutoPrint(buildPreviewHtml()) : "";
@@ -196,6 +199,14 @@ export default function InvoiceTemplatePage() {
                   <Switch checked={!!tpl.tokenBoldValues} onChange={(v) => set("tokenBoldValues", v)} aria-label="Bold values" />
                 </label>
               </div>
+            </Section>
+          )}
+          {type === "B2B_T3" && (
+            <Section title="Charges">
+              <HeaderToggle
+                label="Show Transit Pass" desc="Print the Transit Pass recovery line in the totals box. When off, Sub Total/Round Off/Total are recalculated without it — the actual amount charged/posted to the customer is unaffected either way."
+                checked={tpl.showTransitPass !== false} onChange={() => set("showTransitPass", !(tpl.showTransitPass !== false))}
+              />
             </Section>
           )}
           {type === "B2B_T3" && (

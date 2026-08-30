@@ -1398,6 +1398,13 @@ model InvoiceTemplate {
   qrCodeImage    String? @db.LongText
   signatureImage String? @db.LongText
 
+  // B2B_T3 only — Load & Dispatch's Vehicle Rent/Transit Pass recoveries are
+  // folded into the posted Sale's total either way (the GL/ledger amount is
+  // untouched); this only controls whether the Transit Pass line still shows
+  // on the printed Tax Invoice — when off, the print layer re-derives
+  // Sub Total/Round Off/Total excluding it (see LoadDispatchDocumentPreview).
+  showTransitPass Boolean @default(true)
+
   // TOKEN only — Pre Load Weight Slip's scannable code: a real QR (encoding a
   // digital link to the gate entry, for a future mobile loading-confirmation
   // flow) or the existing pseudo-barcode graphic.

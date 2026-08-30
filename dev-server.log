@@ -7,1596 +7,274 @@
   - Environments: .env
 
  ✓ Starting...
- ✓ Ready in 7.2s
- ○ Compiling /login ...
- ✓ Compiled /login in 18.7s (823 modules)
- GET /login 200 in 10189ms
- GET /login 200 in 25002ms
- ○ Compiling /api/website/config ...
- ✓ Compiled /api/website/config in 674ms (544 modules)
- ✓ Compiled (546 modules)
- GET /api/settings/theme 401 in 1171ms
- GET /api/settings/theme 401 in 1159ms
- ✓ Compiled /icon.png in 279ms (575 modules)
- GET /icon.png?5a285dc6c8e9056e 200 in 512ms
- GET /login 200 in 3117ms
- GET /api/website/config 200 in 2855ms
- GET /api/website/config 200 in 2897ms
- GET /api/website/config 200 in 2992ms
- GET /api/website/config 200 in 3125ms
- ○ Compiling /api/auth/login ...
- ✓ Compiled /api/auth/login in 841ms (542 modules)
- POST /api/auth/login 200 in 2009ms
- ✓ Compiled /api/website/config in 107ms (629 modules)
- ✓ Compiled (631 modules)
- GET /api/settings/theme 401 in 338ms
- GET /api/settings/theme 401 in 343ms
- GET /api/website/config 200 in 1608ms
- GET /login 200 in 10441ms
- ✓ Compiled /icon.png in 134ms (660 modules)
- GET /icon.png?5a285dc6c8e9056e 200 in 333ms
- GET /api/website/config 200 in 679ms
- GET /api/website/config 200 in 3005ms
- GET /api/website/config 200 in 1881ms
- POST /api/auth/login 200 in 7873ms
- ○ Compiling /dashboard ...
- ✓ Compiled /dashboard in 1531ms (1247 modules)
- ✓ Compiled /api/company-setup in 346ms (761 modules)
- ✓ Compiled (772 modules)
- GET /api/settings/document-fields 200 in 5959ms
- GET /api/settings/general 200 in 5965ms
- GET /api/company-setup 200 in 8444ms
- GET /api/dashboard/pending 200 in 2621ms
- GET /api/dashboard/header 200 in 9085ms
- GET /api/dashboard/health 200 in 7689ms
- ✓ Compiled /api/system/scope in 194ms (774 modules)
- GET /api/dashboard/kpis 200 in 19705ms
- ✓ Compiled /api/auth/me in 235ms (776 modules)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10011ms
-    (pool connections: active=7 idle=0 limit=10)
-[dashboard/charts] DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10011ms
-    (pool connections: active=7 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async Module.getCharts (webpack-internal:///(rsc)/./src/lib/dashboard/service.ts:2119:25)
-    at async GET (webpack-internal:///(rsc)/./src/app/api/dashboard/[section]/route.ts:118:27)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:57228
-    at async eT.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:46851)
-    at async eT.handle (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:58760)
-    at async doRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1366:42)
-    at async cacheEntry.responseCache.get.routeKind (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1576:40)
-    at async DevServer.renderToResponseWithComponentsImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1496:28)
-    at async DevServer.renderPageComponent (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1924:24)
-    at async DevServer.renderToResponseImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1962:32)
-    at async DevServer.pipeImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:922:25)
-    at async NextNodeServer.handleCatchallRenderRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\next-server.js:272:17)
-    at async DevServer.handleRequestImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:818:17)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:339:20
-    at async Span.traceAsyncFn (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\trace\trace.js:154:20)
-    at async DevServer.handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
-    at async invokeRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:179:21)
-    at async handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:359:24)
-    at async requestHandlerImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:383:13)
-    at async Server.requestListener (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\start-server.js:141:13) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10011ms\n' +
-      '    (pool connections: active=7 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10011ms\n' +
-      '    (pool connections: active=7 idle=0 limit=10)',
-    state: 'HY000',
-    cause: undefined
-  },
-  clientVersion: '7.8.0'
-}
-prisma:error pool timeout: failed to retrieve a connection from pool after 10011ms
-    (pool connections: active=7 idle=0 limit=10)
- GET /api/dashboard/charts 500 in 31196ms
- GET /api/dashboard/insights 200 in 30046ms
- GET /api/system/scope 200 in 55175ms
-prisma:error pool timeout: failed to retrieve a connection from pool after 10010ms
-    (pool connections: active=7 idle=0 limit=10)
- ⨯ DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10010ms
-    (pool connections: active=7 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43744)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10010ms\n' +
-      '    (pool connections: active=7 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10010ms\n' +
-      '    (pool connections: active=7 idle=0 limit=10)',
-    state: 'HY000',
-    cause: undefined
-  },
-  clientVersion: '7.8.0'
-}
- GET /api/company-setup 500 in 10097ms
-prisma:error pool timeout: failed to retrieve a connection from pool after 10006ms
-    (pool connections: active=7 idle=0 limit=10)
- ⨯ DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10006ms
-    (pool connections: active=7 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async getAllowedScope (webpack-internal:///(rsc)/./src/lib/auth/scope.ts:119:26)
-    at async getActiveScope (webpack-internal:///(rsc)/./src/lib/auth/scope.ts:185:21)
-    at async Promise.all (index 0)
-    at async resolveWriteScope (webpack-internal:///(rsc)/./src/lib/auth/scope.ts:282:30)
-    at async settingScope (webpack-internal:///(rsc)/./src/lib/settings/settingScope.ts:13:38)
-    at async readRow (webpack-internal:///(rsc)/./src/app/api/settings/document-fields/route.ts:46:16)
-    at async GET (webpack-internal:///(rsc)/./src/app/api/settings/document-fields/route.ts:77:17)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:57228
-    at async eT.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:46851)
-    at async eT.handle (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:58760)
-    at async doRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1366:42)
-    at async cacheEntry.responseCache.get.routeKind (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1588:28)
-    at async DevServer.renderToResponseWithComponentsImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1496:28)
-    at async DevServer.renderPageComponent (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1924:24)
-    at async DevServer.renderToResponseImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1962:32)
-    at async DevServer.pipeImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:922:25)
-    at async NextNodeServer.handleCatchallRenderRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\next-server.js:272:17)
-    at async DevServer.handleRequestImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:818:17)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:339:20
-    at async Span.traceAsyncFn (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\trace\trace.js:154:20)
-    at async DevServer.handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
-    at async invokeRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:179:21)
-    at async handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:359:24)
-    at async requestHandlerImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:383:13)
-    at async Server.requestListener (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\start-server.js:141:13) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10006ms\n' +
-      '    (pool connections: active=7 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10006ms\n' +
-      '    (pool connections: active=7 idle=0 limit=10)',
-    state: 'HY000',
-    cause: undefined
-  },
-  clientVersion: '7.8.0'
-}
- GET /api/settings/document-fields 500 in 40894ms
- GET /api/dashboard/activity 200 in 82580ms
-prisma:error pool timeout: failed to retrieve a connection from pool after 10002ms
-    (pool connections: active=7 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10002ms
-    (pool connections: active=7 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10002ms
-    (pool connections: active=7 idle=0 limit=10)
- ⨯ DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10002ms
-    (pool connections: active=7 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async getAllowedScope (webpack-internal:///(rsc)/./src/lib/auth/scope.ts:74:20)
-    at async Promise.all (index 1)
-    at async resolveWriteScope (webpack-internal:///(rsc)/./src/lib/auth/scope.ts:282:30)
-    at async settingScope (webpack-internal:///(rsc)/./src/lib/settings/settingScope.ts:13:38)
-    at async readRow (webpack-internal:///(rsc)/./src/app/api/settings/general/route.ts:72:16)
-    at async GET (webpack-internal:///(rsc)/./src/app/api/settings/general/route.ts:112:17)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:57228
-    at async eT.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:46851)
-    at async eT.handle (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:58760)
-    at async doRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1366:42)
-    at async cacheEntry.responseCache.get.routeKind (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1588:28)
-    at async DevServer.renderToResponseWithComponentsImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1496:28)
-    at async DevServer.renderPageComponent (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1924:24)
-    at async DevServer.renderToResponseImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1962:32)
-    at async DevServer.pipeImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:922:25)
-    at async NextNodeServer.handleCatchallRenderRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\next-server.js:272:17)
-    at async DevServer.handleRequestImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:818:17)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:339:20
-    at async Span.traceAsyncFn (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\trace\trace.js:154:20)
-    at async DevServer.handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
-    at async invokeRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:179:21)
-    at async handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:359:24)
-    at async requestHandlerImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:383:13)
-    at async Server.requestListener (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\start-server.js:141:13) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10002ms\n' +
-      '    (pool connections: active=7 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10002ms\n' +
-      '    (pool connections: active=7 idle=0 limit=10)',
-    state: 'HY000',
-    cause: undefined
-  },
-  clientVersion: '7.8.0'
-}
- GET /api/settings/general 500 in 65246ms
- GET /api/auth/me 200 in 85573ms
- GET /dashboard 200 in 24412ms
- GET /api/dashboard/notifications 200 in 107667ms
- GET /api/dashboard/charts 200 in 17055ms
- GET /api/dashboard/kpis 200 in 36579ms
- GET /api/dashboard/header 200 in 37180ms
- GET /api/dashboard/health 200 in 10809ms
-prisma:error pool timeout: failed to retrieve a connection from pool after 10008ms
-    (pool connections: active=7 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10004ms
-    (pool connections: active=7 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10004ms
-    (pool connections: active=7 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10003ms
-    (pool connections: active=7 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10003ms
-    (pool connections: active=7 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10003ms
-    (pool connections: active=7 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10003ms
-    (pool connections: active=7 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10007ms
-    (pool connections: active=7 idle=0 limit=10)
-[dashboard/health] DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10008ms
-    (pool connections: active=7 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async Promise.all (index 1)
-    at async GET (webpack-internal:///(rsc)/./src/app/api/dashboard/[section]/route.ts:66:30)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:57228
-    at async eT.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:46851)
-    at async eT.handle (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:58760)
-    at async doRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1366:42)
-    at async cacheEntry.responseCache.get.routeKind (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1576:40)
-    at async DevServer.renderToResponseWithComponentsImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1496:28)
-    at async DevServer.renderPageComponent (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1924:24)
-    at async DevServer.renderToResponseImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1962:32)
-    at async DevServer.pipeImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:922:25)
-    at async NextNodeServer.handleCatchallRenderRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\next-server.js:272:17)
-    at async DevServer.handleRequestImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:818:17)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:339:20
-    at async Span.traceAsyncFn (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\trace\trace.js:154:20)
-    at async DevServer.handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
-    at async invokeRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:179:21)
-    at async handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:359:24)
-    at async requestHandlerImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:383:13)
-    at async Server.requestListener (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\start-server.js:141:13) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10008ms\n' +
-      '    (pool connections: active=7 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10008ms\n' +
-      '    (pool connections: active=7 idle=0 limit=10)',
-    state: 'HY000',
-    cause: undefined
-  },
-  clientVersion: '7.8.0'
-}
-[dashboard/kpis] DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10003ms
-    (pool connections: active=7 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async Promise.all (index 5)
-    at async Module.getKpis (webpack-internal:///(rsc)/./src/lib/dashboard/service.ts:285:63)
-    at async GET (webpack-internal:///(rsc)/./src/app/api/dashboard/[section]/route.ts:113:27)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:57228
-    at async eT.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:46851)
-    at async eT.handle (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:58760)
-    at async doRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1366:42)
-    at async cacheEntry.responseCache.get.routeKind (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1576:40)
-    at async DevServer.renderToResponseWithComponentsImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1496:28)
-    at async DevServer.renderPageComponent (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1924:24)
-    at async DevServer.renderToResponseImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1962:32)
-    at async DevServer.pipeImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:922:25)
-    at async NextNodeServer.handleCatchallRenderRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\next-server.js:272:17)
-    at async DevServer.handleRequestImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:818:17)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:339:20
-    at async Span.traceAsyncFn (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\trace\trace.js:154:20)
-    at async DevServer.handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
-    at async invokeRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:179:21)
-    at async handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:359:24)
-    at async requestHandlerImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:383:13)
-    at async Server.requestListener (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\start-server.js:141:13) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10003ms\n' +
-      '    (pool connections: active=7 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10003ms\n' +
-      '    (pool connections: active=7 idle=0 limit=10)',
-    state: 'HY000',
-    cause: undefined
-  },
-  clientVersion: '7.8.0'
-}
-prisma:error pool timeout: failed to retrieve a connection from pool after 10006ms
-    (pool connections: active=7 idle=0 limit=10)
-[dashboard/header] DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10006ms
-    (pool connections: active=7 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10006ms\n' +
-      '    (pool connections: active=7 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10006ms\n' +
-      '    (pool connections: active=7 idle=0 limit=10)',
-    state: 'HY000',
-    cause: undefined
-  },
-  clientVersion: '7.8.0'
-}
-prisma:error pool timeout: failed to retrieve a connection from pool after 10007ms
-    (pool connections: active=0 idle=0 limit=10)
-[dashboard/charts] DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10007ms
-    (pool connections: active=0 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async Module.getCharts (webpack-internal:///(rsc)/./src/lib/dashboard/service.ts:2119:25)
-    at async GET (webpack-internal:///(rsc)/./src/app/api/dashboard/[section]/route.ts:118:27)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:57228
-    at async eT.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:46851)
-    at async eT.handle (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:58760)
-    at async doRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1366:42)
-    at async cacheEntry.responseCache.get.routeKind (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1576:40)
-    at async DevServer.renderToResponseWithComponentsImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1496:28)
-    at async DevServer.renderPageComponent (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1924:24)
-    at async DevServer.renderToResponseImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1962:32)
-    at async DevServer.pipeImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:922:25)
-    at async NextNodeServer.handleCatchallRenderRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\next-server.js:272:17)
-    at async DevServer.handleRequestImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:818:17)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:339:20
-    at async Span.traceAsyncFn (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\trace\trace.js:154:20)
-    at async DevServer.handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
-    at async invokeRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:179:21)
-    at async handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:359:24)
-    at async requestHandlerImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:383:13)
-    at async Server.requestListener (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\start-server.js:141:13) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10007ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10007ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    state: 'HY000',
-    cause: '(conn:-1, no: 45012, SQLState: 08S01) Connection timeout: failed to create socket after 1010ms'
-  },
-  clientVersion: '7.8.0'
-}
- ○ Compiling / ...
- ✓ Compiled / in 1614ms (1143 modules)
- ✓ Compiled in 419ms (492 modules)
- GET / 200 in 3416ms
- GET /login 200 in 568ms
- ✓ Compiled /api/website/config in 294ms (643 modules)
- ✓ Compiled (645 modules)
- GET /api/settings/theme 401 in 601ms
- GET /api/settings/theme 401 in 565ms
- GET /api/website/config 200 in 711ms
- GET /api/website/config 200 in 946ms
- GET /api/website/config 200 in 1032ms
- GET /api/website/config 200 in 985ms
- ✓ Compiled / in 423ms (651 modules)
- GET / 200 in 1698ms
- ✓ Compiled /api/website/config in 139ms (730 modules)
- ✓ Compiled (732 modules)
- GET /api/website/config 200 in 616ms
- GET /api/website/config 200 in 595ms
- GET /api/settings/theme 200 in 898ms
- GET /api/settings/theme 200 in 931ms
- GET /api/website/config 200 in 626ms
- GET /api/website/config 200 in 706ms
- GET / 200 in 2010ms
- GET /api/website/config 200 in 534ms
- GET /api/settings/theme 200 in 1048ms
- GET /api/settings/theme 200 in 1326ms
- GET /api/website/config 200 in 1700ms
- GET /api/website/config 200 in 511ms
- GET /api/website/config 200 in 611ms
-prisma:error pool timeout: failed to retrieve a connection from pool after 10010ms
-    (pool connections: active=0 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10009ms
-    (pool connections: active=0 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10003ms
-    (pool connections: active=0 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10003ms
-    (pool connections: active=0 idle=0 limit=10)
-[website] getPublishedConfig failed, using defaults DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10010ms
-    (pool connections: active=0 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async getPublishedConfig (webpack-internal:///(rsc)/./src/lib/website/service.ts:41:19)
-    at async HomePage (webpack-internal:///(rsc)/./src/app/(site)/page.tsx:18:20) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10010ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10010ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    state: 'HY000',
-    cause: 'getaddrinfo ENOTFOUND oneerp.croa4ksyy3o9.ap-south-1.rds.amazonaws.com'
-  },
-  clientVersion: '7.8.0'
-}
-[website] getPublishedConfig failed, using defaults DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10009ms
-    (pool connections: active=0 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async getPublishedConfig (webpack-internal:///(rsc)/./src/lib/website/service.ts:41:19)
-    at async SiteLayout (webpack-internal:///(rsc)/./src/app/(site)/layout.tsx:42:20) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10009ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10009ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    state: 'HY000',
-    cause: 'getaddrinfo ENOTFOUND oneerp.croa4ksyy3o9.ap-south-1.rds.amazonaws.com'
-  },
-  clientVersion: '7.8.0'
-}
-[website] getPublishedConfig failed, using defaults DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10003ms
-    (pool connections: active=0 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async getPublishedConfig (webpack-internal:///(rsc)/./src/lib/website/service.ts:41:19)
-    at async Module.generateMetadata (webpack-internal:///(rsc)/./src/app/layout.tsx:40:21) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10003ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10003ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    state: 'HY000',
-    cause: 'getaddrinfo ENOTFOUND oneerp.croa4ksyy3o9.ap-south-1.rds.amazonaws.com'
-  },
-  clientVersion: '7.8.0'
-}
-[website] getPublishedConfig failed, using defaults DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10003ms
-    (pool connections: active=0 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async getPublishedConfig (webpack-internal:///(rsc)/./src/lib/website/service.ts:41:19)
-    at async Module.generateMetadata (webpack-internal:///(rsc)/./src/app/(site)/layout.tsx:21:15) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10003ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10003ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    state: 'HY000',
-    cause: 'getaddrinfo ENOTFOUND oneerp.croa4ksyy3o9.ap-south-1.rds.amazonaws.com'
-  },
-  clientVersion: '7.8.0'
-}
- GET / 200 in 10471ms
-prisma:error pool timeout: failed to retrieve a connection from pool after 10014ms
-    (pool connections: active=0 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10014ms
-    (pool connections: active=0 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10013ms
-    (pool connections: active=0 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10013ms
-    (pool connections: active=0 idle=0 limit=10)
-[website] getPublishedConfig failed, using defaults DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10014ms
-    (pool connections: active=0 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async getPublishedConfig (webpack-internal:///(rsc)/./src/lib/website/service.ts:41:19)
-    at async HomePage (webpack-internal:///(rsc)/./src/app/(site)/page.tsx:18:20) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10014ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10014ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    state: 'HY000',
-    cause: 'getaddrinfo ENOTFOUND oneerp.croa4ksyy3o9.ap-south-1.rds.amazonaws.com'
-  },
-  clientVersion: '7.8.0'
-}
-[website] getPublishedConfig failed, using defaults DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10014ms
-    (pool connections: active=0 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async getPublishedConfig (webpack-internal:///(rsc)/./src/lib/website/service.ts:41:19)
-    at async SiteLayout (webpack-internal:///(rsc)/./src/app/(site)/layout.tsx:42:20) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10014ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10014ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    state: 'HY000',
-    cause: 'getaddrinfo ENOTFOUND oneerp.croa4ksyy3o9.ap-south-1.rds.amazonaws.com'
-  },
-  clientVersion: '7.8.0'
-}
-[website] getPublishedConfig failed, using defaults DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10013ms
-    (pool connections: active=0 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async getPublishedConfig (webpack-internal:///(rsc)/./src/lib/website/service.ts:41:19)
-    at async Module.generateMetadata (webpack-internal:///(rsc)/./src/app/layout.tsx:40:21) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10013ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10013ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    state: 'HY000',
-    cause: 'getaddrinfo ENOTFOUND oneerp.croa4ksyy3o9.ap-south-1.rds.amazonaws.com'
-  },
-  clientVersion: '7.8.0'
-}
-[website] getPublishedConfig failed, using defaults DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10013ms
-    (pool connections: active=0 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async getPublishedConfig (webpack-internal:///(rsc)/./src/lib/website/service.ts:41:19)
-    at async Module.generateMetadata (webpack-internal:///(rsc)/./src/app/(site)/layout.tsx:21:15) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10013ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10013ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    state: 'HY000',
-    cause: 'getaddrinfo ENOTFOUND oneerp.croa4ksyy3o9.ap-south-1.rds.amazonaws.com'
-  },
-  clientVersion: '7.8.0'
-}
- GET / 200 in 10551ms
-prisma:error pool timeout: failed to retrieve a connection from pool after 10008ms
-    (pool connections: active=0 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10008ms
-    (pool connections: active=0 idle=0 limit=10)
- ⨯ DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10008ms
-    (pool connections: active=0 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43744)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.requestBatch (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:4653)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6258 {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10008ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10008ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    state: 'HY000',
-    cause: 'getaddrinfo ENOTFOUND oneerp.croa4ksyy3o9.ap-south-1.rds.amazonaws.com'
-  },
-  clientVersion: '7.8.0'
-}
- ⨯ DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10008ms
-    (pool connections: active=0 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43744)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.requestBatch (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:4653)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6258 {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10008ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10008ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    state: 'HY000',
-    cause: 'getaddrinfo ENOTFOUND oneerp.croa4ksyy3o9.ap-south-1.rds.amazonaws.com'
-  },
-  clientVersion: '7.8.0'
-}
- GET /api/settings/theme 500 in 10123ms
- GET /api/settings/theme 500 in 10115ms
-prisma:error pool timeout: failed to retrieve a connection from pool after 10008ms
-    (pool connections: active=0 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10008ms
-    (pool connections: active=0 idle=0 limit=10)
-[website] getPublishedConfig failed, using defaults DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10008ms
-    (pool connections: active=0 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async getPublishedConfig (webpack-internal:///(rsc)/./src/lib/website/service.ts:41:19)
-    at async GET (webpack-internal:///(rsc)/./src/app/api/website/config/route.ts:14:24)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:57228
-    at async eT.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:46851)
-    at async eT.handle (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:58760)
-    at async doRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1366:42)
-    at async cacheEntry.responseCache.get.routeKind (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1588:28)
-    at async DevServer.renderToResponseWithComponentsImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1496:28)
-    at async DevServer.renderPageComponent (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1924:24)
-    at async DevServer.renderToResponseImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1962:32)
-    at async DevServer.pipeImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:922:25)
-    at async NextNodeServer.handleCatchallRenderRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\next-server.js:272:17)
-    at async DevServer.handleRequestImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:818:17)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:339:20
-    at async Span.traceAsyncFn (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\trace\trace.js:154:20)
-    at async DevServer.handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
-    at async invokeRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:179:21)
-    at async handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:359:24)
-    at async requestHandlerImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:383:13)
-    at async Server.requestListener (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\start-server.js:141:13) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10008ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10008ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    state: 'HY000',
-    cause: 'getaddrinfo ENOTFOUND oneerp.croa4ksyy3o9.ap-south-1.rds.amazonaws.com'
-  },
-  clientVersion: '7.8.0'
-}
-[website] getPublishedConfig failed, using defaults DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10008ms
-    (pool connections: active=0 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async getPublishedConfig (webpack-internal:///(rsc)/./src/lib/website/service.ts:41:19)
-    at async GET (webpack-internal:///(rsc)/./src/app/api/website/config/route.ts:14:24)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:57228
-    at async eT.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:46851)
-    at async eT.handle (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:58760)
-    at async doRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1366:42)
-    at async cacheEntry.responseCache.get.routeKind (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1588:28)
-    at async DevServer.renderToResponseWithComponentsImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1496:28)
-    at async DevServer.renderPageComponent (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1924:24)
-    at async DevServer.renderToResponseImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1962:32)
-    at async DevServer.pipeImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:922:25)
-    at async NextNodeServer.handleCatchallRenderRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\next-server.js:272:17)
-    at async DevServer.handleRequestImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:818:17)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:339:20
-    at async Span.traceAsyncFn (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\trace\trace.js:154:20)
-    at async DevServer.handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
-    at async invokeRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:179:21)
-    at async handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:359:24)
-    at async requestHandlerImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:383:13)
-    at async Server.requestListener (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\start-server.js:141:13) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10008ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10008ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    state: 'HY000',
-    cause: 'getaddrinfo ENOTFOUND oneerp.croa4ksyy3o9.ap-south-1.rds.amazonaws.com'
-  },
-  clientVersion: '7.8.0'
-}
- GET /api/website/config 200 in 10128ms
- GET /api/website/config 200 in 10115ms
-prisma:error pool timeout: failed to retrieve a connection from pool after 10001ms
-    (pool connections: active=0 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10000ms
-    (pool connections: active=0 idle=0 limit=10)
-[website] getPublishedConfig failed, using defaults DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10001ms
-    (pool connections: active=0 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async getPublishedConfig (webpack-internal:///(rsc)/./src/lib/website/service.ts:41:19)
-    at async LoginLayout (webpack-internal:///(rsc)/./src/app/login/layout.tsx:21:15) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10001ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10001ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    state: 'HY000',
-    cause: 'getaddrinfo ENOTFOUND oneerp.croa4ksyy3o9.ap-south-1.rds.amazonaws.com'
-  },
-  clientVersion: '7.8.0'
-}
-[website] getPublishedConfig failed, using defaults DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10000ms
-    (pool connections: active=0 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async getPublishedConfig (webpack-internal:///(rsc)/./src/lib/website/service.ts:41:19)
-    at async Module.generateMetadata (webpack-internal:///(rsc)/./src/app/layout.tsx:40:21) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10000ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10000ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    state: 'HY000',
-    cause: 'getaddrinfo ENOTFOUND oneerp.croa4ksyy3o9.ap-south-1.rds.amazonaws.com'
-  },
-  clientVersion: '7.8.0'
-}
-prisma:error pool timeout: failed to retrieve a connection from pool after 10015ms
-    (pool connections: active=0 idle=0 limit=10)
-[website] getPublishedConfig failed, using defaults DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10015ms
-    (pool connections: active=0 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async getPublishedConfig (webpack-internal:///(rsc)/./src/lib/website/service.ts:41:19)
-    at async Module.generateMetadata (webpack-internal:///(rsc)/./src/app/layout.tsx:40:21) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10015ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10015ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    state: 'HY000',
-    cause: 'getaddrinfo ENOTFOUND oneerp.croa4ksyy3o9.ap-south-1.rds.amazonaws.com'
-  },
-  clientVersion: '7.8.0'
-}
-prisma:error pool timeout: failed to retrieve a connection from pool after 10008ms
-    (pool connections: active=0 idle=0 limit=10)
-prisma:error pool timeout: failed to retrieve a connection from pool after 10008ms
-    (pool connections: active=0 idle=0 limit=10)
-[website] getPublishedConfig failed, using defaults DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10008ms
-    (pool connections: active=0 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async getPublishedConfig (webpack-internal:///(rsc)/./src/lib/website/service.ts:41:19)
-    at async GET (webpack-internal:///(rsc)/./src/app/api/website/config/route.ts:14:24)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:57228
-    at async eT.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:46851)
-    at async eT.handle (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:58760)
-    at async doRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1366:42)
-    at async cacheEntry.responseCache.get.routeKind (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1588:28)
-    at async DevServer.renderToResponseWithComponentsImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1496:28)
-    at async DevServer.renderPageComponent (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1924:24)
-    at async DevServer.renderToResponseImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1962:32)
-    at async DevServer.pipeImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:922:25)
-    at async NextNodeServer.handleCatchallRenderRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\next-server.js:272:17)
-    at async DevServer.handleRequestImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:818:17)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:339:20
-    at async Span.traceAsyncFn (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\trace\trace.js:154:20)
-    at async DevServer.handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
-    at async invokeRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:179:21)
-    at async handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:359:24)
-    at async requestHandlerImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:383:13)
-    at async Server.requestListener (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\start-server.js:141:13) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10008ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10008ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    state: 'HY000',
-    cause: 'getaddrinfo ENOTFOUND oneerp.croa4ksyy3o9.ap-south-1.rds.amazonaws.com'
-  },
-  clientVersion: '7.8.0'
-}
-[website] getPublishedConfig failed, using defaults DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10008ms
-    (pool connections: active=0 idle=0 limit=10)
-    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
-    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
-    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
-    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
-    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
-    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
-    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
-    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
-    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
-    at async getPublishedConfig (webpack-internal:///(rsc)/./src/lib/website/service.ts:41:19)
-    at async GET (webpack-internal:///(rsc)/./src/app/api/website/config/route.ts:14:24)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:57228
-    at async eT.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:46851)
-    at async eT.handle (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:58760)
-    at async doRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1366:42)
-    at async cacheEntry.responseCache.get.routeKind (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1588:28)
-    at async DevServer.renderToResponseWithComponentsImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1496:28)
-    at async DevServer.renderPageComponent (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1924:24)
-    at async DevServer.renderToResponseImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:1962:32)
-    at async DevServer.pipeImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:922:25)
-    at async NextNodeServer.handleCatchallRenderRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\next-server.js:272:17)
-    at async DevServer.handleRequestImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\base-server.js:818:17)
-    at async D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:339:20
-    at async Span.traceAsyncFn (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\trace\trace.js:154:20)
-    at async DevServer.handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
-    at async invokeRender (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:179:21)
-    at async handleRequest (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:359:24)
-    at async requestHandlerImpl (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\router-server.js:383:13)
-    at async Server.requestListener (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\lib\start-server.js:141:13) {
-  cause: {
-    originalCode: '45028',
-    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10008ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    kind: 'mysql',
-    code: 45028,
-    message: 'pool timeout: failed to retrieve a connection from pool after 10008ms\n' +
-      '    (pool connections: active=0 idle=0 limit=10)',
-    state: 'HY000',
-    cause: 'getaddrinfo ENOTFOUND oneerp.croa4ksyy3o9.ap-south-1.rds.amazonaws.com'
-  },
-  clientVersion: '7.8.0'
-}
- GET /api/website/config 200 in 10097ms
- GET /api/website/config 200 in 10096ms
- GET /login 200 in 2298ms
- ○ Compiling /api/settings/theme ...
- ✓ Compiled /api/settings/theme in 2.4s (708 modules)
- ✓ Compiled (761 modules)
- GET /api/website/config 200 in 4903ms
- GET /api/website/config 200 in 4921ms
- GET /api/website/config 200 in 4767ms
- GET /icon.png?5a285dc6c8e9056e 200 in 5277ms
- GET /api/website/config 200 in 1076ms
- GET /api/settings/theme 200 in 6422ms
- GET /api/settings/theme 200 in 6433ms
- GET /login 200 in 1167ms
- GET /icon.png?5a285dc6c8e9056e 200 in 729ms
- GET /api/website/config 200 in 850ms
- GET /api/website/config 200 in 896ms
- GET /api/website/config 200 in 912ms
- GET /api/website/config 200 in 473ms
- GET /api/settings/theme 200 in 1115ms
- GET /api/settings/theme 200 in 1131ms
- ○ Compiling /api/auth/login ...
- ✓ Compiled /api/auth/login in 646ms (846 modules)
- POST /api/auth/login 200 in 2303ms
- ✓ Compiled /api/settings/document-fields in 321ms (848 modules)
- ✓ Compiled (854 modules)
- GET /api/system/scope 200 in 1198ms
- GET /api/settings/general 200 in 1283ms
- GET /api/settings/document-fields 200 in 1299ms
- GET /api/settings/general 200 in 1301ms
- GET /api/settings/document-fields 200 in 1138ms
- GET /api/auth/me 200 in 1336ms
- GET /api/system/scope 200 in 221ms
- GET /api/auth/me 200 in 392ms
- ✓ Compiled /api/company-setup in 322ms (858 modules)
- ✓ Compiled /api/dashboard/[section] in 332ms (863 modules)
- GET /api/company-setup 200 in 2102ms
- GET /api/company-setup 200 in 2314ms
- GET /api/dashboard/header 200 in 2376ms
- GET /api/dashboard/health 200 in 2239ms
- GET /api/dashboard/pending 200 in 704ms
- GET /api/dashboard/charts 200 in 2801ms
- GET /api/dashboard/activity 200 in 621ms
- GET /api/dashboard/notifications 200 in 1041ms
- GET /api/dashboard/insights 200 in 849ms
- GET /api/dashboard/kpis 200 in 3311ms
- GET /api/company-setup 200 in 680ms
- GET /api/dashboard/header 200 in 898ms
- GET /api/dashboard/pending 200 in 626ms
- GET /api/dashboard/health 200 in 847ms
- GET /api/dashboard/charts 200 in 1125ms
- GET /api/dashboard/activity 200 in 358ms
- GET /api/dashboard/notifications 200 in 880ms
- GET /api/dashboard/insights 200 in 606ms
- GET /api/dashboard/kpis 200 in 1488ms
- GET /api/company-setup 200 in 496ms
- ○ Compiling /masters/customer ...
- ✓ Compiled /masters/customer in 1328ms (1169 modules)
- ✓ Compiled in 723ms (504 modules)
- ✓ Compiled /api/masters/customers in 210ms (824 modules)
- GET /api/masters/customers 200 in 1105ms
- GET /api/masters/customers 200 in 1109ms
- ○ Compiling /masters/customer/[id] ...
- ✓ Compiled /masters/customer/[id] in 1213ms (1386 modules)
- ✓ Compiled /api/masters/customers/[id] in 122ms (859 modules)
- ✓ Compiled (861 modules)
- GET /api/settings/sales 200 in 755ms
- GET /api/settings/sales 200 in 227ms
- GET /api/masters/customers/25 200 in 1135ms
- GET /api/masters/customers/25 200 in 1161ms
- GET /api/settings/sales 200 in 322ms
- GET /api/settings/sales 200 in 317ms
- ○ Compiling /transport/gate-entry ...
- ✓ Compiled /transport/gate-entry in 1039ms (1403 modules)
- ✓ Compiled /api/transport/gate-entry in 436ms (874 modules)
- GET /api/transport/gate-entry?entryType=Dispatch 200 in 2122ms
- ✓ Compiled /api/transport/gate-entry/[id]/hover-detail in 235ms (855 modules)
- GET /api/transport/gate-entry/105/hover-detail 200 in 3119ms
- GET /api/transport/gate-entry/106/hover-detail 200 in 3807ms
- GET /api/transport/gate-entry/106/hover-detail 200 in 3856ms
- GET /api/transport/gate-entry/107/hover-detail 200 in 3611ms
- GET /api/transport/gate-entry/107/hover-detail 200 in 3618ms
- GET /api/transport/gate-entry/105/hover-detail 200 in 3234ms
- GET /api/transport/gate-entry/104/hover-detail 200 in 508ms
- GET /api/transport/gate-entry/104/hover-detail 200 in 509ms
- ○ Compiling /warehouse/transfer/load-dispatch/new/direct ...
- ✓ Compiled /warehouse/transfer/load-dispatch/new/direct in 1384ms (1425 modules)
- ✓ Compiled /api/transport/masters/transport-company in 295ms (873 modules)
- GET /api/transport/gate-entry/103/hover-detail 200 in 1253ms
- GET /api/transport/gate-entry/103/hover-detail 200 in 1293ms
- ✓ Compiled (880 modules)
- ✓ Compiled /api/settings/dispatch-config in 265ms (882 modules)
- ✓ Compiled (884 modules)
- GET /api/system/scope 200 in 1192ms
- GET /api/settings/purchase 200 in 2036ms
- GET /api/settings/dispatch-config 200 in 1228ms
- GET /api/transport/masters/transport-company?status=Active 200 in 2108ms
- GET /api/system/areas?inventoryStorageType=Finished%20Goods%20Inventory 200 in 2145ms
- GET /api/transport/masters/vehicle?status=Active 200 in 2180ms
- ✓ Compiled /api/transport/gate-entry/[id] in 427ms (886 modules)
- GET /api/system/scope 200 in 926ms
- GET /api/settings/purchase 200 in 1154ms
- GET /api/system/areas?inventoryStorageType=Finished%20Goods%20Inventory 200 in 1108ms
- GET /api/transport/masters/transport-company?status=Active 200 in 1086ms
- GET /api/transport/masters/vehicle?status=Active 200 in 1130ms
- GET /api/settings/dispatch-config 200 in 233ms
- GET /api/transport/gate-entry/105 200 in 1684ms
- GET /api/transport/gate-entry/105 200 in 522ms
- GET /api/transport/gate-entry/105 200 in 337ms
- GET /api/transport/gate-entry/105 200 in 358ms
- ✓ Compiled /api/transport/pre-weighment in 268ms (888 modules)
- GET /api/transport/pre-weighment?gateEntryId=105 200 in 696ms
- GET /api/transport/pre-weighment?gateEntryId=105 200 in 781ms
- ✓ Compiled /api/pos/products in 132ms (891 modules)
- GET /api/pos/products?q=SAN-MSAN 200 in 705ms
- GET /api/pos/products?q=SAN-MSAN 200 in 717ms
- ✓ Compiled /api/settings/accounting-config in 221ms (880 modules)
- GET /api/settings/accounting-config 200 in 713ms
- GET /api/settings/accounting-config 200 in 716ms
- ✓ Compiled in 1028ms (1240 modules)
- ✓ Compiled in 657ms (1240 modules)
- ✓ Compiled in 670ms (1240 modules)
- ✓ Compiled in 619ms (1240 modules)
- ✓ Compiled in 361ms (551 modules)
- ✓ Compiled in 280ms (551 modules)
- ✓ Compiled in 280ms (551 modules)
- ✓ Compiled in 280ms (551 modules)
- ✓ Compiled in 322ms (551 modules)
- GET /warehouse/transfer/load-dispatch/new/direct?gateEntryId=105 200 in 3255ms
- ○ Compiling /sales/invoice/new ...
- ✓ Compiled /sales/invoice/new in 1198ms (1242 modules)
- GET /sales/invoice/new 200 in 1563ms
- ○ Compiling /masters/transport/transport-company ...
- ✓ Compiled /masters/transport/transport-company in 1379ms (1401 modules)
- ✓ Compiled /icon.png in 341ms (807 modules)
- GET /icon.png?5a285dc6c8e9056e 200 in 474ms
- ✓ Compiled /api/transport/masters/transport-company in 378ms (962 modules)
- GET /api/transport/masters/transport-company 200 in 1616ms
- GET /api/transport/masters/transport-company 200 in 1625ms
- ○ Compiling /masters/transport/driver ...
- ✓ Compiled /masters/transport/driver in 925ms (1605 modules)
- ✓ Compiled /api/transport/masters/driver in 277ms (974 modules)
- GET /api/transport/masters/transport-company 200 in 1150ms
- GET /api/transport/masters/transport-company 200 in 1150ms
- GET /api/transport/masters/driver 200 in 1203ms
- GET /api/transport/masters/driver 200 in 1202ms
- ○ Compiling /masters/transport/vehicle ...
- ✓ Compiled /masters/transport/vehicle in 732ms (1638 modules)
- ✓ Compiled /api/transport/masters/vehicle in 259ms (993 modules)
- GET /api/transport/masters/transport-company 200 in 1190ms
- GET /api/transport/masters/transport-company 200 in 1217ms
- GET /api/transport/masters/vehicle 200 in 1273ms
- GET /api/transport/masters/vehicle 200 in 1276ms
- ○ Compiling /system/areas ...
- ✓ Compiled /system/areas in 892ms (1430 modules)
- ✓ Compiled /icon.png in 139ms (809 modules)
- GET /icon.png?5a285dc6c8e9056e 200 in 281ms
- ✓ Compiled /api/system/areas in 300ms (964 modules)
- GET /api/system/areas? 200 in 1421ms
- GET /api/system/areas? 200 in 1438ms
- GET / 200 in 1812ms
- ✓ Compiled /api/website/config in 315ms (768 modules)
- ✓ Compiled (770 modules)
- GET /api/website/config 200 in 867ms
- GET /api/website/config 200 in 849ms
- GET /api/settings/theme 200 in 1120ms
- GET /api/settings/theme 200 in 1107ms
- ○ Compiling /api/transport/gate-entry ...
- ✓ Compiled /api/transport/gate-entry in 654ms (851 modules)
- GET /api/transport/gate-entry?entryType=Dispatch 200 in 2529ms
- ✓ Compiled /api/transport/gate-entry/[id]/hover-detail in 359ms (853 modules)
- GET /api/transport/gate-entry/107/hover-detail 200 in 1407ms
- GET /api/transport/gate-entry/106/hover-detail 200 in 1108ms
- GET /api/transport/gate-entry/107/hover-detail 200 in 1440ms
- GET /api/transport/gate-entry/106/hover-detail 200 in 1166ms
- ○ Compiling /warehouse/transfer/load-dispatch/[id] ...
- ✓ Compiled /warehouse/transfer/load-dispatch/[id] in 2.5s (1599 modules)
- GET /api/transport/gate-entry/104/hover-detail 200 in 1211ms
- GET /api/transport/gate-entry/104/hover-detail 200 in 1254ms
- GET /api/transport/gate-entry/103/hover-detail 200 in 1230ms
- GET /api/transport/gate-entry/103/hover-detail 200 in 1254ms
- GET /api/transport/gate-entry/102/hover-detail 200 in 1240ms
- GET /api/transport/gate-entry/102/hover-detail 200 in 615ms
- GET /api/transport/gate-entry/105/hover-detail 200 in 638ms
- GET /api/transport/gate-entry/105/hover-detail 200 in 581ms
- ✓ Compiled /api/warehouse/load-dispatch/[id] in 364ms (943 modules)
- ✓ Compiled (954 modules)
- GET /api/settings/dispatch-config 200 in 1828ms
- GET /api/transport/masters/loading-bay?status=Active 200 in 1866ms
- GET /api/transport/masters/route?status=Active 200 in 1872ms
- GET /api/transport/masters/transport-company?status=Active 200 in 1916ms
- GET /api/transport/masters/vehicle?status=Active 200 in 1919ms
- GET /api/transport/masters/transport-company?status=Active 200 in 471ms
- GET /api/transport/masters/route?status=Active 200 in 522ms
- GET /api/transport/masters/loading-bay?status=Active 200 in 523ms
- GET /api/transport/masters/vehicle?status=Active 200 in 645ms
- GET /api/settings/dispatch-config 200 in 369ms
- ○ Compiling /api/warehouse/load-dispatch/[id]/transport-cost ...
- ✓ Compiled /api/warehouse/load-dispatch/[id]/transport-cost in 577ms (956 modules)
- GET /api/warehouse/load-dispatch/28 200 in 1378ms
- GET /api/warehouse/load-dispatch/28 200 in 3271ms
- ○ Compiling /api/settings/accounting-config ...
- ✓ Compiled /api/settings/accounting-config in 598ms (958 modules)
- ✓ Compiled (963 modules)
- GET /api/settings/accounting-config 200 in 2871ms
- GET /api/settings/accounting-config 200 in 2905ms
- GET /api/transport/post-weighment?gateEntryId=106 200 in 2975ms
- GET /api/transport/pre-weighment?gateEntryId=106 200 in 3001ms
- GET /api/warehouse/load-dispatch/28/transport-cost 200 in 3990ms
- GET /api/settings/accounting-config 200 in 588ms
- GET /api/settings/accounting-config 200 in 627ms
+ ✓ Ready in 7.4s
+ ○ Compiling /settings/invoice-template ...
+ ✓ Compiled /settings/invoice-template in 17.7s (961 modules)
+ GET /settings/invoice-template 200 in 20440ms
  ○ Compiling /warehouse/transfer/load-dispatch/print ...
- ✓ Compiled /warehouse/transfer/load-dispatch/print in 919ms (1640 modules)
- ○ Compiling /api/warehouse/load-dispatch/[id]/print-data ...
- ✓ Compiled /api/warehouse/load-dispatch/[id]/print-data in 559ms (976 modules)
- GET /api/warehouse/load-dispatch/28/print-data 200 in 3746ms
- GET /api/warehouse/load-dispatch/28/print-data 200 in 3783ms
- GET /api/transport/masters/transport-company?status=Active 200 in 599ms
- GET /api/transport/masters/loading-bay?status=Active 200 in 601ms
- GET /api/transport/masters/route?status=Active 200 in 601ms
- GET /api/settings/dispatch-config 200 in 636ms
- GET /api/transport/masters/vehicle?status=Active 200 in 848ms
- GET /api/warehouse/load-dispatch/28 200 in 1040ms
- GET /api/transport/masters/transport-company?status=Active 200 in 505ms
- GET /api/transport/masters/route?status=Active 200 in 583ms
- GET /api/transport/masters/loading-bay?status=Active 200 in 445ms
- GET /api/warehouse/load-dispatch/28 200 in 771ms
- GET /api/transport/masters/vehicle?status=Active 200 in 884ms
- GET /api/settings/dispatch-config 200 in 527ms
- GET /api/settings/accounting-config 200 in 522ms
- GET /api/warehouse/load-dispatch/28/transport-cost 200 in 640ms
- GET /api/transport/pre-weighment?gateEntryId=106 200 in 512ms
- GET /api/transport/post-weighment?gateEntryId=106 200 in 474ms
- GET /api/settings/accounting-config 200 in 902ms
- GET /api/settings/accounting-config 200 in 714ms
- GET /api/settings/accounting-config 200 in 774ms
- ○ Compiling /api/settings/invoice-template ...
- ✓ Compiled /api/settings/invoice-template in 567ms (973 modules)
- GET /api/settings/invoice-template?type=B2B_T3 200 in 1494ms
- GET /api/settings/invoice-template?type=B2B_T3 200 in 1492ms
- GET /api/warehouse/load-dispatch/28/print-data 200 in 2497ms
- GET /api/warehouse/load-dispatch/28/print-data 200 in 2598ms
- GET /api/transport/masters/loading-bay?status=Active 200 in 584ms
- GET /api/transport/masters/transport-company?status=Active 200 in 595ms
- GET /api/settings/dispatch-config 200 in 596ms
- GET /api/transport/masters/route?status=Active 200 in 654ms
- GET /api/transport/masters/vehicle?status=Active 200 in 667ms
- GET /api/warehouse/load-dispatch/28 200 in 805ms
- GET /api/transport/masters/transport-company?status=Active 200 in 520ms
- GET /api/transport/masters/route?status=Active 200 in 493ms
- GET /api/transport/masters/loading-bay?status=Active 200 in 531ms
- GET /api/transport/masters/vehicle?status=Active 200 in 596ms
- GET /api/settings/dispatch-config 200 in 462ms
- GET /api/warehouse/load-dispatch/28 200 in 1152ms
- GET /api/warehouse/load-dispatch/28/transport-cost 200 in 647ms
- GET /api/transport/pre-weighment?gateEntryId=106 200 in 602ms
- GET /api/transport/post-weighment?gateEntryId=106 200 in 622ms
- GET /api/settings/accounting-config 200 in 566ms
- GET /api/settings/accounting-config 200 in 903ms
- GET /api/settings/accounting-config 200 in 289ms
- GET /api/settings/accounting-config 200 in 317ms
- ○ Compiling /warehouse/transfer/load-dispatch ...
- ✓ Compiled /warehouse/transfer/load-dispatch in 697ms (1650 modules)
- ○ Compiling /api/warehouse/load-dispatch ...
- ✓ Compiled /api/warehouse/load-dispatch in 522ms (1012 modules)
- GET /api/warehouse/load-dispatch? 200 in 1376ms
- GET / 200 in 3223ms
- ○ Compiling /api/website/config ...
- ✓ Compiled /login in 5.2s (768 modules)
- ✓ Compiled (790 modules)
- GET /api/website/config 200 in 8725ms
- GET /api/website/config 200 in 8767ms
- GET /api/settings/theme 200 in 9236ms
- GET /api/settings/theme 200 in 9265ms
- GET /api/website/config 200 in 191ms
- GET /api/website/config 200 in 251ms
+ ✓ Compiled /warehouse/transfer/load-dispatch/print in 2.6s (974 modules)
+ GET /warehouse/transfer/load-dispatch/print?id=31&kind=invoice 200 in 3004ms
+ ○ Compiling / ...
+ ✓ Compiled / in 832ms (1021 modules)
+ GET / 200 in 1352ms
+ ✓ Compiled /api/website/config in 377ms (606 modules)
+ ✓ Compiled (608 modules)
+ GET /api/settings/theme 401 in 712ms
+ GET /api/settings/theme 401 in 719ms
+ GET /api/website/config 200 in 863ms
+ GET /api/website/config 200 in 872ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1174ms (1066 modules)
+ ✓ Compiled /api/website/config in 92ms (581 modules)
+ GET /api/website/config 200 in 428ms
+ GET /api/website/config 200 in 480ms
  ○ Compiling /api/auth/login ...
- ✓ Compiled /api/auth/login in 932ms (875 modules)
- POST /api/auth/login 200 in 2997ms
+ ✓ Compiled /api/auth/login in 957ms (673 modules)
+ POST /api/auth/login 200 in 2407ms
  ○ Compiling /dashboard ...
- ✓ Compiled /dashboard in 585ms (888 modules)
- ✓ Compiled /api/settings/document-fields in 352ms (890 modules)
- ✓ Compiled (896 modules)
- GET /api/system/scope 200 in 1298ms
- GET /api/settings/general 200 in 1379ms
- GET /api/settings/general 200 in 1399ms
- GET /api/settings/document-fields 200 in 1426ms
- GET /api/settings/document-fields 200 in 963ms
- GET /api/auth/me 200 in 1461ms
- GET /api/system/scope 200 in 191ms
- GET /api/auth/me 200 in 313ms
- ✓ Compiled /api/dashboard/[section] in 365ms (900 modules)
- ✓ Compiled (905 modules)
- GET /api/company-setup 200 in 1676ms
- GET /api/company-setup 200 in 1811ms
- GET /api/dashboard/health 200 in 1628ms
- GET /api/dashboard/header 200 in 1865ms
- GET /api/dashboard/charts 200 in 2024ms
- GET /api/dashboard/pending 200 in 538ms
- GET /api/dashboard/activity 200 in 512ms
- GET /api/dashboard/kpis 200 in 2670ms
- GET /api/dashboard/insights 200 in 1058ms
- GET /api/dashboard/notifications 200 in 1347ms
- GET /api/company-setup 200 in 1244ms
- GET /api/dashboard/header 200 in 1331ms
- GET /api/dashboard/pending 200 in 611ms
- GET /api/dashboard/health 200 in 830ms
- GET /api/dashboard/charts 200 in 1219ms
- GET /api/dashboard/activity 200 in 384ms
- GET /api/dashboard/notifications 200 in 810ms
- GET /api/dashboard/insights 200 in 570ms
- GET /api/dashboard/kpis 200 in 1765ms
- GET /api/company-setup 200 in 497ms
- ○ Compiling /api/transport/gate-entry ...
- ✓ Compiled /api/transport/gate-entry in 819ms (902 modules)
- GET /api/transport/gate-entry?entryType=Dispatch 200 in 2324ms
- ○ Compiling /api/transport/gate-entry/[id]/hover-detail ...
- ✓ Compiled /api/transport/gate-entry/[id]/hover-detail in 521ms (904 modules)
- GET /api/transport/gate-entry/106/hover-detail 200 in 1160ms
- GET /api/transport/gate-entry/107/hover-detail 200 in 1381ms
- GET /api/transport/gate-entry/106/hover-detail 200 in 1215ms
- GET /api/transport/gate-entry/105/hover-detail 200 in 1134ms
- GET /api/transport/gate-entry/105/hover-detail 200 in 1206ms
- GET /api/transport/gate-entry/107/hover-detail 200 in 1458ms
- GET /api/transport/gate-entry/108/hover-detail 200 in 619ms
- GET /api/transport/gate-entry/108/hover-detail 200 in 635ms
+ ✓ Compiled /dashboard in 739ms (1294 modules)
+ ✓ Compiled /api/settings/document-fields in 218ms (817 modules)
+ ✓ Compiled (823 modules)
+ GET /api/system/scope 200 in 1124ms
+ GET /api/settings/general 200 in 1139ms
+ GET /api/settings/general 200 in 1178ms
+ GET /api/settings/document-fields 200 in 1198ms
+ GET /api/settings/document-fields 200 in 900ms
+ GET /api/auth/me 200 in 1232ms
+ GET /api/system/scope 200 in 248ms
+ GET /api/auth/me 200 in 359ms
+ ✓ Compiled /api/dashboard/[section] in 349ms (827 modules)
+ ✓ Compiled (832 modules)
+ GET /api/company-setup 200 in 2068ms
+ GET /api/company-setup 200 in 2055ms
+ GET /api/dashboard/pending 200 in 5427ms
+ GET /api/dashboard/health 200 in 7500ms
+ GET /api/dashboard/header 200 in 7687ms
+ GET /api/dashboard/notifications 200 in 5775ms
+ GET /api/dashboard/charts 200 in 7755ms
+ GET /api/dashboard/insights 200 in 565ms
+ GET /api/dashboard/activity 200 in 356ms
+ GET /api/dashboard/kpis 200 in 8385ms
+ GET /api/company-setup 200 in 718ms
+ GET /api/dashboard/header 200 in 827ms
+ GET /api/dashboard/health 200 in 702ms
+ GET /api/dashboard/pending 200 in 452ms
+ GET /api/dashboard/charts 200 in 969ms
+ GET /api/dashboard/activity 200 in 357ms
+ GET /api/dashboard/notifications 200 in 681ms
+ GET /api/dashboard/kpis 200 in 1361ms
+ GET /api/dashboard/insights 200 in 607ms
+ GET /api/company-setup 200 in 437ms
+ ○ Compiling /system/areas ...
+ ✓ Compiled /system/areas in 1430ms (1534 modules)
+ ✓ Compiled /api/system/areas in 241ms (926 modules)
+ GET /api/system/areas? 200 in 1549ms
+ GET /api/system/areas? 200 in 1591ms
+ ○ Compiling /transport/gate-entry ...
+ ✓ Compiled /transport/gate-entry in 1466ms (1368 modules)
+ ✓ Compiled /api/transport/gate-entry in 446ms (913 modules)
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 2131ms
+ ✓ Compiled /api/transport/gate-entry/[id]/hover-detail in 191ms (915 modules)
+ GET /api/transport/gate-entry/109/hover-detail 200 in 1571ms
+ GET /api/transport/gate-entry/109/hover-detail 200 in 1582ms
+ GET /api/transport/gate-entry/108/hover-detail 200 in 936ms
+ GET /api/transport/gate-entry/108/hover-detail 200 in 948ms
+ GET /api/transport/gate-entry/107/hover-detail 200 in 755ms
+ GET /api/transport/gate-entry/107/hover-detail 200 in 784ms
  ○ Compiling /warehouse/transfer/load-dispatch/[id] ...
- ✓ Compiled /warehouse/transfer/load-dispatch/[id] in 877ms (991 modules)
- ✓ Compiled /api/warehouse/load-dispatch/[id] in 321ms (993 modules)
- ✓ Compiled (1004 modules)
- GET /api/settings/dispatch-config 200 in 1297ms
- GET /api/transport/masters/loading-bay?status=Active 200 in 1362ms
- GET /api/transport/masters/transport-company?status=Active 200 in 1373ms
- GET /api/transport/masters/route?status=Active 200 in 1397ms
- GET /api/transport/masters/vehicle?status=Active 200 in 1503ms
- GET /api/warehouse/load-dispatch/30 200 in 1539ms
- GET /api/transport/masters/transport-company?status=Active 200 in 338ms
- GET /api/warehouse/load-dispatch/30 200 in 460ms
- GET /api/transport/masters/route?status=Active 200 in 410ms
- GET /api/transport/masters/vehicle?status=Active 200 in 464ms
- GET /api/transport/masters/loading-bay?status=Active 200 in 417ms
- GET /api/settings/dispatch-config 200 in 392ms
- ✓ Compiled /api/transport/post-weighment in 498ms (1006 modules)
- ✓ Compiled (1013 modules)
- GET /api/settings/accounting-config 200 in 1541ms
- GET /api/settings/accounting-config 200 in 1735ms
- GET /api/transport/pre-weighment?gateEntryId=108 200 in 1679ms
- GET /api/transport/post-weighment?gateEntryId=108 200 in 1709ms
- GET /api/warehouse/load-dispatch/30/transport-cost 200 in 1926ms
- GET /api/settings/accounting-config 200 in 267ms
- GET /api/settings/accounting-config 200 in 270ms
- ✓ Compiled /warehouse/transfer/load-dispatch/print in 322ms (897 modules)
- ✓ Compiled /api/warehouse/load-dispatch/[id]/print-data in 239ms (881 modules)
- GET /api/warehouse/load-dispatch/30/print-data 200 in 1406ms
- GET /api/warehouse/load-dispatch/30/print-data 200 in 1454ms
- GET /api/transport/masters/loading-bay?status=Active 200 in 432ms
- GET /api/transport/masters/route?status=Active 200 in 464ms
- GET /api/transport/masters/transport-company?status=Active 200 in 474ms
- GET /api/settings/dispatch-config 200 in 512ms
- GET /api/transport/masters/vehicle?status=Active 200 in 539ms
- GET /api/warehouse/load-dispatch/30 200 in 618ms
- GET /api/transport/masters/transport-company?status=Active 200 in 291ms
- GET /api/transport/masters/route?status=Active 200 in 344ms
- GET /api/transport/masters/loading-bay?status=Active 200 in 366ms
+ ✓ Compiled /warehouse/transfer/load-dispatch/[id] in 779ms (1554 modules)
+ ✓ Compiled /api/warehouse/load-dispatch/[id] in 209ms (931 modules)
+ ✓ Compiled (942 modules)
+ GET /api/settings/dispatch-config 200 in 1267ms
+ GET /api/transport/masters/route?status=Active 200 in 1268ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1299ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1299ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1404ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 356ms
+ GET /api/transport/masters/route?status=Active 200 in 381ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 321ms
  GET /api/transport/masters/vehicle?status=Active 200 in 463ms
- GET /api/warehouse/load-dispatch/30 200 in 567ms
- GET /api/settings/dispatch-config 200 in 401ms
- GET /api/settings/accounting-config 200 in 371ms
- GET /api/warehouse/load-dispatch/30/transport-cost 200 in 506ms
- GET /api/transport/pre-weighment?gateEntryId=108 200 in 388ms
- GET /api/transport/post-weighment?gateEntryId=108 200 in 385ms
- GET /api/settings/accounting-config 200 in 377ms
- GET /api/settings/accounting-config 200 in 187ms
- GET /api/settings/accounting-config 200 in 192ms
- ✓ Compiled /api/settings/invoice-template in 347ms (870 modules)
- GET /api/settings/invoice-template?type=B2B_T3 200 in 871ms
- GET /api/settings/invoice-template?type=B2B_T3 200 in 872ms
- GET /api/warehouse/load-dispatch/30/print-data 200 in 1973ms
- GET /api/warehouse/load-dispatch/30/print-data 200 in 1964ms
- ✓ Compiled in 981ms (1329 modules)
- ✓ Compiled in 205ms (685 modules)
- ✓ Compiled in 408ms (685 modules)
- ✓ Compiled in 373ms (685 modules)
- GET /warehouse/transfer/load-dispatch/print?id=30&kind=dc 200 in 1960ms
- ✓ Compiled /api/warehouse/load-dispatch/[id]/print-data in 418ms (766 modules)
- GET /api/warehouse/load-dispatch/30/print-data 401 in 597ms
- ✓ Compiled /api/settings/dispatch-config in 276ms (846 modules)
- ✓ Compiled (857 modules)
- GET /api/settings/dispatch-config 200 in 1387ms
- GET /api/transport/masters/loading-bay?status=Active 200 in 1407ms
- GET /api/transport/masters/transport-company?status=Active 200 in 1436ms
- GET /api/transport/masters/route?status=Active 200 in 1455ms
- GET /api/transport/masters/vehicle?status=Active 200 in 1512ms
- GET /api/warehouse/load-dispatch/30 200 in 1602ms
- GET /api/transport/masters/transport-company?status=Active 200 in 281ms
- GET /api/transport/masters/route?status=Active 200 in 257ms
- GET /api/transport/masters/loading-bay?status=Active 200 in 339ms
- GET /api/warehouse/load-dispatch/30 200 in 565ms
- GET /api/transport/masters/vehicle?status=Active 200 in 537ms
- GET /api/settings/dispatch-config 200 in 400ms
- ✓ Compiled /api/transport/post-weighment in 372ms (859 modules)
- ✓ Compiled (866 modules)
- GET /api/settings/accounting-config 200 in 772ms
- GET /api/settings/accounting-config 200 in 1039ms
- GET /api/transport/post-weighment?gateEntryId=108 200 in 857ms
- GET /api/transport/pre-weighment?gateEntryId=108 200 in 975ms
- GET /api/warehouse/load-dispatch/30/transport-cost 200 in 1162ms
- GET /api/settings/accounting-config 200 in 189ms
- GET /api/settings/accounting-config 200 in 211ms
- ✓ Compiled /api/warehouse/load-dispatch/[id]/print-data in 300ms (868 modules)
- GET /api/warehouse/load-dispatch/30/print-data 200 in 1523ms
- GET /api/warehouse/load-dispatch/30/print-data 200 in 1524ms
- GET /api/transport/masters/transport-company?status=Active 200 in 316ms
- GET /api/transport/masters/route?status=Active 200 in 316ms
- GET /api/transport/masters/loading-bay?status=Active 200 in 340ms
- GET /api/settings/dispatch-config 200 in 388ms
- GET /api/transport/masters/vehicle?status=Active 200 in 434ms
- GET /api/warehouse/load-dispatch/30 200 in 458ms
- GET /api/transport/masters/transport-company?status=Active 200 in 305ms
- GET /api/transport/masters/route?status=Active 200 in 303ms
- GET /api/transport/masters/loading-bay?status=Active 200 in 305ms
- GET /api/settings/dispatch-config 200 in 342ms
- GET /api/transport/masters/vehicle?status=Active 200 in 496ms
- GET /api/warehouse/load-dispatch/30 200 in 578ms
- GET /api/settings/accounting-config 200 in 362ms
- GET /api/transport/pre-weighment?gateEntryId=108 200 in 360ms
- GET /api/transport/post-weighment?gateEntryId=108 200 in 328ms
- GET /api/settings/accounting-config 200 in 342ms
- GET /api/warehouse/load-dispatch/30/transport-cost 200 in 651ms
+ GET /api/warehouse/load-dispatch/30 200 in 1845ms
+ GET /api/warehouse/load-dispatch/30 200 in 670ms
+ ✓ Compiled /api/warehouse/load-dispatch/[id]/transport-cost in 294ms (944 modules)
+ GET /api/settings/dispatch-config 200 in 428ms
+ ✓ Compiled /api/transport/pre-weighment in 241ms (947 modules)
+ ✓ Compiled (951 modules)
+ GET /api/settings/accounting-config 200 in 1107ms
+ GET /api/settings/accounting-config 200 in 1122ms
+ GET /api/transport/pre-weighment?gateEntryId=108 200 in 1183ms
+ GET /api/transport/post-weighment?gateEntryId=108 200 in 1185ms
+ GET /api/settings/accounting-config 200 in 253ms
  GET /api/settings/accounting-config 200 in 256ms
- GET /api/settings/accounting-config 200 in 319ms
- ○ Compiling /warehouse/transfer/load-dispatch ...
- ✓ Compiled /warehouse/transfer/load-dispatch in 603ms (876 modules)
- ✓ Compiled /api/warehouse/load-dispatch in 306ms (908 modules)
- GET /api/warehouse/load-dispatch? 200 in 1356ms
- ✓ Compiled /transport/gate-entry in 340ms (901 modules)
- ✓ Compiled /api/transport/gate-entry in 219ms (904 modules)
- GET /api/transport/gate-entry?entryType=Dispatch 200 in 1187ms
- ✓ Compiled /api/transport/gate-entry/[id]/hover-detail in 218ms (906 modules)
- GET /api/transport/gate-entry/108/hover-detail 200 in 1070ms
- GET /api/transport/gate-entry/108/hover-detail 200 in 1096ms
- GET /api/transport/masters/transport-company?status=Active 200 in 366ms
+ GET /api/warehouse/load-dispatch/30/transport-cost 200 in 1862ms
+ ✓ Compiled /warehouse/transfer/load-dispatch/print in 325ms (963 modules)
+ ✓ Compiled /api/warehouse/load-dispatch/[id]/print-data in 278ms (965 modules)
+ ✓ Compiled (967 modules)
+ GET /api/settings/invoice-template?type=B2B_T3 200 in 947ms
+ GET /api/settings/invoice-template?type=B2B_T3 200 in 944ms
+ GET /api/settings/dispatch-config 200 in 1027ms
+ GET /api/settings/dispatch-config 200 in 1039ms
+ GET /api/warehouse/load-dispatch/30/print-data 200 in 2174ms
+ GET /api/warehouse/load-dispatch/30/print-data 200 in 2206ms
+ GET /api/transport/masters/route?status=Active 200 in 462ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 463ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 466ms
+ GET /api/settings/dispatch-config 200 in 466ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 637ms
+ GET /api/warehouse/load-dispatch/30 200 in 639ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 363ms
  GET /api/transport/masters/route?status=Active 200 in 365ms
- GET /api/transport/masters/vehicle?status=Active 200 in 432ms
- GET /api/warehouse/load-dispatch/30 200 in 559ms
- GET /api/transport/masters/loading-bay?status=Active 200 in 337ms
- GET /api/settings/dispatch-config 200 in 358ms
- GET /api/transport/masters/transport-company?status=Active 200 in 424ms
- GET /api/transport/masters/vehicle?status=Active 200 in 422ms
- GET /api/transport/masters/route?status=Active 200 in 320ms
- GET /api/transport/masters/loading-bay?status=Active 200 in 348ms
- GET /api/warehouse/load-dispatch/30 200 in 606ms
- GET /api/settings/dispatch-config 200 in 401ms
- GET /api/settings/accounting-config 200 in 396ms
- GET /api/transport/pre-weighment?gateEntryId=108 200 in 369ms
- GET /api/transport/post-weighment?gateEntryId=108 200 in 400ms
- GET /api/settings/accounting-config 200 in 375ms
- GET /api/warehouse/load-dispatch/30/transport-cost 200 in 466ms
- GET /api/settings/accounting-config 200 in 246ms
- GET /api/settings/accounting-config 200 in 272ms
- ✓ Compiled in 661ms (685 modules)
- ✓ Compiled /api/settings/dispatch-config in 1358ms (1274 modules)
- ✓ Compiled (1487 modules)
- GET /api/settings/dispatch-config 200 in 1885ms
- GET /api/transport/masters/loading-bay?status=Active 200 in 1896ms
- GET /api/transport/masters/transport-company?status=Active 200 in 1919ms
- GET /api/transport/masters/route?status=Active 200 in 1994ms
- GET /api/transport/masters/vehicle?status=Active 200 in 1995ms
- GET /api/warehouse/load-dispatch/30 200 in 2101ms
- GET /api/transport/masters/transport-company?status=Active 200 in 245ms
- GET /api/transport/masters/vehicle?status=Active 200 in 310ms
- GET /api/transport/masters/route?status=Active 200 in 350ms
- ⨯ Failed to generate static paths for /warehouse/transfer/load-dispatch/[id]:
-TypeError: __webpack_require__.C is not a function
-    at D:\Old_LapTop_Backup_2\Retail_POS\.next\server\app\(app)\warehouse\transfer\load-dispatch\[id]\page.js:963:21
-    at Object.<anonymous> (D:\Old_LapTop_Backup_2\Retail_POS\.next\server\app\(app)\warehouse\transfer\load-dispatch\[id]\page.js:968:3)
-    at Module._compile (node:internal/modules/cjs/loader:1812:14)
-    at Object..js (node:internal/modules/cjs/loader:1943:10)
-    at Module.load (node:internal/modules/cjs/loader:1533:32)
-    at Module._load (node:internal/modules/cjs/loader:1335:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
-    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
-    at mod.require (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\next\dist\server\require-hook.js:65:28)
-    at require (node:internal/modules/helpers:152:16) {
-  type: 'TypeError'
-}
- GET /api/transport/masters/loading-bay?status=Active 200 in 392ms
- ✓ Compiled /api/warehouse/load-dispatch/[id]/transport-cost in 142ms (804 modules)
- GET /api/warehouse/load-dispatch/30 200 in 537ms
- GET /api/settings/dispatch-config 200 in 376ms
- ✓ Compiled /api/transport/post-weighment in 157ms (807 modules)
- ✓ Compiled (811 modules)
- GET /api/settings/accounting-config 200 in 799ms
- GET /api/settings/accounting-config 200 in 888ms
- GET /api/warehouse/load-dispatch/30/transport-cost 200 in 1030ms
- GET /api/transport/pre-weighment?gateEntryId=108 200 in 924ms
- GET /api/transport/post-weighment?gateEntryId=108 200 in 915ms
- GET /api/settings/accounting-config 200 in 265ms
- GET /api/settings/accounting-config 200 in 267ms
- ✓ Compiled in 1743ms (1496 modules)
- GET /api/warehouse/load-dispatch/30 200 in 933ms
- ✓ Compiled in 597ms (1496 modules)
- ✓ Compiled in 0ms (811 modules)
- ✓ Compiled in 0ms (811 modules)
- ✓ Compiled in 0ms (811 modules)
- GET /api/warehouse/load-dispatch/30 200 in 2035ms
- GET /warehouse/transfer/load-dispatch/30 200 in 432ms
- ✓ Compiled /api/warehouse/load-dispatch/[id]/transit-pass-no in 450ms (813 modules)
- PATCH /api/warehouse/load-dispatch/30/transit-pass-no 401 in 928ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 541ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 432ms
+ GET /api/settings/dispatch-config 200 in 457ms
+ GET /api/warehouse/load-dispatch/30 200 in 687ms
+ GET /api/settings/accounting-config 200 in 432ms
+ GET /api/transport/pre-weighment?gateEntryId=108 200 in 390ms
+ GET /api/warehouse/load-dispatch/30/transport-cost 200 in 578ms
+ GET /api/transport/post-weighment?gateEntryId=108 200 in 385ms
+ GET /api/settings/accounting-config 200 in 413ms
+ GET /api/settings/accounting-config 200 in 232ms
+ GET /api/settings/accounting-config 200 in 257ms
+ ○ Compiling /warehouse/transfer/load-dispatch ...
+ ✓ Compiled /warehouse/transfer/load-dispatch in 1561ms (1231 modules)
+ ○ Compiling /api/warehouse/load-dispatch ...
+ ✓ Compiled /api/warehouse/load-dispatch in 836ms (834 modules)
+ GET /api/warehouse/load-dispatch? 200 in 2246ms
+ ✓ Compiled in 2.4s (1206 modules)
+ ✓ Compiled in 276ms (645 modules)
+ ✓ Compiled in 293ms (645 modules)
+ ✓ Compiled in 269ms (645 modules)
+ ✓ Compiled in 348ms (645 modules)
+ ✓ Compiled in 1317ms (1221 modules)
+ ✓ Compiled in 871ms (1221 modules)
+ ○ Compiling /operations/reports ...
+ ✓ Compiled /operations/reports in 699ms (1221 modules)
+ GET /operations/reports 200 in 3718ms
+ ○ Compiling /api/operations/reports/raw-material ...
+ ✓ Compiled /api/operations/reports/raw-material in 553ms (704 modules)
+ GET /api/operations/reports/raw-material?from=2026-08-01&to=2026-08-29 401 in 703ms
+ GET /warehouse/transfer/load-dispatch 200 in 293ms
+ ✓ Compiled /api/settings/general in 191ms (707 modules)
+ ✓ Compiled (713 modules)
+ GET /api/website/config 200 in 772ms
+ GET /api/website/config 200 in 781ms
+ ✓ Compiled /api/auth/me in 177ms (715 modules)
+ GET /api/settings/theme 200 in 1127ms
+ GET /api/settings/document-fields 200 in 1132ms
+ GET /api/settings/theme 200 in 1240ms
+ GET /api/settings/general 200 in 1214ms
+ ✓ Compiled in 1ms (718 modules)
+ ✓ Compiled in 1ms (718 modules)
+ ✓ Compiled in 0ms (718 modules)
+ ✓ Compiled in 0ms (718 modules)
+ GET /api/system/scope 200 in 1482ms
+ GET /api/settings/document-fields 200 in 1160ms
+ GET /api/settings/general 200 in 1344ms
+ GET /api/system/scope 200 in 1294ms
+ GET /api/auth/me 200 in 1738ms
+ GET /api/auth/me 200 in 1297ms
+ ○ Compiling /api/company-setup ...
+ ✓ Compiled /api/company-setup in 648ms (747 modules)
+ ✓ Compiled (866 modules)
+ GET /icon.png?5a285dc6c8e9056e 200 in 2353ms
+ GET /api/warehouse/load-dispatch? 200 in 2800ms
+ GET /api/company-setup 200 in 2703ms
+ GET /api/company-setup 200 in 2711ms
+ GET /api/operations/reports/raw-material?from=2026-08-30&to=2026-08-30 200 in 585ms
+ GET /api/operations/reports/raw-material?from=2026-08-01&to=2026-08-30 200 in 650ms
+ ✓ Compiled in 503ms (651 modules)
+ ✓ Compiled in 1032ms (1219 modules)
+ ✓ Compiled in 1157ms (1219 modules)
+ ✓ Compiled in 455ms (648 modules)
+ ✓ Compiled in 309ms (648 modules)
+ GET /operations/reports 200 in 299ms
+ ○ Compiling /operations/reports/raw-material ...
+ ✓ Compiled /operations/reports/raw-material in 1016ms (1219 modules)
+ GET /operations/reports/raw-material 200 in 1412ms
+ GET /operations/reports 200 in 246ms
+ ✓ Compiled /api/settings/general in 291ms (700 modules)
+ ✓ Compiled (706 modules)
+ GET /api/website/config 200 in 791ms
+ GET /api/website/config 200 in 791ms
+ ✓ Compiled /api/auth/me in 118ms (708 modules)
+ ✓ Compiled (711 modules)
+ GET /api/settings/general 200 in 1095ms
+ GET /api/settings/theme 200 in 1146ms
+ GET /api/settings/theme 200 in 1149ms
+ GET /api/settings/document-fields 200 in 1126ms
+ GET /api/system/scope 200 in 258ms
+ GET /api/system/scope 200 in 626ms
+ GET /api/settings/document-fields 200 in 335ms
+ GET /api/settings/general 200 in 400ms
+ GET /api/auth/me 200 in 764ms
+ GET /api/auth/me 200 in 554ms
+ ✓ Compiled /api/company-setup in 303ms (740 modules)
+ ✓ Compiled (823 modules)
+ GET /icon.png?5a285dc6c8e9056e 200 in 1840ms
+ GET /api/company-setup 200 in 2384ms
+ GET /api/company-setup 200 in 2565ms
+ ✓ Compiled /api/operations/reports/raw-material in 287ms (825 modules)
+ GET /api/company-setup 200 in 692ms
+ GET /api/company-setup 200 in 696ms
+ GET /api/operations/reports/raw-material?from=2026-08-30&to=2026-08-30 200 in 978ms
+ GET /api/operations/reports/raw-material?from=2026-08-01&to=2026-08-30 200 in 840ms
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ✓ Compiled in 1595ms (1226 modules)
+ GET /operations/reports/raw-material 200 in 2366ms
+ ✓ Compiled /api/settings/general in 164ms (604 modules)
+ ✓ Compiled (725 modules)
+ GET /icon.png?5a285dc6c8e9056e 200 in 602ms
+ GET /api/website/config 200 in 814ms
+ GET /api/website/config 200 in 813ms
+ ✓ Compiled /api/auth/me in 389ms (727 modules)
+ GET /api/settings/theme 200 in 1151ms
+ GET /api/settings/theme 200 in 1169ms
+ GET /api/settings/general 200 in 1112ms
+ ✓ Compiled (732 modules)
+ GET /api/system/scope 200 in 767ms
+ GET /api/system/scope 200 in 535ms
+ GET /api/settings/document-fields 200 in 1200ms
+ GET /api/settings/general 200 in 659ms
+ GET /api/settings/document-fields 200 in 725ms
+ GET /api/auth/me 200 in 1086ms
+ GET /api/auth/me 200 in 317ms
+ ✓ Compiled /api/operations/reports/raw-material in 412ms (815 modules)
+ ✓ Compiled (817 modules)
+ GET /api/operations/reports/raw-material?from=2026-08-30&to=2026-08-30 200 in 1704ms
+ GET /api/company-setup 200 in 1647ms
+ GET /api/company-setup 200 in 1362ms
+ GET /api/operations/reports/raw-material?from=2026-08-30&to=2026-08-30 200 in 1569ms
+ GET /api/company-setup 200 in 1402ms
+ GET /api/company-setup 200 in 1841ms
+ ✓ Compiled in 802ms (1471 modules)
+ GET /operations/reports/raw-material 200 in 303ms
+ GET /operations/reports/raw-material 200 in 2820ms
+ GET /api/website/config 200 in 465ms
+ GET /api/website/config 200 in 485ms
+ GET /api/settings/theme 200 in 730ms
+ GET /api/settings/theme 200 in 745ms
+ GET /api/system/scope 200 in 301ms
+ GET /api/settings/document-fields 200 in 738ms
+ GET /api/settings/general 200 in 773ms
+ GET /icon.png?5a285dc6c8e9056e 200 in 218ms
+ GET /api/settings/general 200 in 359ms
+ GET /api/system/scope 200 in 341ms
+ GET /api/auth/me 200 in 658ms
+ GET /api/settings/document-fields 200 in 421ms
+ GET /api/auth/me 200 in 489ms
+ GET /api/operations/reports/raw-material?from=2026-08-30&to=2026-08-30 200 in 690ms
+ GET /api/operations/reports/raw-material?from=2026-08-30&to=2026-08-30 200 in 747ms
+ GET /api/company-setup 200 in 843ms
+ GET /api/company-setup 200 in 825ms
+ GET /api/company-setup 200 in 643ms
+ GET /api/company-setup 200 in 618ms
+ GET /api/operations/reports/raw-material?from=2026-08-01&to=2026-08-30 200 in 602ms
+ ○ Compiling /api/operations/reports/raw-material ...
+ ✓ Compiled /api/operations/reports/raw-material in 1582ms (1428 modules)
+ GET /api/operations/reports/raw-material?from=2026-08-30&to=2026-08-30 200 in 2267ms
+ GET /api/operations/reports/raw-material?from=2026-08-30&to=2026-08-30 200 in 2269ms
+ GET /api/company-setup 200 in 2270ms
+ GET /api/company-setup 200 in 2297ms
+ ✓ Compiled in 887ms (1428 modules)
+ ✓ Compiled in 528ms (1428 modules)
+ GET /operations/reports/raw-material 200 in 286ms

@@ -19,6 +19,8 @@ export interface ReceiptTemplate {
   /** Print a contact / toll-free number in the header. */
   showContact: boolean;
   contactNumber: string;
+  /** B2B_T3 only — print the Transit Pass recovery line on the Tax Invoice. */
+  showTransitPass?: boolean;
   /** TOKEN only — the Pre Load Weight Slip's scannable code. */
   tokenCodeType?: "qrcode" | "barcode";
   /** TOKEN only — business name font size and whether row values print bold. */
@@ -43,6 +45,7 @@ export const DEFAULT_RECEIPT: ReceiptTemplate = {
   showBranchName: false,
   showContact: false,
   contactNumber: "",
+  showTransitPass: true,
   tokenCodeType: "qrcode",
   tokenBrandFontSize: "normal",
   tokenBoldValues: false,

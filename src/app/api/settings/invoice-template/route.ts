@@ -10,7 +10,7 @@ const STR = ["title", "paperSize", "headerNote", "thankYouMessage", "footerNote"
 // tens of KB, uploaded via the same FileReader.readAsDataURL pattern as the
 // company logo elsewhere in this app.
 const IMAGE_FIELDS = ["qrCodeImage", "signatureImage"] as const;
-const FLAGS = ["showGstin", "showCustomer", "showHsn", "showMrp", "showSavings", "showTaxBreakup", "showItemTax", "useBranchDetails", "showBranchName", "showContact"] as const;
+const FLAGS = ["showGstin", "showCustomer", "showHsn", "showMrp", "showSavings", "showTaxBreakup", "showItemTax", "useBranchDetails", "showBranchName", "showContact", "showTransitPass"] as const;
 // B2B_T2 — the alternate "Tax Invoice" design (Bill To/Vehicle/Driver/weight
 // line/Royalty Pass) used from Load & Dispatch; B2B_T3 — a further GST-style
 // design (Bill To/Ship info/Driver/Vehicle, a per-line Price+Taxable Price+GST

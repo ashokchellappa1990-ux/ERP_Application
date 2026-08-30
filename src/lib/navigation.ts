@@ -320,6 +320,7 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       { label: "Transit Pass Reconciliation", href: "/transport/transit-pass-wallet", icon: Wallet },
       { label: "Day Open / Close", href: "/operations/day-close", icon: Banknote },
+      { label: "Operation Reports", href: "/operations/reports", icon: FileBarChart },
     ],
   },
   {

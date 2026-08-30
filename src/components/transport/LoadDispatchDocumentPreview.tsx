@@ -9,6 +9,7 @@ import { buildTaxInvoiceParts, type TaxInvoiceData } from "@/lib/print/taxInvoic
 import { buildTaxInvoiceT3Parts, type TaxInvoiceT3Data } from "@/lib/print/taxInvoiceT3Html";
 import { buildWeightSlipParts, type WeightSlipData } from "@/lib/print/weightSlipHtml";
 import { DEFAULT_RECEIPT } from "@/lib/settings/receiptTemplate";
+import { roundInvoiceTotal, type TransportConfigData } from "@/lib/settings/transportConfigDefaults";
 
 type Kind = "dc" | "weight-slip" | "invoice";
 const KIND_LABEL: Record<Kind, string> = { dc: "Delivery Challan", "weight-slip": "Weight Slip", invoice: "Tax Invoice" };
@@ -38,9 +39,10 @@ export function LoadDispatchDocumentPreview() {
       if (!id) { setErrorMsg("No dispatch was specified."); setLoading(false); return; }
       try {
         const tplType = KIND_TPL_TYPE[kind];
-        const [dataRes, tplRes] = await Promise.all([
+        const [dataRes, tplRes, dispatchCfgRes] = await Promise.all([
           fetch(`/api/warehouse/load-dispatch/${id}/print-data`, { cache: "no-store" }).then((r) => r.json()),
           tplType ? fetch(`/api/settings/invoice-template?type=${tplType}`, { cache: "no-store" }).then((r) => r.json()) : Promise.resolve(null),
+          kind === "invoice" ? fetch("/api/settings/dispatch-config", { cache: "no-store" }).then((r) => r.json()) : Promise.resolve(null),
         ]);
         if (!active) return;
         if (!dataRes?.ok) { setErrorMsg(dataRes?.message || "Could not load print data."); return; }
@@ -54,7 +56,23 @@ export function LoadDispatchDocumentPreview() {
           setParts(buildWeightSlipParts(dataRes.weightSlip as WeightSlipData, tpl));
         } else {
           if (!dataRes.taxInvoiceT3) { setErrorMsg("No Sales Invoice has been posted for this dispatch yet."); return; }
-          const t3 = dataRes.taxInvoiceT3 as TaxInvoiceT3Data;
+          let t3 = dataRes.taxInvoiceT3 as TaxInvoiceT3Data;
+
+          // "Show Transit Pass" (B2B_T3 Invoice Template setting) — when off,
+          // drop the line and re-derive Sub Total/Round Off/Total without it
+          // (rounded the same configured way as everywhere else) so the
+          // printed figures still tally. The actual posted Sale total this
+          // was charged/GL-recorded at is never touched — print-layer only.
+          if (tplRes?.ok && tplRes.template.showTransitPass === false) {
+            const transitPassAmt = (t3.otherCharges ?? []).find((o) => o.label === "Transit Pass")?.amount ?? 0;
+            if (transitPassAmt) {
+              const rawTotal = t3.subTotal - transitPassAmt;
+              const dispatchCfg = dispatchCfgRes?.ok ? (dispatchCfgRes.config as TransportConfigData) : null;
+              const { total, roundOff } = dispatchCfg ? roundInvoiceTotal(dispatchCfg, rawTotal) : { total: rawTotal, roundOff: 0 };
+              t3 = { ...t3, otherCharges: (t3.otherCharges ?? []).filter((o) => o.label !== "Transit Pass"), subTotal: rawTotal, roundOff, total };
+            }
+          }
+
           setParts(buildTaxInvoiceT3Parts({ ...t3, qrCodeImage: tplRes?.template?.qrCodeImage || null, signatureImage: tplRes?.template?.signatureImage || null }, tpl));
         }
       } catch (err) {
