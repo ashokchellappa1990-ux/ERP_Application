@@ -198,3 +198,374 @@
  GET /api/masters/suppliers 200 in 1455ms
  ○ Compiling /masters/supplier/new ...
  ✓ Compiled /masters/supplier/new in 3.6s (1467 modules)
+ ✓ Compiled in 1789ms (1270 modules)
+ ✓ Compiled in 1256ms (1270 modules)
+ ✓ Compiled in 501ms (1270 modules)
+ ✓ Compiled in 809ms (1270 modules)
+ ✓ Compiled in 1331ms (1270 modules)
+ ✓ Compiled in 663ms (597 modules)
+ ✓ Compiled in 692ms (597 modules)
+ ✓ Compiled in 456ms (597 modules)
+ ✓ Compiled in 773ms (597 modules)
+ ✓ Compiled in 505ms (597 modules)
+ ✓ Compiled in 1249ms (597 modules)
+ ✓ Compiled in 824ms (598 modules)
+ ○ Compiling /masters/supplier/new ...
+ ✓ Compiled /masters/supplier/new in 780ms (703 modules)
+ GET /masters/supplier/new 200 in 3970ms
+ ✓ Compiled /api/settings/general in 463ms (735 modules)
+ ✓ Compiled (815 modules)
+ GET /icon.png?5a285dc6c8e9056e 200 in 930ms
+ ✓ Compiled /api/settings/document-fields in 127ms (817 modules)
+ GET /api/website/config 200 in 1183ms
+ GET /api/website/config 200 in 1187ms
+ ✓ Compiled /api/auth/me in 174ms (819 modules)
+ ✓ Compiled (822 modules)
+ GET /api/settings/theme 200 in 1665ms
+ GET /api/settings/theme 200 in 1686ms
+ GET /api/settings/general 200 in 1602ms
+ GET /api/settings/document-fields 200 in 801ms
+ GET /api/system/scope 200 in 700ms
+ GET /api/system/scope 200 in 195ms
+ GET /api/auth/me 200 in 848ms
+ GET /api/settings/document-fields 200 in 355ms
+ GET /api/settings/general 200 in 475ms
+ GET /api/auth/me 200 in 549ms
+ ✓ Compiled /api/company-setup in 295ms (831 modules)
+ ✓ Compiled (914 modules)
+ ✓ Compiled /api/masters/suppliers in 227ms (918 modules)
+ GET /api/company-setup 200 in 1561ms
+ GET /api/company-setup 200 in 1777ms
+ GET /api/masters/suppliers 200 in 618ms
+ GET /api/masters/suppliers 200 in 618ms
+ ○ Compiling /settings/documents ...
+ ✓ Compiled /settings/documents in 3.1s (1688 modules)
+ ✓ Compiled /api/settings/dispatch-config in 234ms (1009 modules)
+ GET /api/settings/document-fields 200 in 2155ms
+ GET /api/settings/dispatch-config 200 in 2159ms
+ GET /api/settings/dispatch-config 200 in 2163ms
+ GET /api/settings/document-fields 200 in 2551ms
+ ✓ Compiled in 991ms (1320 modules)
+ ✓ Compiled in 323ms (682 modules)
+ ✓ Compiled in 254ms (682 modules)
+ ✓ Compiled in 426ms (682 modules)
+ ✓ Compiled in 395ms (682 modules)
+ ✓ Compiled in 449ms (682 modules)
+ ✓ Compiled in 471ms (682 modules)
+ ✓ Compiled in 458ms (682 modules)
+ ✓ Compiled in 333ms (682 modules)
+ ✓ Compiled in 296ms (682 modules)
+ ✓ Compiled in 369ms (682 modules)
+ ✓ Compiled in 665ms (682 modules)
+ ✓ Compiled in 669ms (682 modules)
+ ✓ Compiled in 385ms (682 modules)
+ ✓ Compiled in 334ms (682 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /settings/documents?screen=supplier_master 200 in 716ms
+ ○ Compiling /api/settings/general ...
+ ✓ Compiled /api/settings/general in 511ms (670 modules)
+ ✓ Compiled (791 modules)
+ GET /icon.png?5a285dc6c8e9056e 200 in 1016ms
+ GET /api/website/config 200 in 1047ms
+ ✓ Compiled /api/system/scope in 193ms (793 modules)
+ GET /api/website/config 200 in 1295ms
+ ✓ Compiled /api/auth/me in 1ms (795 modules)
+ ✓ Compiled in 0ms (798 modules)
+ ✓ Compiled in 1ms (798 modules)
+ GET /api/settings/theme 200 in 2180ms
+ GET /api/settings/theme 200 in 2180ms
+ GET /api/settings/general 200 in 2053ms
+ ✓ Compiled in 1ms (798 modules)
+ ✓ Compiled in 1ms (798 modules)
+ ✓ Compiled in 0ms (798 modules)
+ GET /api/settings/document-fields 200 in 1852ms
+ GET /api/system/scope 200 in 1782ms
+ GET /api/system/scope 200 in 707ms
+ GET /api/auth/me 200 in 1681ms
+ ✓ Compiled /api/settings/dispatch-config in 308ms (801 modules)
+ GET /api/settings/general 200 in 1032ms
+ GET /api/settings/document-fields 200 in 1055ms
+ GET /api/auth/me 200 in 467ms
+ ✓ Compiled /api/company-setup in 0ms (801 modules)
+ ✓ Compiled in 0ms (884 modules)
+ ✓ Compiled in 256ms (682 modules)
+ GET /api/settings/document-fields 200 in 1612ms
+ GET /api/settings/document-fields 200 in 1941ms
+ GET /api/settings/dispatch-config 200 in 1889ms
+ GET /api/settings/dispatch-config 200 in 2008ms
+ GET /api/company-setup 200 in 1780ms
+ GET /api/company-setup 200 in 1818ms
+ GET /masters/supplier 200 in 1204ms
+ GET /settings/documents?screen=supplier_master 200 in 627ms
+ ✓ Compiled /api/masters/suppliers in 427ms (838 modules)
+ GET /api/masters/suppliers 200 in 1383ms
+ GET /api/masters/suppliers 200 in 1387ms
+ ✓ Compiled /api/settings/document-fields in 220ms (842 modules)
+ ✓ Compiled (844 modules)
+ GET /api/settings/document-fields 200 in 1277ms
+ GET /api/settings/dispatch-config 200 in 1280ms
+ GET /api/settings/document-fields 200 in 1306ms
+ GET /api/settings/dispatch-config 200 in 1335ms
+ GET /settings/documents?screen=supplier_master 200 in 3849ms
+ ○ Compiling /api/settings/general ...
+ ✓ Compiled /api/settings/general in 561ms (670 modules)
+ ✓ Compiled (791 modules)
+ GET /icon.png?5a285dc6c8e9056e 200 in 1225ms
+ GET /api/website/config 200 in 1300ms
+ GET /api/website/config 200 in 1307ms
+ ✓ Compiled /api/settings/document-fields in 143ms (793 modules)
+ ✓ Compiled /api/auth/me in 248ms (795 modules)
+ ✓ Compiled (798 modules)
+ GET /api/settings/general 200 in 2720ms
+ GET /api/settings/theme 200 in 2805ms
+ GET /api/settings/theme 200 in 2808ms
+ GET /api/system/scope 200 in 1500ms
+ GET /api/system/scope 200 in 661ms
+ GET /api/settings/document-fields 200 in 2302ms
+ GET /api/auth/me 200 in 2357ms
+ GET /api/auth/me 200 in 1099ms
+ GET /api/settings/general 200 in 1238ms
+ ○ Compiling /api/settings/dispatch-config ...
+ GET /api/settings/document-fields 200 in 1357ms
+ ✓ Compiled /api/company-setup in 1045ms (801 modules)
+ ✓ Compiled (884 modules)
+ GET /api/settings/dispatch-config 200 in 4388ms
+ GET /api/settings/dispatch-config 200 in 4594ms
+ GET /api/settings/document-fields 200 in 4265ms
+ GET /api/settings/document-fields 200 in 4708ms
+ GET /api/company-setup 200 in 5079ms
+ GET /api/company-setup 200 in 4981ms
+ ✓ Compiled in 1904ms (1320 modules)
+ ✓ Compiled in 492ms (682 modules)
+ ✓ Compiled in 320ms (682 modules)
+ ✓ Compiled in 309ms (682 modules)
+ ✓ Compiled in 279ms (682 modules)
+ ✓ Compiled in 615ms (682 modules)
+ ✓ Compiled in 662ms (682 modules)
+ ✓ Compiled in 553ms (682 modules)
+ ✓ Compiled in 628ms (682 modules)
+ ✓ Compiled in 333ms (682 modules)
+ ✓ Compiled in 334ms (682 modules)
+ ✓ Compiled in 531ms (682 modules)
+ ✓ Compiled in 714ms (682 modules)
+ ✓ Compiled in 596ms (682 modules)
+ ✓ Compiled in 729ms (682 modules)
+ ✓ Compiled in 852ms (682 modules)
+ ✓ Compiled in 253ms (682 modules)
+ ✓ Compiled in 463ms (682 modules)
+ ✓ Compiled in 454ms (682 modules)
+ ✓ Compiled in 466ms (682 modules)
+ ✓ Compiled in 757ms (682 modules)
+ ✓ Compiled in 665ms (682 modules)
+ ○ Compiling /masters/customer ...
+ ✓ Compiled /masters/customer in 1660ms (1313 modules)
+ GET /masters/customer 200 in 4809ms
+ ○ Compiling /masters/product ...
+ ✓ Compiled /masters/product in 1108ms (1400 modules)
+ GET /masters/product 200 in 1434ms
+ GET /settings/documents?screen=customer_master 200 in 285ms
+ GET /settings/documents?screen=product_master 200 in 223ms
+ GET /masters/customer 200 in 316ms
+ GET /masters/product 200 in 748ms
+ GET /settings/documents?screen=customer_master 200 in 640ms
+ GET /settings/documents?screen=product_master 200 in 743ms
+ GET /settings/documents?screen=supplier_master 200 in 2836ms
+ ✓ Compiled /icon.png in 484ms (675 modules)
+ ○ Compiling /api/settings/document-fields ...
+ ✓ Compiled /api/settings/document-fields in 509ms (792 modules)
+ ✓ Compiled (798 modules)
+ GET /api/website/config 200 in 962ms
+ GET /api/website/config 200 in 966ms
+ ✓ Compiled /api/auth/me in 253ms (800 modules)
+ GET /api/settings/theme 200 in 1314ms
+ GET /api/settings/theme 200 in 1314ms
+ GET /api/settings/document-fields 200 in 1335ms
+ GET /api/settings/general 200 in 1337ms
+ ✓ Compiled in 1ms (803 modules)
+ ✓ Compiled in 0ms (803 modules)
+ ✓ Compiled in 0ms (803 modules)
+ GET /api/system/scope 200 in 1400ms
+ GET /api/system/scope 200 in 1802ms
+ ○ Compiling /api/settings/dispatch-config ...
+ ✓ Compiled /api/settings/dispatch-config in 534ms (806 modules)
+ GET /api/settings/general 200 in 2136ms
+ GET /api/settings/document-fields 200 in 2136ms
+ GET /api/auth/me 200 in 2487ms
+ GET /api/auth/me 200 in 2086ms
+ ✓ Compiled in 0ms (806 modules)
+ GET /icon.png?5a285dc6c8e9056e 200 in 887ms
+ ✓ Compiled /api/company-setup in 0ms (806 modules)
+ ✓ Compiled in 0ms (889 modules)
+ GET /api/settings/dispatch-config 200 in 4225ms
+ GET /api/settings/dispatch-config 200 in 3540ms
+ GET /api/settings/document-fields 200 in 3547ms
+ GET /api/settings/document-fields 200 in 3828ms
+ ○ Compiling /api/masters/customers ...
+ ✓ Compiled /api/masters/customers in 581ms (893 modules)
+ GET /api/company-setup 200 in 7026ms
+ GET /api/company-setup 200 in 7284ms
+ GET /api/masters/customers 200 in 6873ms
+ GET /api/masters/customers 200 in 6883ms
+ GET /api/settings/dispatch-config 200 in 356ms
+ GET /api/settings/document-fields 200 in 372ms
+ GET /api/settings/dispatch-config 200 in 375ms
+ GET /api/settings/document-fields 200 in 397ms
+ ○ Compiling /masters/product ...
+ ✓ Compiled /masters/product in 519ms (903 modules)
+ GET /icon.png?5a285dc6c8e9056e 200 in 138ms
+ ○ Compiling /api/products ...
+ ✓ Compiled /api/products in 534ms (901 modules)
+ GET /api/products?q=&status=All&page=1&pageSize=8 200 in 4135ms
+ GET /api/settings/dispatch-config 200 in 316ms
+ GET /api/settings/document-fields 200 in 327ms
+ GET /api/settings/document-fields 200 in 330ms
+ GET /api/settings/dispatch-config 200 in 385ms
+ ✓ Compiled /api/masters/suppliers in 297ms (881 modules)
+ GET /api/masters/suppliers 200 in 974ms
+ GET /api/masters/suppliers 200 in 980ms
+ ○ Compiling /masters/supplier/new ...
+ ✓ Compiled /masters/supplier/new in 776ms (915 modules)
+ ○ Compiling /api/transport/gate-entry ...
+ ✓ Compiled /api/transport/gate-entry in 554ms (877 modules)
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 2351ms
+ ✓ Compiled /api/transport/gate-entry/[id]/hover-detail in 199ms (879 modules)
+ GET /api/transport/gate-entry/107/hover-detail 200 in 1034ms
+ GET /api/transport/gate-entry/105/hover-detail 200 in 1088ms
+ GET /api/transport/gate-entry/106/hover-detail 200 in 1096ms
+ GET /api/transport/gate-entry/106/hover-detail 200 in 1115ms
+ GET /api/transport/gate-entry/107/hover-detail 200 in 1138ms
+ GET /api/transport/gate-entry/105/hover-detail 200 in 1211ms
+ GET /api/transport/gate-entry/108/hover-detail 200 in 472ms
+ GET /api/transport/gate-entry/108/hover-detail 200 in 549ms
+ GET /api/transport/gate-entry/109/hover-detail 200 in 557ms
+ GET /api/transport/gate-entry/109/hover-detail 200 in 572ms
+ GET /api/transport/gate-entry/111/hover-detail 200 in 518ms
+ GET /api/transport/gate-entry/111/hover-detail 200 in 591ms
+ GET /api/transport/gate-entry/112/hover-detail 200 in 486ms
+ GET /api/transport/gate-entry/112/hover-detail 200 in 429ms
+ GET /api/transport/gate-entry/110/hover-detail 200 in 399ms
+ GET /api/transport/gate-entry/110/hover-detail 200 in 395ms
+ ○ Compiling /transport/gate-entry/new ...
+ ✓ Compiled /transport/gate-entry/new in 1461ms (1585 modules)
+ ✓ Compiled in 382ms (698 modules)
+ ✓ Compiled /api/transport/masters/loading-bay in 228ms (889 modules)
+ ✓ Compiled (899 modules)
+ GET /api/transport/masters/loading-bay?status=Active 200 in 2589ms
+ GET /api/settings/dispatch-config 200 in 2915ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 2916ms
+ ✓ Compiled /api/system/scope in 362ms (901 modules)
+ GET /api/transport/masters/vehicle?status=Active 200 in 3012ms
+ GET /api/transport/gate-entry/next-number 200 in 3404ms
+ GET /api/system/scope 200 in 1568ms
+ GET /api/settings/dispatch-config 200 in 1805ms
+ GET /api/settings/document-fields 200 in 976ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1753ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 2209ms
+ GET /api/transport/gate-entry/next-number 200 in 2421ms
+ ✓ Compiled /icon.png in 389ms (930 modules)
+ GET /icon.png?5a285dc6c8e9056e 200 in 616ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1013ms
+ GET /api/system/scope 200 in 776ms
+ GET /api/settings/document-fields 200 in 6012ms
+ ✓ Compiled /api/masters/customers in 457ms (901 modules)
+ GET /api/masters/customers 200 in 1698ms
+ GET /api/masters/customers 200 in 1701ms
+ ○ Compiling /masters/customer/new ...
+ ✓ Compiled /masters/customer/new in 1213ms (1584 modules)
+ ✓ Compiled /api/settings/sales in 136ms (883 modules)
+ GET /api/settings/sales 200 in 953ms
+ GET /api/settings/sales 200 in 378ms
+ ✓ Compiled /transport/gate-entry in 207ms (890 modules)
+ ✓ Compiled /api/transport/gate-entry in 197ms (896 modules)
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 1779ms
+ ✓ Compiled /api/settings/dispatch-config in 189ms (898 modules)
+ ✓ Compiled (900 modules)
+ GET /api/settings/dispatch-config 200 in 1050ms
+ GET /api/settings/dispatch-config 200 in 1052ms
+ GET /api/settings/document-fields 200 in 1055ms
+ GET /api/settings/document-fields 200 in 1155ms
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 950ms
+ ✓ Compiled /transport/gate-entry/new in 402ms (879 modules)
+ ✓ Compiled (887 modules)
+ ✓ Compiled /api/transport/masters/transport-company in 132ms (889 modules)
+ ✓ Compiled (895 modules)
+ GET /api/transport/gate-entry/112/hover-detail 200 in 1781ms
+ GET /api/transport/gate-entry/112/hover-detail 200 in 1838ms
+ GET /api/settings/dispatch-config 200 in 825ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 862ms
+ ✓ Compiled /api/transport/masters/loading-bay in 254ms (897 modules)
+ GET /api/transport/gate-entry/next-number 200 in 925ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 917ms
+ ✓ Compiled /api/system/scope in 0ms (899 modules)
+ ✓ Compiled in 1ms (901 modules)
+ ✓ Compiled in 0ms (901 modules)
+ ✓ Compiled in 0ms (901 modules)
+ GET /api/settings/document-fields 200 in 1466ms
+ GET /api/settings/dispatch-config 200 in 1151ms
+ GET /api/system/scope 200 in 1238ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1460ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1267ms
+ GET /api/transport/gate-entry/next-number 200 in 1354ms
+ GET /api/system/scope 200 in 184ms
+ GET /api/settings/document-fields 200 in 352ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 419ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 493ms
+ ○ Compiling /masters/transport/vehicle ...
+ ✓ Compiled /masters/transport/vehicle in 1888ms (1643 modules)
+ GET /api/transport/masters/transport-company 200 in 628ms
+ GET /api/transport/masters/transport-company 200 in 638ms
+ GET /api/transport/masters/vehicle 200 in 723ms
+ GET /api/transport/masters/vehicle 200 in 723ms
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 653ms
+ GET /api/settings/dispatch-config 200 in 1927ms
+ GET /api/transport/gate-entry/112/hover-detail 200 in 2415ms
+ GET /api/transport/gate-entry/112/hover-detail 200 in 2513ms
+ GET /api/transport/gate-entry/111/hover-detail 200 in 2436ms
+ GET /api/transport/gate-entry/111/hover-detail 200 in 2438ms
+ GET /api/transport/gate-entry/next-number 200 in 2368ms
+ GET /api/system/scope 200 in 484ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 683ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 678ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1111ms
+ GET /api/settings/document-fields 200 in 1464ms
+ GET /api/transport/gate-entry/next-number 200 in 1752ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1357ms
+ GET /api/settings/dispatch-config 200 in 1645ms
+ GET /api/settings/document-fields 200 in 1840ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1254ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 2323ms
+ GET /api/system/scope 200 in 1454ms
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 2845ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 354ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 367ms
+ GET /api/settings/dispatch-config 200 in 506ms
+ GET /api/settings/document-fields 200 in 688ms
+ GET /api/transport/gate-entry/next-number 200 in 899ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 898ms
+ GET /api/system/scope 200 in 616ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1159ms
+ GET /api/settings/dispatch-config 200 in 1750ms
+ GET /api/transport/gate-entry/next-number 200 in 2057ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1557ms
+ GET /api/settings/document-fields 200 in 1939ms
+ GET /api/system/scope 200 in 779ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 2140ms
+ GET /api/transport/masters/transport-company 200 in 1168ms
+ GET /api/transport/masters/transport-company 200 in 1170ms
+ GET /api/transport/masters/vehicle 200 in 1171ms
+ GET /api/transport/masters/vehicle 200 in 1478ms
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 3957ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 842ms
+ GET /api/settings/dispatch-config 200 in 1129ms
+ GET /api/settings/document-fields 200 in 1309ms
+ GET /api/system/scope 200 in 488ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1329ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 684ms
+ GET /api/transport/gate-entry/next-number 200 in 1623ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1234ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1283ms
+ GET /api/settings/dispatch-config 200 in 1601ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1606ms
+ GET /api/transport/gate-entry/next-number 200 in 1876ms
+ GET /api/settings/document-fields 200 in 1689ms
+ GET /api/system/scope 200 in 454ms

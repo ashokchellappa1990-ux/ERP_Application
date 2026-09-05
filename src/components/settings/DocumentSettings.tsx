@@ -21,6 +21,11 @@ const REFERENCE_TYPE_OPTS = [
   { value: "Sales Order", label: "Sales Order" },
   { value: "Direct Customer Dispatch", label: "Direct Customer Dispatch" },
 ];
+const ITEM_CAPTURE_OPTS = [
+  { value: "None", label: "None — hide Item Details" },
+  { value: "Single", label: "Single Product" },
+  { value: "Multiple", label: "Multiple Products" },
+];
 
 export function DocumentSettings() {
   const [cfg, setCfg] = useState<DocFieldsConfig>(() => clone(DEFAULT_DOC_FIELDS_CONFIG));
@@ -207,6 +212,18 @@ export function DocumentSettings() {
             <span><span className="block text-sm font-medium text-foreground">Auto-load Customer from Vehicle History</span><span className="block text-2xs text-subtle">Picking a Vehicle Number looks up that vehicle&apos;s most recent past gate entry and pre-fills its Customer — still changeable by the user afterward. When off, Customer is picked manually as today.</span></span>
             <Switch checked={!!dispatchCfg.flags.autoLoadCustomerFromVehicleHistory} onChange={(v) => setDispatchFlag("autoLoadCustomerFromVehicleHistory", v)} aria-label="Auto-load customer from vehicle history" />
           </label>
+
+          <div className="mt-4 border-t border-border pt-4">
+            <p className="mb-3 text-sm font-semibold text-foreground">Item Capture on Vehicle Gate Entry</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Select label="Product Capture" options={ITEM_CAPTURE_OPTS} value={dispatchCfg.fields.itemCaptureMode || "Multiple"} onChange={(e) => setDispatchField("itemCaptureMode", e.target.value)} />
+              <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2.5">
+                <span className="text-sm font-medium text-foreground">Capture Quantity at Gate</span>
+                <Switch checked={!!dispatchCfg.flags.captureQtyAtGate} onChange={(v) => setDispatchFlag("captureQtyAtGate", v)} aria-label="Capture quantity at gate" />
+              </label>
+            </div>
+            <p className="mt-2 text-2xs text-muted">Controls the Item Details section on the New Vehicle Gate Entry screen — None hides it, Single limits it to exactly one product at a time (deleting it re-opens the search box to add a replacement), Multiple allows several at once. Shared with Dispatch Configuration.</p>
+          </div>
         </div>
       )}
       <div className="rounded-2xl border border-border bg-card shadow-sm">

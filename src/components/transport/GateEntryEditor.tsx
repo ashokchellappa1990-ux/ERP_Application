@@ -9,7 +9,7 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import { AppLoader } from "@/components/ui/AppLoader";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
-import { GATE_ENTRY_DISPATCH_TYPES, VEHICLE_TYPE_OPTS } from "@/lib/contracts/transport";
+import { GATE_ENTRY_DISPATCH_TYPES, VEHICLE_TYPE_OPTS, VEHICLE_OWNER_TYPE_OPTS, VEHICLE_BODY_TYPE_OPTS, VEHICLE_FUEL_TYPE_OPTS, vehicleInput, type VehicleInput } from "@/lib/contracts/transport";
 import { fieldOn, fieldMust, applyDocFieldsConfig } from "@/lib/settings/docFieldsConfig";
 
 const SCREEN = "vehicle_gate_entry";
@@ -771,25 +771,42 @@ function AddTransportCompanyModal({ onClose, onAdded }: { onClose: () => void; o
   );
 }
 
+// Full parity with the standalone Vehicle Master screen's own add/edit modal
+// (src/components/transport/masters/VehicleMasterList.tsx's VehicleModal) —
+// every field it has, and the same Own vs. non-Own conditional section set,
+// so nothing is left half-filled that requires a follow-up trip to Masters.
+const VEHICLE_BLANK: VehicleInput = {
+  vehicleNo: "", vehicleType: "", capacity: 0, capacityUnit: "", transportCompanyId: null, ownerType: "Customer", status: "Active", remarks: "",
+  vehicleCategory: "", make: "", model: "", manufacturingYear: null, registrationDate: "",
+  numberOfAxles: null, bodyType: "", fuelType: "", engineNo: "", chassisNo: "", colour: "",
+  contractRef: "", transporterEffectiveFrom: "", transporterEffectiveTo: "",
+  rfidTagNo: "", gpsDeviceId: "", fastagId: "",
+  registrationCertNo: "", registrationValidUpto: "", insuranceNo: "", insuranceValidUpto: "",
+  fitnessNo: "", fitnessValidUpto: "", pollutionNo: "", pollutionValidUpto: "", permitNo: "", permitValidUpto: "",
+};
+
 function AddVehicleModal({ companies, onClose, onAdded }: { companies: Opt[]; onClose: () => void; onAdded: (row: { id: number; vehicleNo: string; vehicleType: string | null; transportCompanyId: number | null; ownerType: string | null }) => void }) {
   const toast = useToast();
-  const [vehicleNo, setVehicleNo] = useState("");
-  const [vehicleType, setVehicleType] = useState("");
-  const [capacity, setCapacity] = useState("");
-  const [capacityUnit, setCapacityUnit] = useState("");
-  const [transportCompanyId, setTransportCompanyId] = useState<number | "">("");
-  const [ownerType, setOwnerType] = useState<"Own" | "Hired" | "Transporter" | "Supplier">("Own");
-  const [remarks, setRemarks] = useState("");
+  const [f, setF] = useState<VehicleInput>(VEHICLE_BLANK);
+  const [companyList, setCompanyList] = useState<Opt[]>(companies);
+  const [addCompanyOpen, setAddCompanyOpen] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const set = <K extends keyof VehicleInput>(k: K, v: VehicleInput[K]) => setF((s) => ({ ...s, [k]: v }));
 
   async function save() {
-    if (!vehicleNo.trim()) { toast.error("Vehicle number is required."); return; }
+    const parsed = vehicleInput.safeParse(f);
+    if (!parsed.success) {
+      const fieldErrors: Record<string, string> = {};
+      for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0])] = issue.message;
+      setErrors(fieldErrors);
+      toast.error(parsed.error.issues[0]?.message ?? "Please check the form.");
+      return;
+    }
+    setErrors({});
     setSaving(true);
     try {
-      const res = await fetch("/api/transport/masters/vehicle", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vehicleNo, vehicleType: vehicleType || null, capacity: Number(capacity) || 0, capacityUnit: capacityUnit || null, transportCompanyId: transportCompanyId || null, ownerType, remarks: remarks || null, status: "Active" }),
-      });
+      const res = await fetch("/api/transport/masters/vehicle", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(parsed.data) });
       const j = await res.json().catch(() => ({}));
       if (res.ok && j.ok) { toast.success("Vehicle added."); onAdded(j.row); }
       else { toast.error(j.message || "Could not add the vehicle."); setSaving(false); }
@@ -798,20 +815,96 @@ function AddVehicleModal({ companies, onClose, onAdded }: { companies: Opt[]; on
 
   return (
     <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="max-h-[92vh] w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="max-h-[92vh] w-full max-w-4xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-border bg-surface-2 px-5 py-3.5">
           <h2 className="text-sm font-bold text-foreground">Add Vehicle</h2>
           <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-surface hover:text-foreground"><X className="h-4 w-4" /></button>
         </div>
-        <div className="max-h-[70vh] overflow-y-auto p-5">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Fld label="Vehicle Number *"><input value={vehicleNo} onChange={(e) => setVehicleNo(e.target.value)} className={inp} /></Fld>
-            <Fld label="Vehicle Type"><select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} className={inp}><option value="">— Select —</option>{VEHICLE_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></Fld>
-            <Fld label="Capacity"><input type="number" value={capacity} onChange={(e) => setCapacity(e.target.value)} className={inp} /></Fld>
-            <Fld label="Capacity Unit"><input value={capacityUnit} onChange={(e) => setCapacityUnit(e.target.value)} className={inp} /></Fld>
-            <Fld label="Transport Company"><select value={transportCompanyId} onChange={(e) => setTransportCompanyId(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">— None —</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select></Fld>
-            <Fld label="Owner Type"><select value={ownerType} onChange={(e) => setOwnerType(e.target.value as typeof ownerType)} className={inp}><option value="Own">Own</option><option value="Hired">Hired</option><option value="Transporter">Transporter</option><option value="Supplier">Supplier</option></select></Fld>
-            <div className="sm:col-span-2"><Fld label="Remarks"><input value={remarks} onChange={(e) => setRemarks(e.target.value)} className={inp} /></Fld></div>
+        <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
+          <div className="space-y-5">
+            <VFSection title="Ownership">
+              <div><label className={vfLbl}>Owner Type</label><select value={f.ownerType} onChange={(e) => set("ownerType", e.target.value as VehicleInput["ownerType"])} className={inp}>{VEHICLE_OWNER_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
+            </VFSection>
+
+            {f.ownerType === "Own" ? (
+              <>
+                <VFSection title="Basic Information">
+                  <div><label className={vfLbl}>Vehicle No *</label><input value={f.vehicleNo} onChange={(e) => set("vehicleNo", e.target.value)} className={inp} />{errors.vehicleNo && <p className={vfErr}>{errors.vehicleNo}</p>}</div>
+                  <div><label className={vfLbl}>Vehicle Type</label><select value={f.vehicleType ?? ""} onChange={(e) => set("vehicleType", e.target.value)} className={inp}><option value="">— Select —</option>{VEHICLE_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
+                  <div><label className={vfLbl}>Vehicle Category</label><input value={f.vehicleCategory ?? ""} onChange={(e) => set("vehicleCategory", e.target.value)} placeholder="e.g. Heavy Vehicle" className={inp} /></div>
+                  <div><label className={vfLbl}>Make</label><input value={f.make ?? ""} onChange={(e) => set("make", e.target.value)} className={inp} /></div>
+                  <div><label className={vfLbl}>Model</label><input value={f.model ?? ""} onChange={(e) => set("model", e.target.value)} className={inp} /></div>
+                  <div><label className={vfLbl}>Manufacturing Year</label><input type="number" value={f.manufacturingYear ?? ""} onChange={(e) => set("manufacturingYear", e.target.value ? Number(e.target.value) : null)} className={inp} /></div>
+                  <div><label className={vfLbl}>Registration Date</label><input type="date" value={f.registrationDate ?? ""} onChange={(e) => set("registrationDate", e.target.value)} className={inp} /></div>
+                  <div><label className={vfLbl}>Vehicle Status</label><select value={f.status} onChange={(e) => set("status", e.target.value as VehicleInput["status"])} className={inp}><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div>
+                </VFSection>
+
+                <VFSection title="Capacity & Technical Details">
+                  <div><label className={vfLbl}>Capacity</label><input type="number" value={f.capacity} onChange={(e) => set("capacity", Number(e.target.value) || 0)} className={inp} /></div>
+                  <div><label className={vfLbl}>Capacity Unit</label><input value={f.capacityUnit ?? ""} onChange={(e) => set("capacityUnit", e.target.value)} className={inp} /></div>
+                  <div><label className={vfLbl}>Number of Axles</label><input type="number" value={f.numberOfAxles ?? ""} onChange={(e) => set("numberOfAxles", e.target.value ? Number(e.target.value) : null)} className={inp} /></div>
+                  <div><label className={vfLbl}>Body Type</label><select value={f.bodyType ?? ""} onChange={(e) => set("bodyType", e.target.value)} className={inp}><option value="">— Select —</option>{VEHICLE_BODY_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
+                  <div><label className={vfLbl}>Fuel Type</label><select value={f.fuelType ?? ""} onChange={(e) => set("fuelType", e.target.value)} className={inp}><option value="">— Select —</option>{VEHICLE_FUEL_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
+                  <div><label className={vfLbl}>Engine Number</label><input value={f.engineNo ?? ""} onChange={(e) => set("engineNo", e.target.value)} className={inp} /></div>
+                  <div><label className={vfLbl}>Chassis Number</label><input value={f.chassisNo ?? ""} onChange={(e) => set("chassisNo", e.target.value)} className={inp} /></div>
+                  <div><label className={vfLbl}>Colour</label><input value={f.colour ?? ""} onChange={(e) => set("colour", e.target.value)} className={inp} /></div>
+                </VFSection>
+
+                <VFSection title="Transporter Relationship">
+                  <div className="sm:col-span-2">
+                    <label className={vfLbl}>Transporter</label>
+                    <div className="flex gap-1.5">
+                      <select value={f.transportCompanyId ?? ""} onChange={(e) => set("transportCompanyId", Number(e.target.value) || null)} className={inp}><option value="">— None —</option>{companyList.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select>
+                      <button type="button" title="Add new transport company" onClick={() => setAddCompanyOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border-strong bg-surface text-muted hover:border-primary hover:text-primary"><Plus className="h-4 w-4" /></button>
+                    </div>
+                  </div>
+                  <div><label className={vfLbl}>Contract Reference</label><input value={f.contractRef ?? ""} onChange={(e) => set("contractRef", e.target.value)} className={inp} /></div>
+                  <div><label className={vfLbl}>Effective From</label><input type="date" value={f.transporterEffectiveFrom ?? ""} onChange={(e) => set("transporterEffectiveFrom", e.target.value)} className={inp} /></div>
+                  <div><label className={vfLbl}>Effective To</label><input type="date" value={f.transporterEffectiveTo ?? ""} onChange={(e) => set("transporterEffectiveTo", e.target.value)} className={inp} /></div>
+                </VFSection>
+
+                <VFSection title="Tracking">
+                  <div><label className={vfLbl}>RFID</label><input value={f.rfidTagNo ?? ""} onChange={(e) => set("rfidTagNo", e.target.value)} placeholder="RFID tag no." className={inp} /></div>
+                  <div><label className={vfLbl}>GPS Device</label><input value={f.gpsDeviceId ?? ""} onChange={(e) => set("gpsDeviceId", e.target.value)} placeholder="GPS device ID" className={inp} /></div>
+                  <div><label className={vfLbl}>Fastag</label><input value={f.fastagId ?? ""} onChange={(e) => set("fastagId", e.target.value)} placeholder="Fastag ID" className={inp} /></div>
+                </VFSection>
+
+                <VFSection title="Compliance">
+                  <div><label className={vfLbl}>Registration No</label><input value={f.registrationCertNo ?? ""} onChange={(e) => set("registrationCertNo", e.target.value)} className={inp} /></div>
+                  <div><label className={vfLbl}>Registration Valid Upto</label><input type="date" value={f.registrationValidUpto ?? ""} onChange={(e) => set("registrationValidUpto", e.target.value)} className={inp} /></div>
+                  <div />
+                  <div><label className={vfLbl}>Insurance No</label><input value={f.insuranceNo ?? ""} onChange={(e) => set("insuranceNo", e.target.value)} className={inp} /></div>
+                  <div><label className={vfLbl}>Insurance Valid Upto</label><input type="date" value={f.insuranceValidUpto ?? ""} onChange={(e) => set("insuranceValidUpto", e.target.value)} className={inp} /></div>
+                  <div />
+                  <div><label className={vfLbl}>Fitness No</label><input value={f.fitnessNo ?? ""} onChange={(e) => set("fitnessNo", e.target.value)} className={inp} /></div>
+                  <div><label className={vfLbl}>Fitness Valid Upto</label><input type="date" value={f.fitnessValidUpto ?? ""} onChange={(e) => set("fitnessValidUpto", e.target.value)} className={inp} /></div>
+                  <div />
+                  <div><label className={vfLbl}>Pollution (PUC) No</label><input value={f.pollutionNo ?? ""} onChange={(e) => set("pollutionNo", e.target.value)} className={inp} /></div>
+                  <div><label className={vfLbl}>Pollution Valid Upto</label><input type="date" value={f.pollutionValidUpto ?? ""} onChange={(e) => set("pollutionValidUpto", e.target.value)} className={inp} /></div>
+                  <div />
+                  <div><label className={vfLbl}>Permit No</label><input value={f.permitNo ?? ""} onChange={(e) => set("permitNo", e.target.value)} className={inp} /></div>
+                  <div><label className={vfLbl}>Permit Valid Upto</label><input type="date" value={f.permitValidUpto ?? ""} onChange={(e) => set("permitValidUpto", e.target.value)} className={inp} /></div>
+                </VFSection>
+
+                <VFSection title="Notes">
+                  <div className="sm:col-span-3"><label className={vfLbl}>Remarks</label><input value={f.remarks ?? ""} onChange={(e) => set("remarks", e.target.value)} className={inp} /></div>
+                </VFSection>
+              </>
+            ) : (
+              <VFSection title="Vehicle Details">
+                <div><label className={vfLbl}>Vehicle No *</label><input value={f.vehicleNo} onChange={(e) => set("vehicleNo", e.target.value)} className={inp} />{errors.vehicleNo && <p className={vfErr}>{errors.vehicleNo}</p>}</div>
+                <div><label className={vfLbl}>Vehicle Type</label><select value={f.vehicleType ?? ""} onChange={(e) => set("vehicleType", e.target.value)} className={inp}><option value="">— Select —</option>{VEHICLE_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
+                <div><label className={vfLbl}>Vehicle Status</label><select value={f.status} onChange={(e) => set("status", e.target.value as VehicleInput["status"])} className={inp}><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div>
+                <div className="sm:col-span-2">
+                  <label className={vfLbl}>Transporter Name</label>
+                  <div className="flex gap-1.5">
+                    <select value={f.transportCompanyId ?? ""} onChange={(e) => set("transportCompanyId", Number(e.target.value) || null)} className={inp}><option value="">— None —</option>{companyList.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select>
+                    <button type="button" title="Add new transport company" onClick={() => setAddCompanyOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border-strong bg-surface text-muted hover:border-primary hover:text-primary"><Plus className="h-4 w-4" /></button>
+                  </div>
+                </div>
+                <div className="sm:col-span-3"><label className={vfLbl}>Remarks</label><input value={f.remarks ?? ""} onChange={(e) => set("remarks", e.target.value)} className={inp} /></div>
+              </VFSection>
+            )}
           </div>
         </div>
         <div className="flex items-center justify-end gap-2 border-t border-border bg-surface-2 px-5 py-3">
@@ -819,9 +912,26 @@ function AddVehicleModal({ companies, onClose, onAdded }: { companies: Opt[]; on
           <Button size="md" onClick={save} disabled={saving}>{saving ? "Saving…" : "Add"}</Button>
         </div>
       </div>
+      {addCompanyOpen && (
+        <AddTransportCompanyModal
+          onClose={() => setAddCompanyOpen(false)}
+          onAdded={(row) => { setCompanyList((p) => [{ id: row.id, label: row.name }, ...p]); set("transportCompanyId", row.id); setAddCompanyOpen(false); }}
+        />
+      )}
     </div>
   );
 }
+
+function VFSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-3 border-t border-border pt-4 first:border-t-0 first:pt-0">
+      <p className="text-xs font-bold uppercase tracking-wide text-primary">{title}</p>
+      <div className="grid gap-3 sm:grid-cols-3">{children}</div>
+    </div>
+  );
+}
+const vfLbl = "mb-1 block text-2xs font-semibold text-muted";
+const vfErr = "mt-1 text-2xs font-medium text-danger";
 
 function AddDriverModal({ companies, onClose, onAdded }: { companies: Opt[]; onClose: () => void; onAdded: (row: { id: number; name: string; phone: string | null; licenseNo: string | null }) => void }) {
   const toast = useToast();

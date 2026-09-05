@@ -7,7 +7,7 @@ import { writeAudit } from "@/lib/audit/log";
 import { loadDispatchUpdateInput } from "@/lib/contracts/loadDispatch";
 import type { LoadDispatchDetail } from "@/lib/contracts/loadDispatch";
 import { getDispatchConfig } from "@/lib/settings/dispatchConfig";
-import { computeDriverBatta, computeTransitPass } from "@/lib/settings/transportConfigDefaults";
+import { computeDriverBatta, computeTransitPass, roundInvoiceTotal } from "@/lib/settings/transportConfigDefaults";
 
 const PERM = "warehouse.transfer";
 const num = (v: unknown) => (v == null ? 0 : Number(v));
@@ -85,7 +85,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   const input = parsed.data;
 
   const sw = scopeWhere(await getActiveScope(user), { branch: true });
-  const doc = await prisma.loadDispatch.findFirst({ where: { ...sw, id, deletedAt: null }, select: { id: true, status: true, dispatchNo: true, businessId: true, branchId: true, docType: true } });
+  const doc = await prisma.loadDispatch.findFirst({ where: { ...sw, id, deletedAt: null }, select: { id: true, status: true, dispatchNo: true, businessId: true, branchId: true, docType: true, paymentMode: true, vehicleRent: true, transitPassAmount: true } });
   if (!doc) return NextResponse.json({ ok: false, message: "Load & Dispatch not found." }, { status: 404 });
   if (!["Draft", "Ready", "Loading"].includes(doc.status)) return NextResponse.json({ ok: false, message: `A ${doc.status} dispatch can no longer be edited.` }, { status: 422 });
 
@@ -103,6 +103,37 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   const transitPassAmount = transitPassQty != null ? Math.round(computeTransitPass(cfg, transitPassQty) * 100) / 100 : undefined;
   const transitPassRate = transitPassQty != null ? Number(cfg.fields.transitPassPerTon) || 0 : undefined;
 
+  // Keep a "Full" payment truly full when this save recalculates Transit
+  // Pass/Vehicle Rent from an updated net weight (Modify Transport Info,
+  // weighment finalizing after an earlier estimate) — otherwise the stored
+  // paymentAmount stays frozen at the old, lower total and the dispatch
+  // wrongly reads "Partial" even though the customer was charged in full at
+  // the time and nobody was ever asked for the difference. Only resyncs when
+  // this call ISN'T itself submitting a specific payment amount — an explicit
+  // Payment Details save already computed its own amount and must win as-is.
+  let resyncedPaymentAmount: number | undefined;
+  if (input.payment?.paymentAmount === undefined && (input.payment?.paymentMode ?? doc.paymentMode) === "Full") {
+    const vehicleRentVal = input.vehicleRent ?? num(doc.vehicleRent);
+    const resolvedTransitPassAmount = transitPassAmount ?? num(doc.transitPassAmount);
+    let itemsGrandTotal = 0;
+    if (input.items) {
+      for (const it of input.items) {
+        const rate = it.rate ?? 0;
+        const gross = rate * it.dispatchedQty;
+        const discPct = it.discPct ?? null;
+        const discAmount = it.discAmount ?? (discPct ? gross * (discPct / 100) : 0);
+        const taxableValue = Math.max(0, gross - discAmount);
+        const taxPct = it.taxPct ?? null;
+        const taxAmount = taxPct ? taxableValue * (taxPct / 100) : 0;
+        itemsGrandTotal += taxableValue + taxAmount;
+      }
+    } else {
+      const agg = await prisma.loadDispatchItem.aggregate({ where: { loadDispatchId: id }, _sum: { taxableValue: true, taxAmount: true } });
+      itemsGrandTotal = num(agg._sum.taxableValue) + num(agg._sum.taxAmount);
+    }
+    resyncedPaymentAmount = roundInvoiceTotal(cfg, itemsGrandTotal + vehicleRentVal + resolvedTransitPassAmount).total;
+  }
+
   await prisma.$transaction(async (tx) => {
     await tx.loadDispatch.update({
       where: { id },
@@ -115,7 +146,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         loadingStart: input.loadingStart ? new Date(input.loadingStart) : undefined, loadingEnd: input.loadingEnd ? new Date(input.loadingEnd) : undefined,
         packages: input.packages, pallets: input.pallets, remarks: input.remarks,
         totalPackages: input.packages != null ? input.packages : undefined,
-        paymentMode: input.payment?.paymentMode, paymentAmount: input.payment?.paymentAmount,
+        paymentMode: input.payment?.paymentMode, paymentAmount: input.payment?.paymentAmount ?? resyncedPaymentAmount,
         paymentMethod: input.payment?.paymentMethod, bankId: input.payment?.bankId,
         bankName: input.payment?.bankName, bankAccount: input.payment?.bankAccount,
         vehicleRent: input.vehicleRent, transitPassRefNo: input.transitPassRefNo === undefined ? undefined : (input.transitPassRefNo?.trim() || null), transitPassQty, transitPassRate, transitPassAmount, driverBattaAmount,

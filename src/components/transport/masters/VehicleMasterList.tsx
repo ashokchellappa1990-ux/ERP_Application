@@ -14,8 +14,13 @@ import { TyreHistory } from "@/components/transport/masters/tyre/TyreHistory";
 
 interface Row extends VehicleInput { id: number }
 interface CompanyOption { id: number; name: string }
+// Owner Type defaults to "Customer" — most vehicles entering via Gate Entry
+// belong to the customer receiving/sending the load, not the business's own
+// fleet, so this is the common case an operator shouldn't have to change
+// every time. Because it isn't "Own", the modal opens on the shorter
+// "Vehicle Details" field set below rather than the full Own vehicle profile.
 const BLANK: VehicleInput = {
-  vehicleNo: "", vehicleType: "", capacity: 0, capacityUnit: "", transportCompanyId: null, ownerType: "Own", status: "Active", remarks: "",
+  vehicleNo: "", vehicleType: "", capacity: 0, capacityUnit: "", transportCompanyId: null, ownerType: "Customer", status: "Active", remarks: "",
   vehicleCategory: "", make: "", model: "", manufacturingYear: null, registrationDate: "",
   numberOfAxles: null, bodyType: "", fuelType: "", engineNo: "", chassisNo: "", colour: "",
   contractRef: "", transporterEffectiveFrom: "", transporterEffectiveTo: "",
