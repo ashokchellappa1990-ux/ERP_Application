@@ -9,8 +9,24 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { fieldMust } from "@/lib/settings/docFieldsConfig";
+
 export type Row = Record<string, string> & { id: string };
 export type RowKey = "addresses";
+
+const CUSTOMER_SCREEN = "customer_master";
+// Top-level fields whose docFieldsConfig key matches the form field name 1:1
+// and can be turned Mandatory from Configure Document Field — validated here
+// in addition to the always-required name/c1Mobile.
+const CONFIGURABLE_REQUIRED: { key: string; message: string }[] = [
+  { key: "code", message: "Customer Code is required." },
+  { key: "c1Name", message: "Primary contact name is required." },
+  { key: "c1Email", message: "Primary contact email is required." },
+  { key: "billLine1", message: "Billing Address Line 1 is required." },
+  { key: "billCity", message: "Billing Address City is required." },
+  { key: "billState", message: "Billing Address State is required." },
+  { key: "billPincode", message: "Billing Address Pincode is required." },
+];
 
 export interface CustomerFormData {
   fields: Record<string, string>;
@@ -159,6 +175,9 @@ export function CustomerFormProvider({
     if (f.c1Email && !EMAIL_RE.test(f.c1Email)) e["c1Email"] = "Enter a valid email.";
     const gst = (f.gstin ?? "").trim();
     if (gst && gst.length !== 15) e["gstin"] = "GSTIN must be exactly 15 characters.";
+    for (const { key, message } of CONFIGURABLE_REQUIRED) {
+      if (!e[key] && fieldMust(CUSTOMER_SCREEN, key) && !f[key]?.trim()) e[key] = message;
+    }
     setErrors(e);
     return e;
   }, [data.fields]);

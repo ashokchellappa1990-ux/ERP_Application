@@ -8,6 +8,21 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { fieldMust } from "@/lib/settings/docFieldsConfig";
+
+const PRODUCT_SCREEN = "product_master";
+// Top-level fields whose docFieldsConfig key matches the form field name 1:1
+// and can be turned Mandatory from Configure Document Field — validated here
+// in addition to the always-required `name`.
+const CONFIGURABLE_REQUIRED: { key: string; message: string }[] = [
+  { key: "code", message: "Product Code is required." },
+  { key: "category", message: "Category is required." },
+  { key: "baseUom", message: "Base UOM is required." },
+  { key: "gstRate", message: "GST Rate is required." },
+  { key: "hsn", message: "HSN Code is required." },
+  { key: "mrp", message: "MRP is required." },
+  { key: "retailPrice", message: "Retail Price is required." },
+];
 
 export interface VariantAttr {
   id: string;
@@ -193,6 +208,9 @@ export function ProductFormProvider({ children, initial }: { children: ReactNode
     if (data.fields.hsn && !/^\d{4,8}$/.test(data.fields.hsn))
       e["hsn"] = "HSN must be 4–8 digits.";
     if (!EMAIL_OK) e["_"] = "";
+    for (const { key, message } of CONFIGURABLE_REQUIRED) {
+      if (!e[key] && fieldMust(PRODUCT_SCREEN, key) && !data.fields[key]?.trim()) e[key] = message;
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   }, [data.fields]);

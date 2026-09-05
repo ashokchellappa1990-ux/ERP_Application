@@ -21,6 +21,7 @@ import {
   Download,
   FileSpreadsheet,
   CircleAlert,
+  Settings2,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -115,6 +116,9 @@ export default function SupplierMasterPage() {
           <Button variant="outline" size="md" onClick={() => setImportOpen(true)}>
             <Upload className="h-4 w-4" /> Import
           </Button>
+          <Link href="/settings/documents?screen=supplier_master">
+            <Button variant="outline" size="md"><Settings2 className="h-4 w-4" /> Configure Document Field</Button>
+          </Link>
           <Link href="/masters/supplier/new">
             <Button size="md"><Plus className="h-4 w-4" /> Add Supplier</Button>
           </Link>

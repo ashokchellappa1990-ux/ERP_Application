@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { FileCog, Settings2, CheckCircle2, Receipt, PackageCheck, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Switch } from "@/components/ui/Switch";
@@ -30,7 +31,9 @@ export function DocumentSettings() {
   // fetched here too so this screen can offer the same preload/lock controls
   // alongside the rest of Vehicle Gate Entry's field settings.
   const [dispatchCfg, setDispatchCfg] = useState<TransportConfigData>(() => clone(DEFAULT_DISPATCH_CONFIG));
-  const [active, setActive] = useState(DOC_SCREENS[0].key);
+  const searchParams = useSearchParams();
+  const screenParam = searchParams.get("screen");
+  const [active, setActive] = useState(() => (screenParam && DOC_SCREENS.some((s) => s.key === screenParam) ? screenParam : DOC_SCREENS[0].key));
   const [saved, setSaved] = useState(false);
   const screen = DOC_SCREENS.find((s) => s.key === active);
   const isGrn = active === "grn_pricing";
@@ -220,6 +223,14 @@ export function DocumentSettings() {
                   <span className="text-center text-2xs font-semibold uppercase text-subtle">Enabled</span>
                   <span className="w-20 text-center text-2xs font-semibold uppercase text-subtle">Mandatory</span>
                   {items.map((f) => {
+                    if (f.locked) {
+                      return (
+                        <div key={f.key} className="contents">
+                          <span className="py-1.5 font-medium text-foreground">{f.label}<span className="ml-1.5 rounded-full bg-warning-subtle px-1.5 py-0.5 text-[10px] font-semibold text-warning">Required</span></span>
+                          <div className="col-span-2 py-1.5 text-center text-2xs text-subtle">Always enabled &amp; mandatory</div>
+                        </div>
+                      );
+                    }
                     const setting = cfg[screen.key][f.key] ?? { enabled: true, mandatory: false };
                     const gstOff = f.gst && !company.gstEnabled;
                     return (

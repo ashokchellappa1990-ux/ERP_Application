@@ -53,6 +53,7 @@ import {
   type SField,
   type SToggle,
 } from "@/lib/masters/supplierConfig";
+import { fieldOn, fieldMust } from "@/lib/settings/docFieldsConfig";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
@@ -67,6 +68,10 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 
 /* ============================================================ helpers === */
+
+const SUPPLIER_SCREEN = "supplier_master";
+const configKeyOf = (d: Pick<SField, "name" | "configKey">) => d.configKey ?? d.name;
+const withReq = (label: string, required: boolean) => (required && !label.trim().endsWith("*") ? `${label} *` : label);
 
 function Grid({ children }: { children: ReactNode }) {
   return <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{children}</div>;
@@ -85,7 +90,8 @@ function FieldRenderer({ def }: { def: SField }) {
   const { getField, setField, errors, customOptions, addOption } = useSupplierForm();
   const Icon = def.icon;
   const lead = Icon ? <Icon className="h-4 w-4" /> : undefined;
-  const common = { label: def.label, info: def.info, sample: def.sample, error: errors[def.name] };
+  const required = fieldMust(SUPPLIER_SCREEN, configKeyOf(def));
+  const common = { label: withReq(def.label, required), info: def.info, sample: def.sample, error: errors[def.name] };
 
   if (def.type === "textarea") {
     return (
@@ -136,9 +142,10 @@ function CreatableSelect({ def, options, onAdd }: { def: SField; options: { valu
 }
 
 function Fields({ defs }: { defs: SField[] }) {
+  const visible = defs.filter((d) => fieldOn(SUPPLIER_SCREEN, configKeyOf(d)));
   return (
     <Grid>
-      {defs.map((d) => (
+      {visible.map((d) => (
         <div key={d.name} className={d.full ? "sm:col-span-2 lg:col-span-3" : ""}>
           <FieldRenderer def={d} />
         </div>
@@ -147,11 +154,19 @@ function Fields({ defs }: { defs: SField[] }) {
   );
 }
 
+// commPrefs/paymentModes toggle ids are registered individually in
+// docFieldsConfig as commPrefEmail/paymentModeBank/etc — cap-first the id
+// and prefix with the group's singular config key to resolve each one.
+const TOGGLE_GROUP_PREFIX: Record<string, string> = { commPrefs: "commPref", paymentModes: "paymentMode", documents: "doc" };
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 function ToggleGrid({ group, items, cols = 2 }: { group: string; items: SToggle[]; cols?: 2 | 3 }) {
   const { isOn, toggle } = useSupplierForm();
+  const prefix = TOGGLE_GROUP_PREFIX[group];
+  const visible = prefix ? items.filter((it) => fieldOn(SUPPLIER_SCREEN, `${prefix}${cap(it.id)}`)) : items;
   return (
     <div className={cn("grid gap-3 sm:grid-cols-2", cols === 3 && "lg:grid-cols-3")}>
-      {items.map((it) => {
+      {visible.map((it) => {
         const on = isOn(group, it.id);
         return (
           <label key={it.id} className={cn("flex cursor-pointer items-start justify-between gap-3 rounded-lg border p-3.5 transition", on ? "border-primary/40 bg-primary-subtle/40" : "border-border bg-surface hover:bg-surface-2")}>
@@ -183,6 +198,8 @@ function Flag({ id, label, desc }: { id: string; label: string; desc?: string })
 function Repeatable({ rowKey, addLabel, empty, defs }: { rowKey: RowKey; addLabel: string; empty: string; defs: SField[] }) {
   const { rowsOf, addRow, updateRow, removeRow } = useSupplierForm();
   const rows = rowsOf(rowKey);
+  const visibleDefs = defs.filter((d) => fieldOn(SUPPLIER_SCREEN, configKeyOf(d)));
+  defs = visibleDefs;
   return (
     <div className="space-y-4">
       {rows.length === 0 && (
@@ -293,7 +310,7 @@ function GstTab() {
       <SubHeading>TDS Configuration</SubHeading>
       <div className="grid gap-4 sm:grid-cols-2">
         <Flag id="tdsApplicable" label="TDS Applicable" />
-        {flag("tdsApplicable") && <FieldRenderer def={GST_FIELDS[5]} />}
+        {flag("tdsApplicable") && fieldOn(SUPPLIER_SCREEN, configKeyOf(GST_FIELDS[5])) && <FieldRenderer def={GST_FIELDS[5]} />}
       </div>
     </div>
   );
@@ -368,12 +385,13 @@ function BranchTab() {
   );
 }
 function DocumentsTab() {
+  const visible = DOCUMENTS.filter((d) => fieldOn(SUPPLIER_SCREEN, `doc${cap(d.id)}`));
   return (
     <div className="space-y-5">
       <Flag id="docExpiry" label="Document Expiry Tracking" desc="Alert before licences / certificates expire" />
       <SubHeading>Upload Documents</SubHeading>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {DOCUMENTS.map((d) => (
+        {visible.map((d) => (
           <Dropzone key={d.id} label={d.label} />
         ))}
       </div>

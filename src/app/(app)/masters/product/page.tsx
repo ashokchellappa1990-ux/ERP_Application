@@ -24,6 +24,7 @@ import {
   X,
   CircleAlert,
   QrCode as QrCodeIcon,
+  Settings2,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -125,6 +126,9 @@ export default function ProductMasterPage() {
             <Upload className="h-4 w-4" />
             Import
           </Button>
+          <Link href="/settings/documents?screen=product_master">
+            <Button variant="outline" size="md"><Settings2 className="h-4 w-4" /> Configure Document Field</Button>
+          </Link>
           <Link href="/masters/product/new">
             <Button size="md">
               <Plus className="h-4 w-4" />

@@ -37,6 +37,10 @@ export interface SField {
   options?: { value: string; label: string }[];
   full?: boolean;
   creatable?: boolean;
+  /** Key this field is registered under in docFieldsConfig's supplier_master
+   * screen, when it differs from `name` (BANK_FIELDS reuses generic names
+   * like "type"/"branch" that collide with other tabs' field names). */
+  configKey?: string;
 }
 
 export interface SToggle {
@@ -134,12 +138,12 @@ export const GST_FIELDS: SField[] = [
 
 export const BANK_FIELDS: SField[] = [
   { name: "bankName", label: "Bank Name", icon: Landmark, info: "Bank name.", sample: "HDFC Bank" },
-  { name: "branch", label: "Branch Name", icon: Building2, info: "Branch.", sample: "MG Road" },
-  { name: "holder", label: "Account Holder Name", icon: User, info: "As per bank records.", sample: "Metro Wholesale India Pvt Ltd" },
-  { name: "account", label: "Account Number", icon: Hash, info: "Bank account number.", sample: "50100123456789" },
-  { name: "ifsc", label: "IFSC Code", icon: Hash, info: "11-character IFSC.", sample: "HDFC0000123" },
-  { name: "type", label: "Account Type", icon: CreditCard, info: "Type of account.", type: "select", options: ACCOUNT_TYPE_OPTS },
-  { name: "upi", label: "UPI ID", icon: Phone, info: "UPI handle.", sample: "metro@hdfcbank" },
+  { name: "branch", label: "Branch Name", icon: Building2, info: "Branch.", sample: "MG Road", configKey: "bankBranch" },
+  { name: "holder", label: "Account Holder Name", icon: User, info: "As per bank records.", sample: "Metro Wholesale India Pvt Ltd", configKey: "bankHolder" },
+  { name: "account", label: "Account Number", icon: Hash, info: "Bank account number.", sample: "50100123456789", configKey: "bankAccount" },
+  { name: "ifsc", label: "IFSC Code", icon: Hash, info: "11-character IFSC.", sample: "HDFC0000123", configKey: "bankIfsc" },
+  { name: "type", label: "Account Type", icon: CreditCard, info: "Type of account.", type: "select", options: ACCOUNT_TYPE_OPTS, configKey: "bankAccountType" },
+  { name: "upi", label: "UPI ID", icon: Phone, info: "UPI handle.", sample: "metro@hdfcbank", configKey: "bankUpi" },
 ];
 
 export const PURCHASE_FIELDS: SField[] = [

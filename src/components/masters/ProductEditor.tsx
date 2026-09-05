@@ -55,6 +55,7 @@ import {
   type PField,
   type ToggleItem,
 } from "@/lib/masters/productConfig";
+import { fieldOn, fieldMust } from "@/lib/settings/docFieldsConfig";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
@@ -88,6 +89,9 @@ const useMasterValues = () => useContext(MasterValuesContext);
 
 /* ============================================================ helpers === */
 
+const PRODUCT_SCREEN = "product_master";
+const withReq = (label: string, required: boolean) => (required && !label.trim().endsWith("*") ? `${label} *` : label);
+
 function Grid({ children }: { children: ReactNode }) {
   return <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{children}</div>;
 }
@@ -108,7 +112,8 @@ function FieldRenderer({ def }: { def: PField }) {
   const sample = samples[def.name] ?? def.sample;
   const Icon = def.icon;
   const lead = Icon ? <Icon className="h-4 w-4" /> : undefined;
-  const common = { label: def.label, info: def.info, sample, error: errors[def.name] };
+  const required = fieldMust(PRODUCT_SCREEN, def.name);
+  const common = { label: withReq(def.label, required), info: def.info, sample, error: errors[def.name] };
 
   // Search Keywords & Description get an AI assist based on the product name.
   if (def.name === "keywords" || def.name === "description") {
@@ -453,9 +458,10 @@ function HierSelectField({ def }: { def: PField }) {
 }
 
 function Fields({ defs }: { defs: PField[] }) {
+  const visible = defs.filter((d) => fieldOn(PRODUCT_SCREEN, d.name));
   return (
     <Grid>
-      {defs.map((d) => (
+      {visible.map((d) => (
         <div key={d.name} className={d.full ? "sm:col-span-2 lg:col-span-3" : ""}>
           <FieldRenderer def={d} />
         </div>

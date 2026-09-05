@@ -53,6 +53,7 @@ import {
   type CField,
   type CToggle,
 } from "@/lib/masters/customerConfig";
+import { fieldOn, fieldMust } from "@/lib/settings/docFieldsConfig";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
@@ -67,6 +68,9 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 
 /* ============================================================ helpers === */
+
+const CUSTOMER_SCREEN = "customer_master";
+const withReq = (label: string, required: boolean) => (required && !label.trim().endsWith("*") ? `${label} *` : label);
 
 function Grid({ children }: { children: ReactNode }) {
   return <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{children}</div>;
@@ -85,7 +89,8 @@ function FieldRenderer({ def }: { def: CField }) {
   const { getField, setField, errors, customOptions, addOption } = useCustomerForm();
   const Icon = def.icon;
   const lead = Icon ? <Icon className="h-4 w-4" /> : undefined;
-  const common = { label: def.label, info: def.info, sample: def.sample, error: errors[def.name] };
+  const required = fieldMust(CUSTOMER_SCREEN, def.name);
+  const common = { label: withReq(def.label, required), info: def.info, sample: def.sample, error: errors[def.name] };
   if (def.type === "textarea") {
     return <Textarea {...common} rows={2} placeholder={def.sample} value={getField(def.name)} onChange={(e) => setField(def.name, e.target.value)} />;
   }
@@ -129,9 +134,10 @@ function CreatableSelect({ def, options, onAdd }: { def: CField; options: { valu
 }
 
 function Fields({ defs }: { defs: CField[] }) {
+  const visible = defs.filter((d) => fieldOn(CUSTOMER_SCREEN, d.name));
   return (
     <Grid>
-      {defs.map((d) => (
+      {visible.map((d) => (
         <div key={d.name} className={d.full ? "sm:col-span-2 lg:col-span-3" : ""}>
           <FieldRenderer def={d} />
         </div>
@@ -140,11 +146,21 @@ function Fields({ defs }: { defs: CField[] }) {
   );
 }
 
+// commPrefs/documents toggle ids are registered individually in
+// docFieldsConfig as commPrefSms/docPan/etc — cap-first the id and prefix
+// with the group's singular config key to resolve each one. categoryPrefs
+// (Preferred Product Categories) isn't part of the configurable registry —
+// it's on a hidden tab, out of scope like Supplier's hidden tabs.
+const TOGGLE_GROUP_PREFIX: Record<string, string> = { commPrefs: "commPref", documents: "doc" };
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 function ToggleGrid({ group, items, cols = 2 }: { group: string; items: CToggle[]; cols?: 2 | 3 }) {
   const { isOn, toggle } = useCustomerForm();
+  const prefix = TOGGLE_GROUP_PREFIX[group];
+  const visible = prefix ? items.filter((it) => fieldOn(CUSTOMER_SCREEN, `${prefix}${cap(it.id)}`)) : items;
   return (
     <div className={cn("grid gap-3 sm:grid-cols-2", cols === 3 && "lg:grid-cols-3")}>
-      {items.map((it) => {
+      {visible.map((it) => {
         const on = isOn(group, it.id);
         return (
           <label key={it.id} className={cn("flex cursor-pointer items-start justify-between gap-3 rounded-lg border p-3.5 transition", on ? "border-primary/40 bg-primary-subtle/40" : "border-border bg-surface hover:bg-surface-2")}>
@@ -356,11 +372,12 @@ function AccountingTab() {
   );
 }
 function DocumentsTab() {
+  const visible = DOCUMENTS.filter((d) => fieldOn(CUSTOMER_SCREEN, `doc${cap(d.id)}`));
   return (
     <div className="space-y-5">
       <SubHeading>Upload Documents</SubHeading>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {DOCUMENTS.map((d) => <Dropzone key={d.id} label={d.label} />)}
+        {visible.map((d) => <Dropzone key={d.id} label={d.label} />)}
       </div>
     </div>
   );
@@ -655,7 +672,7 @@ export function CustomerEditor({ customerId }: { customerId?: string }) {
 
   // Which tab each validated field lives on — so a validation error focuses the
   // right tab (e.g. a GSTIN error jumps to GST & Tax, not General).
-  const FIELD_TAB: Record<string, string> = { name: "general", code: "general", c1Name: "contact", c1Mobile: "contact", c1Email: "contact", gstin: "gst", pan: "gst" };
+  const FIELD_TAB: Record<string, string> = { name: "general", code: "general", c1Name: "contact", c1Mobile: "contact", c1Email: "contact", gstin: "gst", pan: "gst", billLine1: "address", billCity: "address", billState: "address", billPincode: "address" };
 
   // Persist the customer (create or update) to the API.
   async function save() {

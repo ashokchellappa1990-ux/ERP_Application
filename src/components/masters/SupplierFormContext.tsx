@@ -9,8 +9,25 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { fieldMust } from "@/lib/settings/docFieldsConfig";
+
 export type Row = Record<string, string> & { id: string };
 export type RowKey = "banks" | "products" | "branches";
+
+const SUPPLIER_SCREEN = "supplier_master";
+// Top-level (non-repeatable) fields whose docFieldsConfig key matches the
+// form field name 1:1 and can be turned Mandatory from Configure Document
+// Field — validated here in addition to the always-required name/c1Name/c1Mobile.
+const CONFIGURABLE_REQUIRED: { key: string; message: string }[] = [
+  { key: "code", message: "Supplier Code is required." },
+  { key: "c1Email", message: "Primary contact email is required." },
+  { key: "gstin", message: "GSTIN is required." },
+  { key: "pan", message: "PAN Number is required." },
+  { key: "regLine1", message: "Registered Address Line 1 is required." },
+  { key: "regCity", message: "Registered Address City is required." },
+  { key: "regState", message: "Registered Address State is required." },
+  { key: "regPincode", message: "Registered Address Pincode is required." },
+];
 
 export interface SupplierFormData {
   fields: Record<string, string>;
@@ -164,6 +181,9 @@ export function SupplierFormProvider({
     else if (!/^[+\d][\d\s-]{7,14}$/.test(f.c1Mobile)) e["c1Mobile"] = "Enter a valid mobile number.";
     if (f.c1Email && !EMAIL_RE.test(f.c1Email)) e["c1Email"] = "Enter a valid email.";
     { const gst = (f.gstin ?? "").trim(); if (gst && gst.length !== 15) e["gstin"] = "GSTIN must be exactly 15 characters."; }
+    for (const { key, message } of CONFIGURABLE_REQUIRED) {
+      if (!e[key] && fieldMust(SUPPLIER_SCREEN, key) && !f[key]?.trim()) e[key] = message;
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   }, [data.fields]);
