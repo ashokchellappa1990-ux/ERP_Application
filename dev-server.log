@@ -569,3 +569,461 @@
  GET /api/transport/gate-entry/next-number 200 in 1876ms
  GET /api/settings/document-fields 200 in 1689ms
  GET /api/system/scope 200 in 454ms
+ ✓ Compiled in 841ms (1389 modules)
+ ✓ Compiled in 594ms (722 modules)
+ ✓ Compiled in 358ms (722 modules)
+ ✓ Compiled in 380ms (722 modules)
+ ○ Compiling /transport/gate-entry/new ...
+ ✓ Compiled /transport/gate-entry/new in 528ms (675 modules)
+ GET /transport/gate-entry/new 200 in 6749ms
+ ✓ Compiled /masters/transport/vehicle in 225ms (695 modules)
+ GET /masters/transport/vehicle 200 in 1983ms
+ GET /transport/gate-entry/new?entryType=RawMaterial 200 in 286ms
+ ✓ Compiled /api/settings/general in 372ms (795 modules)
+ ✓ Compiled (801 modules)
+ GET /api/website/config 200 in 961ms
+ ✓ Compiled /api/system/scope in 176ms (803 modules)
+ GET /api/settings/general 200 in 1290ms
+ GET /api/settings/theme 200 in 1365ms
+ GET /api/settings/theme 200 in 1344ms
+ GET /api/settings/document-fields 200 in 1334ms
+ GET /api/system/scope 200 in 497ms
+ ✓ Compiled /api/auth/me in 241ms (806 modules)
+ GET /api/system/scope 200 in 712ms
+ GET /api/auth/me 200 in 722ms
+ GET /api/auth/me 200 in 841ms
+ GET /api/settings/general 200 in 824ms
+ GET /api/settings/document-fields 200 in 851ms
+ GET /api/website/config 200 in 2301ms
+ ○ Compiling /api/settings/dispatch-config ...
+ ✓ Compiled /api/settings/dispatch-config in 557ms (835 modules)
+ ✓ Compiled (925 modules)
+ GET /icon.png?5a285dc6c8e9056e 200 in 1453ms
+ ✓ Compiled /api/transport/masters/loading-bay in 149ms (927 modules)
+ GET /api/settings/document-fields 200 in 2118ms
+ GET /api/settings/dispatch-config 200 in 2315ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 2185ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 2336ms
+ GET /api/transport/gate-entry/next-number 200 in 2420ms
+ GET /api/system/scope 200 in 493ms
+ GET /api/settings/dispatch-config 200 in 1623ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1743ms
+ GET /api/settings/document-fields 200 in 1449ms
+ GET /api/transport/gate-entry/next-number 200 in 2122ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 2122ms
+ ✓ Compiled /api/company-setup in 252ms (931 modules)
+ GET /api/transport/masters/loading-bay?status=Active 200 in 3370ms
+ GET /api/system/scope 200 in 678ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1063ms
+ GET /api/company-setup 200 in 2960ms
+ GET /api/company-setup 200 in 3302ms
+ ○ Compiling /masters/transport/vehicle ...
+ ✓ Compiled /masters/transport/vehicle in 680ms (945 modules)
+ GET /api/transport/masters/transport-company 200 in 2256ms
+ GET /api/transport/masters/transport-company 200 in 2258ms
+ GET /api/transport/masters/vehicle 200 in 2360ms
+ GET /api/transport/masters/vehicle 200 in 2456ms
+ ○ Compiling /transport/gate-entry ...
+ ✓ Compiled /transport/gate-entry in 550ms (943 modules)
+ ✓ Compiled /api/transport/gate-entry in 280ms (946 modules)
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 2722ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 3850ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 4319ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 4807ms
+ GET /api/settings/document-fields 200 in 5191ms
+ GET /api/settings/dispatch-config 200 in 5494ms
+ GET /api/system/scope 200 in 1811ms
+ GET /api/transport/gate-entry/next-number 200 in 5892ms
+ GET /api/settings/dispatch-config 200 in 1753ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1363ms
+ GET /api/transport/gate-entry/next-number 200 in 2429ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1359ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 971ms
+ GET /api/settings/document-fields 200 in 1358ms
+ GET /api/system/scope 200 in 489ms
+ ○ Compiling /api/masters/suppliers ...
+ ✓ Compiled /api/masters/suppliers in 513ms (881 modules)
+ GET /api/masters/suppliers?q=p 200 in 1596ms
+ GET /api/masters/suppliers?q=pvk 200 in 439ms
+ GET /api/masters/suppliers?q=p 200 in 327ms
+ GET /api/masters/suppliers?q=pkv 200 in 301ms
+ ✓ Compiled /api/transport/gate-entry in 147ms (888 modules)
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 1819ms
+ ✓ Compiled /api/transport/gate-entry/[id]/hover-detail in 295ms (890 modules)
+ GET /api/transport/gate-entry/112/hover-detail 200 in 1064ms
+ GET /api/transport/gate-entry/111/hover-detail 200 in 1030ms
+ GET /api/transport/gate-entry/110/hover-detail 200 in 918ms
+ GET /api/transport/gate-entry/111/hover-detail 200 in 1081ms
+ GET /api/transport/gate-entry/110/hover-detail 200 in 957ms
+ GET /api/transport/gate-entry/112/hover-detail 200 in 1180ms
+ ✓ Compiled /api/transport/masters/loading-bay in 157ms (892 modules)
+ ✓ Compiled (902 modules)
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1234ms
+ GET /api/settings/dispatch-config 200 in 1304ms
+ GET /api/settings/document-fields 200 in 1330ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1363ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1366ms
+ GET /api/transport/gate-entry/next-number 200 in 1428ms
+ ✓ Compiled /api/system/scope in 267ms (904 modules)
+ ✓ Compiled in 0ms (904 modules)
+ ✓ Compiled in 0ms (904 modules)
+ GET /api/system/scope 200 in 1111ms
+ GET /api/settings/dispatch-config 200 in 1121ms
+ GET /api/settings/document-fields 200 in 1032ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1066ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1149ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 215ms
+ GET /api/transport/gate-entry/next-number 200 in 1283ms
+ GET /api/system/scope 200 in 156ms
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 519ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 838ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 955ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1234ms
+ GET /api/settings/dispatch-config 200 in 1236ms
+ GET /api/system/scope 200 in 578ms
+ GET /api/settings/document-fields 200 in 1525ms
+ GET /api/transport/gate-entry/next-number 200 in 1632ms
+ GET /api/settings/dispatch-config 200 in 1361ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1258ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1753ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1363ms
+ GET /api/transport/gate-entry/next-number 200 in 2224ms
+ GET /api/settings/document-fields 200 in 1844ms
+ GET /api/system/scope 200 in 777ms
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 1627ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 621ms
+ GET /api/settings/dispatch-config 200 in 648ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 643ms
+ GET /api/settings/document-fields 200 in 644ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 676ms
+ GET /api/transport/gate-entry/next-number 200 in 765ms
+ GET /api/system/scope 200 in 249ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 338ms
+ GET /api/settings/dispatch-config 200 in 451ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 452ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 245ms
+ GET /api/transport/gate-entry/next-number 200 in 494ms
+ GET /api/settings/document-fields 200 in 416ms
+ GET /api/system/scope 200 in 161ms
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 971ms
+ GET /api/transport/gate-entry/112/hover-detail 200 in 442ms
+ GET /api/transport/gate-entry/112/hover-detail 200 in 475ms
+ GET /api/transport/gate-entry/111/hover-detail 200 in 445ms
+ GET /api/transport/gate-entry/111/hover-detail 200 in 477ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1063ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1161ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1258ms
+ GET /api/settings/dispatch-config 200 in 1260ms
+ GET /api/settings/document-fields 200 in 1350ms
+ GET /api/transport/gate-entry/next-number 200 in 1645ms
+ GET /api/system/scope 200 in 682ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 975ms
+ GET /api/settings/dispatch-config 200 in 1452ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1549ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1449ms
+ GET /api/system/scope 200 in 969ms
+ GET /api/transport/gate-entry/next-number 200 in 2235ms
+ GET /api/settings/document-fields 200 in 1847ms
+ ✓ Compiled /api/transport/gate-entry/vehicle-history in 321ms (902 modules)
+ GET /api/transport/gate-entry/vehicle-history?vehicleId=16 200 in 2319ms
+ ✓ Compiled /api/masters/suppliers in 184ms (906 modules)
+ GET /api/masters/suppliers?q=p 200 in 744ms
+ GET /api/masters/suppliers?q=pkv 200 in 305ms
+ GET /api/transport/gate-entry/vehicle-history?vehicleId=16 200 in 543ms
+ GET /api/transport/gate-entry/vehicle-history?vehicleId=14 200 in 418ms
+ POST /api/transport/gate-entry 201 in 2716ms
+ ○ Compiling /transport/gate-entry/[id]/weighment ...
+ ✓ Compiled /transport/gate-entry/[id]/weighment in 1027ms (1632 modules)
+ ✓ Compiled /api/system/areas in 277ms (920 modules)
+ ✓ Compiled (925 modules)
+ GET /api/settings/purchase 200 in 1455ms
+ GET /api/system/areas 200 in 1501ms
+ GET /api/system/areas 200 in 1516ms
+ GET /api/settings/purchase 200 in 1534ms
+ GET /api/transport/gate-entry/113/weighment 200 in 1541ms
+ GET /api/transport/gate-entry/113/weighment 200 in 1590ms
+ ✓ Compiled /api/pos/products in 193ms (829 modules)
+ GET /api/pos/products?q=j 200 in 982ms
+ GET /api/pos/products?q=ja 200 in 610ms
+ GET /api/pos/products?q=jall 200 in 378ms
+ GET /api/pos/products?q=jally 200 in 480ms
+ ✓ Compiled in 748ms (730 modules)
+ ✓ Compiled in 436ms (730 modules)
+prisma:error pool timeout: failed to retrieve a connection from pool after 10007ms
+    (pool connections: active=0 idle=0 limit=10)
+[website] getPublishedConfig failed, using defaults DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10007ms
+    (pool connections: active=0 idle=0 limit=10)
+    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
+    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
+    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
+    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
+    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
+    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
+    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
+    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
+    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
+    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
+    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
+    at async getPublishedConfig (webpack-internal:///(rsc)/./src/lib/website/service.ts:41:19)
+    at async Module.generateMetadata (webpack-internal:///(rsc)/./src/app/layout.tsx:40:21) {
+  cause: {
+    originalCode: '45028',
+    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10007ms\n' +
+      '    (pool connections: active=0 idle=0 limit=10)',
+    kind: 'mysql',
+    code: 45028,
+    message: 'pool timeout: failed to retrieve a connection from pool after 10007ms\n' +
+      '    (pool connections: active=0 idle=0 limit=10)',
+    state: 'HY000',
+    cause: '(conn:85881, no: 1040, SQLState: 08004) Too many connections'
+  },
+  clientVersion: '7.8.0'
+}
+prisma:error pool timeout: failed to retrieve a connection from pool after 10007ms
+    (pool connections: active=0 idle=0 limit=10)
+[website] getPublishedConfig failed, using defaults DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10007ms
+    (pool connections: active=0 idle=0 limit=10)
+    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
+    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
+    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
+    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
+    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
+    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
+    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
+    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
+    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
+    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
+    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
+    at async getPublishedConfig (webpack-internal:///(rsc)/./src/lib/website/service.ts:41:19)
+    at async Module.generateMetadata (webpack-internal:///(rsc)/./src/app/layout.tsx:40:21) {
+  cause: {
+    originalCode: '45028',
+    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10007ms\n' +
+      '    (pool connections: active=0 idle=0 limit=10)',
+    kind: 'mysql',
+    code: 45028,
+    message: 'pool timeout: failed to retrieve a connection from pool after 10007ms\n' +
+      '    (pool connections: active=0 idle=0 limit=10)',
+    state: 'HY000',
+    cause: '(conn:85881, no: 1040, SQLState: 08004) Too many connections'
+  },
+  clientVersion: '7.8.0'
+}
+ ✓ Compiled /settings/documents in 467ms (623 modules)
+prisma:error pool timeout: failed to retrieve a connection from pool after 10004ms
+    (pool connections: active=0 idle=0 limit=10)
+[website] getPublishedConfig failed, using defaults DriverAdapterError: pool timeout: failed to retrieve a connection from pool after 10004ms
+    (pool connections: active=0 idle=0 limit=10)
+    at PrismaMariaDbAdapter.onError (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:320:11)
+    at PrismaMariaDbAdapter.performIO (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:315:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async PrismaMariaDbAdapter.queryRaw (file:///D:/Old_LapTop_Backup_2/Retail_POS/node_modules/@prisma/adapter-mariadb/dist/index.mjs:280:20)
+    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:44621)
+    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:45065)
+    at async e.interpretNode (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:46285)
+    at async e.run (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:11:43335)
+    at async e.execute (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:57:815)
+    at async jt.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:58:2401)
+    at async Object.singleLoader (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:6569)
+    at async zr.request (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:65:7175)
+    at async a (D:\Old_LapTop_Backup_2\Retail_POS\node_modules\@prisma\client\runtime\client.js:75:6862)
+    at async getPublishedConfig (webpack-internal:///(rsc)/./src/lib/website/service.ts:41:19)
+    at async Module.generateMetadata (webpack-internal:///(rsc)/./src/app/layout.tsx:40:21) {
+  cause: {
+    originalCode: '45028',
+    originalMessage: 'pool timeout: failed to retrieve a connection from pool after 10004ms\n' +
+      '    (pool connections: active=0 idle=0 limit=10)',
+    kind: 'mysql',
+    code: 45028,
+    message: 'pool timeout: failed to retrieve a connection from pool after 10004ms\n' +
+      '    (pool connections: active=0 idle=0 limit=10)',
+    state: 'HY000',
+    cause: '(conn:85881, no: 1040, SQLState: 08004) Too many connections'
+  },
+  clientVersion: '7.8.0'
+}
+ GET /settings/documents?screen=vehicle_gate_entry 200 in 10756ms
+ GET /transport/gate-entry/113/weighment 200 in 4214ms
+ ✓ Compiled /api/settings/document-fields in 320ms (733 modules)
+ ✓ Compiled (739 modules)
+ GET /api/website/config 200 in 2609ms
+ GET /api/website/config 200 in 2836ms
+ ✓ Compiled /api/system/scope in 252ms (741 modules)
+ ✓ Compiled /api/auth/me in 363ms (744 modules)
+ GET /api/settings/theme 200 in 3469ms
+ GET /api/settings/theme 200 in 3464ms
+ GET /api/settings/general 200 in 3422ms
+ GET /api/settings/document-fields 200 in 3488ms
+ GET /api/system/scope 200 in 1243ms
+ GET /api/system/scope 200 in 341ms
+ GET /api/settings/document-fields 200 in 514ms
+ GET /api/auth/me 200 in 1235ms
+ GET /api/settings/general 200 in 718ms
+ GET /api/auth/me 200 in 647ms
+ ○ Compiling /api/system/areas ...
+ ✓ Compiled /api/system/areas in 534ms (773 modules)
+ ✓ Compiled (860 modules)
+ GET /icon.png?5a285dc6c8e9056e 200 in 1307ms
+ GET /api/system/areas 200 in 1760ms
+ GET /api/settings/purchase 200 in 1725ms
+ GET /api/settings/purchase 200 in 2137ms
+ ✓ Compiled /api/company-setup in 149ms (864 modules)
+ GET /api/transport/gate-entry/113/weighment 200 in 1985ms
+ GET /api/system/areas 200 in 909ms
+ GET /api/transport/gate-entry/113/weighment 200 in 1886ms
+ GET /api/company-setup 200 in 13728ms
+ GET /api/company-setup 200 in 14269ms
+ ✓ Compiled /api/transport/gate-entry in 380ms (870 modules)
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 2634ms
+ ✓ Compiled /api/transport/masters/loading-bay in 312ms (872 modules)
+ ✓ Compiled (880 modules)
+ GET /api/transport/masters/transport-company?status=Active 200 in 1218ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1251ms
+ GET /api/settings/document-fields 200 in 1315ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1318ms
+ GET /api/transport/gate-entry/next-number 200 in 1372ms
+ GET /api/system/scope 200 in 167ms
+ GET /api/settings/dispatch-config 200 in 1486ms
+ GET /api/transport/gate-entry/next-number 200 in 827ms
+ GET /api/settings/dispatch-config 200 in 860ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1015ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1055ms
+ GET /api/settings/document-fields 200 in 1172ms
+ GET /api/system/scope 200 in 583ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1388ms
+ ✓ Compiled /api/transport/gate-entry/vehicle-history in 213ms (882 modules)
+ GET /api/transport/gate-entry/vehicle-history?vehicleId=14 200 in 2190ms
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 692ms
+ ✓ Compiled /api/transport/gate-entry/[id]/hover-detail in 349ms (884 modules)
+ GET /api/transport/gate-entry/112/hover-detail 200 in 1443ms
+ GET /api/transport/gate-entry/112/hover-detail 200 in 1443ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 527ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 527ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 637ms
+ GET /api/settings/document-fields 200 in 652ms
+ GET /api/settings/dispatch-config 200 in 740ms
+ GET /api/transport/gate-entry/next-number 200 in 766ms
+ GET /api/system/scope 200 in 312ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 910ms
+ GET /api/settings/dispatch-config 200 in 1116ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1499ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 2097ms
+ GET /api/transport/gate-entry/next-number 200 in 3265ms
+ GET /api/system/scope 200 in 2370ms
+ GET /api/settings/document-fields 200 in 4607ms
+ GET /api/transport/gate-entry/vehicle-history?vehicleId=14 200 in 3597ms
+ ✓ Compiled /api/pos/products in 398ms (887 modules)
+ GET /api/pos/products?q=jally 200 in 2128ms
+ ○ Compiling /settings/documents ...
+ ✓ Compiled /settings/documents in 876ms (847 modules)
+ GET /api/settings/dispatch-config 200 in 664ms
+ GET /api/settings/dispatch-config 200 in 669ms
+ GET /api/settings/document-fields 200 in 703ms
+ GET /api/settings/document-fields 200 in 705ms
+ PUT /api/settings/document-fields 200 in 6322ms
+ PUT /api/settings/dispatch-config 200 in 895ms
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 1977ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 2871ms
+ GET /api/settings/dispatch-config 200 in 2874ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 2957ms
+ GET /api/settings/document-fields 200 in 3155ms
+ GET /api/transport/gate-entry/next-number 200 in 3182ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 3361ms
+ GET /api/system/scope 200 in 490ms
+ GET /api/settings/dispatch-config 200 in 682ms
+ GET /api/transport/gate-entry/next-number 200 in 879ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 872ms
+ GET /api/settings/document-fields 200 in 1063ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1352ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1165ms
+ GET /api/system/scope 200 in 969ms
+ GET /api/pos/products?q=j 200 in 525ms
+ GET /api/pos/products?q=ja 200 in 476ms
+ GET /api/pos/products?q=jally 200 in 486ms
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 9661ms
+ GET /api/transport/gate-entry/111/hover-detail 200 in 4986ms
+ GET /api/transport/gate-entry/112/hover-detail 200 in 5146ms
+ GET /api/transport/gate-entry/112/hover-detail 200 in 5269ms
+ GET /api/transport/gate-entry/111/hover-detail 200 in 5286ms
+ GET /api/transport/gate-entry/110/hover-detail 200 in 5320ms
+ GET /api/transport/gate-entry/110/hover-detail 200 in 5466ms
+ ○ Compiling /warehouse/transfer/load-dispatch/[id] ...
+ ✓ Compiled /warehouse/transfer/load-dispatch/[id] in 1502ms (1528 modules)
+ ✓ Compiled /api/warehouse/load-dispatch/[id] in 114ms (808 modules)
+ ✓ Compiled (819 modules)
+ GET /api/settings/dispatch-config 200 in 960ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 966ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 967ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1031ms
+ GET /api/transport/masters/route?status=Active 200 in 1036ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 260ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 383ms
+ GET /api/transport/masters/route?status=Active 200 in 344ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 375ms
+ GET /api/warehouse/load-dispatch/34 200 in 1499ms
+ ✓ Compiled /api/warehouse/load-dispatch/[id]/transport-cost in 193ms (821 modules)
+ GET /api/warehouse/load-dispatch/34 200 in 617ms
+ GET /api/settings/dispatch-config 200 in 392ms
+ ✓ Compiled /api/transport/pre-weighment in 156ms (824 modules)
+ ✓ Compiled (828 modules)
+ GET /api/settings/accounting-config 200 in 1018ms
+ GET /api/settings/accounting-config 200 in 1180ms
+ GET /api/transport/post-weighment?gateEntryId=112 200 in 1183ms
+ GET /api/transport/pre-weighment?gateEntryId=112 200 in 1282ms
+ GET /api/warehouse/load-dispatch/34/transport-cost 200 in 1941ms
+ GET /api/settings/accounting-config 200 in 1540ms
+ GET /api/settings/accounting-config 200 in 1541ms
+ ○ Compiling /warehouse/transfer/load-dispatch ...
+ ✓ Compiled /warehouse/transfer/load-dispatch in 1204ms (1327 modules)
+ ○ Compiling /api/warehouse/load-dispatch ...
+ ✓ Compiled /api/warehouse/load-dispatch in 944ms (834 modules)
+ GET /api/warehouse/load-dispatch? 200 in 2449ms
+ ✓ Compiled /api/transport/gate-entry in 217ms (838 modules)
+ GET /api/transport/gate-entry?entryType=Dispatch 200 in 1410ms
+ ✓ Compiled /api/transport/gate-entry/[id]/hover-detail in 265ms (840 modules)
+ GET /api/transport/gate-entry/110/hover-detail 200 in 1035ms
+ GET /api/transport/gate-entry/109/hover-detail 200 in 1039ms
+ GET /api/transport/gate-entry/109/hover-detail 200 in 1042ms
+ GET /api/transport/gate-entry/108/hover-detail 200 in 1013ms
+ GET /api/transport/gate-entry/108/hover-detail 200 in 1043ms
+ GET /api/transport/gate-entry/110/hover-detail 200 in 1154ms
+ GET /api/transport/gate-entry/111/hover-detail 200 in 1622ms
+ GET /api/transport/gate-entry/111/hover-detail 200 in 1625ms
+ GET /api/transport/gate-entry/112/hover-detail 200 in 1364ms
+ GET /api/transport/gate-entry/112/hover-detail 200 in 1368ms
+ GET /api/transport/gate-entry/107/hover-detail 200 in 3530ms
+ GET /api/transport/gate-entry/107/hover-detail 200 in 3633ms
+ ✓ Compiled /api/transport/masters/loading-bay in 299ms (842 modules)
+ ✓ Compiled (852 modules)
+ GET /api/settings/dispatch-config 200 in 1324ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 1346ms
+ GET /api/transport/masters/route?status=Active 200 in 1392ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 1432ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 1445ms
+ GET /api/warehouse/load-dispatch/32 200 in 1588ms
+ GET /api/transport/masters/transport-company?status=Active 200 in 317ms
+ GET /api/warehouse/load-dispatch/32 200 in 437ms
+ GET /api/transport/masters/vehicle?status=Active 200 in 420ms
+ GET /api/transport/masters/route?status=Active 200 in 361ms
+ GET /api/transport/masters/loading-bay?status=Active 200 in 362ms
+ GET /api/settings/dispatch-config 200 in 360ms
+ ✓ Compiled /api/settings/accounting-config in 264ms (854 modules)
+ ✓ Compiled /api/transport/post-weighment in 1ms (856 modules)
+ ✓ Compiled in 0ms (860 modules)
+ ✓ Compiled in 0ms (860 modules)
+ ✓ Compiled in 0ms (860 modules)
+ GET /api/settings/accounting-config 200 in 1531ms
+ GET /api/settings/accounting-config 200 in 1413ms
+ GET /api/transport/pre-weighment?gateEntryId=110 200 in 1497ms
+ GET /api/transport/post-weighment?gateEntryId=110 200 in 1499ms
+ GET /api/warehouse/load-dispatch/32/transport-cost 200 in 1743ms
+ GET /api/settings/accounting-config 200 in 388ms
+ GET /api/settings/accounting-config 200 in 412ms
+ ✓ Compiled in 1049ms (1335 modules)
+ ✓ Compiled in 422ms (741 modules)
+ ✓ Compiled in 206ms (741 modules)
+ ✓ Compiled in 204ms (741 modules)
