@@ -67,7 +67,7 @@ export async function GET(req: Request) {
       return {
         id: p.id, name: p.name, sku: p.sku ?? p.code ?? "", barcode: p.barcode ?? "", hsn: p.hsn ?? "",
         uom: p.baseUom ?? "Pcs", brand: p.brand ?? "",
-        mrp: num(p.mrp), purchaseRate: cost, sellingRate: invSelling, price, gst: parsePct(p.gstRate),
+        mrp: num(p.mrp), retailPrice: num(p.retailPrice), purchaseRate: cost, sellingRate: invSelling, price, gst: parsePct(p.gstRate),
         stock: stockMap.get(p.id) ?? 0,
         // Batch tracking: whether this product needs a batch, and (if scanned via QR)
         // the batch / mfg / expiry the scanned code belongs to — for the billing screen.

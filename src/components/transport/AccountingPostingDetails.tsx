@@ -13,6 +13,7 @@ const SCREEN = "load_dispatch";
 interface Props {
   taxableValue: number;
   taxTotal: number;
+  itemDiscount?: number;
   vehicleRent: number;
   transitPassAmount: number;
   driverBattaAmount: number;
@@ -27,7 +28,7 @@ const TIMING_LABEL: Record<string, string> = { OnDispatch: "On Dispatch", OnInvo
  * src/lib/transport/loadDispatch.ts) will post and when, driven by live
  * Accounting Configuration — kept in this one shared component so the add
  * page and the view page can never drift out of sync with each other. */
-export function AccountingPostingDetails({ taxableValue, taxTotal, vehicleRent, transitPassAmount, driverBattaAmount, driverBattaMode, roundOff }: Props) {
+export function AccountingPostingDetails({ taxableValue, taxTotal, itemDiscount, vehicleRent, transitPassAmount, driverBattaAmount, driverBattaMode, roundOff }: Props) {
   const fmt = useFmt();
   const [cfg, setCfg] = useState<AccountingConfigData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,6 +52,9 @@ export function AccountingPostingDetails({ taxableValue, taxTotal, vehicleRent, 
     label: "Customer Receivable", amount: fmt.money(receivableAtDispatch + roundOff),
     when: separateVoucher ? TIMING_LABEL[c.fields.customerReceivableTiming || "OnDispatch"] + (roundOff !== 0 ? " (+ Round Off at Sales Invoice)" : "") : "On Sales Invoice",
   });
+  if (itemDiscount && itemDiscount > 0) {
+    rows.push({ label: "Item Discount (netted into Sales Revenue below)", amount: `- ${fmt.money(itemDiscount)}`, when: "Reduces Sales Revenue" });
+  }
   rows.push({ label: "Sales Revenue", amount: fmt.money(taxableValue), when: separateVoucher ? TIMING_LABEL[c.fields.salesRevenueTiming || "OnInvoice"] : "On Sales Invoice" });
   rows.push({ label: "GST", amount: fmt.money(taxTotal), when: separateVoucher ? TIMING_LABEL[c.fields.gstRecognitionTiming || "OnInvoice"] : "On Sales Invoice" });
   rows.push({ label: "Inventory / Cost of Goods Sold", amount: "—", when: separateVoucher ? TIMING_LABEL[c.fields.inventoryCogsTiming || "OnDispatch"] : "On Dispatch" });

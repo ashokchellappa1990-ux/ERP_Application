@@ -27,9 +27,14 @@ const r2 = (v: number) => Math.round((Number(v) || 0) * 100) / 100;
 
 interface CustomerHit { id: number; name: string; phone: string; address: string; creditAllowed?: boolean }
 interface ProductHit {
-  id: number; name: string; sku?: string; uom?: string; price?: number; gst?: number;
+  id: number; name: string; sku?: string; uom?: string; price?: number; mrp?: number; retailPrice?: number; gst?: number;
   batchTracked?: boolean; invBatch?: boolean; invMfg?: boolean; invExpiry?: boolean;
 }
+// Master Pricing (Product master's Sales Pricing tab) wins over this branch's
+// own inventory selling rate — a per-branch InventoryBalance.sellingRate
+// override can silently differ from what's configured on the product itself
+// (e.g. a stale/test rate), which confused rate auto-fill here.
+const masterRate = (p: Pick<ProductHit, "retailPrice" | "mrp" | "price">) => (p.retailPrice ? String(p.retailPrice) : p.mrp ? String(p.mrp) : p.price != null ? String(p.price) : "");
 interface Opt { id: number; label: string }
 interface VehicleOpt extends Opt { vehicleType: string | null }
 interface GateHit {
@@ -323,7 +328,7 @@ export function DirectLoadDispatchForm() {
               // name-only) — left at 0 here; the Weighment Management "Capture
               // Now" net weight fills it in once the vehicle is actually weighed.
               ...blankLine(i), productId: it.productId, productName: it.productName, sku: it.sku || hit?.sku || "", uom: it.uom || hit?.uom || "",
-              qty: "0", rate: hit?.price != null ? String(hit.price) : "", taxPct: hit?.gst != null ? String(hit.gst) : "",
+              qty: "0", rate: hit ? masterRate(hit) : "", taxPct: hit?.gst != null ? String(hit.gst) : "",
               batchTracked: !!(hit?.batchTracked || hit?.invBatch || hit?.invMfg || hit?.invExpiry),
             };
           }));
@@ -499,7 +504,7 @@ export function DirectLoadDispatchForm() {
     setLines((prev) => {
       const filled: Line = {
         ...blankLine(prev.length), productId: p.id, productName: p.name, sku: p.sku ?? "", uom: p.uom ?? "",
-        rate: p.price != null ? String(p.price) : "", taxPct: p.gst != null ? String(p.gst) : "",
+        rate: masterRate(p), taxPct: p.gst != null ? String(p.gst) : "",
         batchTracked: !!(p.batchTracked || p.invBatch || p.invMfg || p.invExpiry),
       };
       // Fill the first still-empty row (e.g. the initial blank line) instead of
@@ -773,9 +778,8 @@ export function DirectLoadDispatchForm() {
               {gateMatching ? (
                 <div className="flex h-9 items-center rounded-md border border-border-strong bg-surface-2 px-2.5 text-sm text-muted"><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Matching…</div>
               ) : vehicleGateEntryId ? (
-                <div className="flex h-9 items-center justify-between rounded-md border border-border-strong bg-primary-subtle/40 px-2.5 text-sm">
+                <div className="flex h-9 items-center rounded-md border border-border-strong bg-primary-subtle/40 px-2.5 text-sm">
                   <span className="font-mono font-semibold text-primary">{linkedGateNo}</span>
-                  <button onClick={clearGateEntry} className="text-2xs font-semibold text-danger hover:underline">Unlink</button>
                 </div>
               ) : (
                 <div className="flex h-9 items-center rounded-md border border-dashed border-border bg-surface-2 px-2.5 text-2xs text-subtle">Select a customer to auto-load a gate entry, if any.</div>
@@ -1130,7 +1134,7 @@ export function DirectLoadDispatchForm() {
       </div>
 
       <AccountingPostingDetails
-        taxableValue={totals.taxable} taxTotal={totals.tax} vehicleRent={n(vehicleRent)} transitPassAmount={transitPassAmount}
+        taxableValue={totals.taxable} taxTotal={totals.tax} itemDiscount={totals.discTotal} vehicleRent={n(vehicleRent)} transitPassAmount={transitPassAmount}
         driverBattaAmount={driverBattaAmount} driverBattaMode={driverBattaMode === "payment" ? "Payment" : "Adjustment"}
         roundOff={invoiceRoundOff}
       />

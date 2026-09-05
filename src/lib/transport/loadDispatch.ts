@@ -38,6 +38,28 @@ import type { LoadDispatchItemDto } from "@/lib/contracts/loadDispatch";
 type Actor = AuditActor & { fullName?: string | null };
 const num = (v: unknown) => (v == null ? 0 : Number(v));
 const r2 = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
+
+/** Single source of truth for a dispatch line's discount/tax math — used by
+ * dispatch creation here AND by the item-replace/payment-resync paths in
+ * src/app/api/warehouse/load-dispatch/[id]/route.ts, so a fix never has to
+ * be applied in more than one place again. `discPct` always wins when given:
+ * every caller (Direct Customer Dispatch, Sales-Order-loaded dispatch, the
+ * Load & Dispatch item-edit save) only ever sends discPct, never a real
+ * discAmount — and the contract's discAmount field defaults to 0 via zod
+ * when omitted, so trusting a "provided" discAmount first (0 counts as
+ * "provided") silently discarded every % discount and taxed the full
+ * undiscounted gross instead. Only a caller with NO discPct at all falls
+ * back to a literal discAmount. */
+export function computeDispatchLineAmounts(input: { rate: number; qty: number; discPct?: number | null; discAmount?: number | null; taxPct?: number | null }): { gross: number; discPct: number | null; discAmount: number; taxableValue: number; taxPct: number | null; taxAmount: number; value: number } {
+  const gross = r2(input.qty * input.rate);
+  const discPct = input.discPct != null ? Number(input.discPct) : null;
+  const discAmount = discPct != null ? r2(gross * (discPct / 100)) : r2(Number(input.discAmount) || 0);
+  const taxableValue = r2(Math.max(0, gross - discAmount));
+  const taxPct = input.taxPct != null ? Number(input.taxPct) : null;
+  const taxAmount = taxPct ? r2(taxableValue * (taxPct / 100)) : 0;
+  const value = r2(taxableValue + taxAmount);
+  return { gross, discPct, discAmount, taxableValue, taxPct, taxAmount, value };
+}
 const r3 = (n: number) => Math.round((Number(n) || 0) * 1000) / 1000;
 
 // docType-specific suffix appended after the configurable base prefix
@@ -174,13 +196,10 @@ export async function createDirectCustomerDispatch(scope: ActiveScope, user: Act
     const p = byId.get(i.productId)!;
     const qty = r3(Number(i.dispatchedQty) || 0);
     const rate = i.rate != null ? Number(i.rate) : 0;
-    const gross = r2(qty * rate);
-    const discPct = i.discPct != null ? Number(i.discPct) : null;
-    const discAmount = i.discAmount != null ? r2(Number(i.discAmount)) : discPct ? r2(gross * (discPct / 100)) : 0;
-    const taxableValue = r2(Math.max(0, gross - discAmount));
-    const taxPct = i.taxPct != null ? Number(i.taxPct) : Number(String(p.gstRate ?? "0").replace(/[^0-9.]/g, "")) || null;
-    const taxAmount = taxPct ? r2(taxableValue * (taxPct / 100)) : 0;
-    const value = r2(taxableValue + taxAmount);
+    const fallbackTaxPct = Number(String(p.gstRate ?? "0").replace(/[^0-9.]/g, "")) || null;
+    const { gross, discPct, discAmount, taxableValue, taxPct, taxAmount, value } = computeDispatchLineAmounts({
+      rate, qty, discPct: i.discPct, discAmount: i.discAmount, taxPct: i.taxPct ?? fallbackTaxPct,
+    });
     totalQty += qty; totalValue += value;
     return {
       tenantId: scope.tenantId, productId: i.productId, productName: i.productName || p.name, sku: i.sku ?? p.sku,
@@ -703,9 +722,14 @@ async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc, c
   // needed below to resolve any category/brand-scoped Discount Master rule,
   // the same way prepareSale (src/lib/sales/createSale.ts) does for POS.
   const productIds = Array.from(new Set(items.map((i) => i.productId)));
-  const prods = productIds.length ? await prisma.product.findMany({ where: { id: { in: productIds }, tenantId }, select: { id: true, gstRate: true, category: true, brand: true } }) : [];
+  const prods = productIds.length ? await prisma.product.findMany({ where: { id: { in: productIds }, tenantId }, select: { id: true, gstRate: true, category: true, brand: true, hsn: true } }) : [];
   const gstById = new Map(prods.map((p) => [p.id, Number(String(p.gstRate ?? "0").replace(/[^0-9.]/g, "")) || 0]));
   const metaById = new Map(prods.map((p) => [p.id, { category: p.category ?? undefined, brand: p.brand ?? undefined }]));
+  // HSN lives on the Product master, never captured per-line on LoadDispatchItem
+  // (unlike POS's own lines, which already carry it from the product search
+  // result) — resolved fresh here so the posted Sale/SaleLine, and every
+  // invoice template printed off it, actually shows it instead of "—".
+  const hsnById = new Map(prods.map((p) => [p.id, p.hsn ?? null]));
   // GSTIN isn't captured on LoadDispatch itself — read it from the customer
   // master so the posted invoice isn't missing it on the B2B invoice list.
   // customerGroup is read here too, for the Discount Engine call below.
@@ -723,7 +747,7 @@ async function buildPreparedSale(tenantId: number, doc: PreparedSaleSourceDoc, c
     const tax = hasStoredTax ? num(it.taxAmount) : (gst > 0 ? r2(taxable * (gst / 100)) : 0);
     subtotal += gross; itemDiscount += discAmount; taxableValue += taxable; taxTotal += tax; itemCount += qty;
     return {
-      productId: it.productId, productName: it.productName, sku: it.sku, uom: it.uom,
+      productId: it.productId, productName: it.productName, sku: it.sku, hsn: hsnById.get(it.productId) ?? null, uom: it.uom,
       qty, mrp: null, rate, discPct: it.discPct != null ? num(it.discPct) : null, discAmount, taxPct: gst || null, taxableValue: r2(taxable), taxAmount: tax, value: r2(taxable + tax),
       batchNo: it.batchNo, mfgDate: it.mfgDate, expiryDate: it.expiryDate,
       // Already resolved by completeLoadDispatch's inventory consumption — the

@@ -8,6 +8,7 @@ import { loadDispatchUpdateInput } from "@/lib/contracts/loadDispatch";
 import type { LoadDispatchDetail } from "@/lib/contracts/loadDispatch";
 import { getDispatchConfig } from "@/lib/settings/dispatchConfig";
 import { computeDriverBatta, computeTransitPass, roundInvoiceTotal } from "@/lib/settings/transportConfigDefaults";
+import { computeDispatchLineAmounts } from "@/lib/transport/loadDispatch";
 
 const PERM = "warehouse.transfer";
 const num = (v: unknown) => (v == null ? 0 : Number(v));
@@ -118,14 +119,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     let itemsGrandTotal = 0;
     if (input.items) {
       for (const it of input.items) {
-        const rate = it.rate ?? 0;
-        const gross = rate * it.dispatchedQty;
-        const discPct = it.discPct ?? null;
-        const discAmount = it.discAmount ?? (discPct ? gross * (discPct / 100) : 0);
-        const taxableValue = Math.max(0, gross - discAmount);
-        const taxPct = it.taxPct ?? null;
-        const taxAmount = taxPct ? taxableValue * (taxPct / 100) : 0;
-        itemsGrandTotal += taxableValue + taxAmount;
+        const { value } = computeDispatchLineAmounts({ rate: it.rate ?? 0, qty: it.dispatchedQty, discPct: it.discPct, discAmount: it.discAmount, taxPct: it.taxPct });
+        itemsGrandTotal += value;
       }
     } else {
       const agg = await prisma.loadDispatchItem.aggregate({ where: { loadDispatchId: id }, _sum: { taxableValue: true, taxAmount: true } });
@@ -163,19 +158,13 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       await tx.loadDispatchItem.deleteMany({ where: { loadDispatchId: id } });
       await tx.loadDispatchItem.createMany({
         data: input.items.map((it) => {
-          const rate = it.rate ?? 0;
-          const gross = rate * it.dispatchedQty;
-          const discPct = it.discPct ?? null;
-          const discAmount = it.discAmount ?? (discPct ? gross * (discPct / 100) : 0);
-          const taxableValue = Math.max(0, gross - discAmount);
-          const taxPct = it.taxPct ?? null;
-          const taxAmount = taxPct ? taxableValue * (taxPct / 100) : 0;
+          const { discPct, discAmount, taxableValue, taxPct, taxAmount, value } = computeDispatchLineAmounts({ rate: it.rate ?? 0, qty: it.dispatchedQty, discPct: it.discPct, discAmount: it.discAmount, taxPct: it.taxPct });
           return {
             tenantId: user.tenantId, loadDispatchId: id, productId: it.productId, productName: it.productName ?? "",
             sku: it.sku ?? null, uom: it.uom ?? null, batchNo: it.batchNo ?? null, mfgDate: it.mfgDate ?? null, expiryDate: it.expiryDate ?? null,
             serialNo: it.serialNo ?? null, allocationLotId: it.allocationLotId ?? null,
             allocatedQty: it.allocatedQty, dispatchedQty: it.dispatchedQty, pendingQty: Math.max(0, it.allocatedQty - it.dispatchedQty),
-            rate: it.rate ?? null, discPct, discAmount, taxPct, taxableValue, taxAmount, value: taxableValue + taxAmount,
+            rate: it.rate ?? null, discPct, discAmount, taxPct, taxableValue, taxAmount, value,
             qrCode: it.qrCode ?? null, remarks: it.remarks ?? null,
           };
         }),

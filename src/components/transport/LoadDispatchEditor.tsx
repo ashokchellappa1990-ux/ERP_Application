@@ -328,9 +328,9 @@ export function LoadDispatchEditor({ id }: { id: number }) {
   }
 
   const itemTotals = useMemo(() => {
-    let taxable = 0, tax = 0;
-    for (const it of items) { taxable += it.taxableValue || 0; tax += it.taxAmount || 0; }
-    return { taxable, tax, grandTotal: taxable + tax };
+    let taxable = 0, tax = 0, discount = 0;
+    for (const it of items) { taxable += it.taxableValue || 0; tax += it.taxAmount || 0; discount += it.discAmount || 0; }
+    return { taxable, tax, discount, grandTotal: taxable + tax };
   }, [items]);
 
   const vehicleRentVal = data?.vehicleRent ?? 0;
@@ -582,7 +582,7 @@ export function LoadDispatchEditor({ id }: { id: number }) {
               </select>
             </Fld>
             {fieldOn(SCREEN, "vehicleType") && <Fld label={`Vehicle Type${req("vehicleType")}`}><input value={vehicleType} disabled={!canEdit || !editingTransport} onChange={(e) => setVehicleType(e.target.value)} className={inp} /></Fld>}
-            {fieldOn(SCREEN, "route") && (
+            {fieldOn(SCREEN, "route") && !x.deliveryChallanId && (
               <Fld label="Route">
                 <select value={routeId} disabled={!canEdit || !editingTransport} onChange={(e) => setRouteId(e.target.value ? Number(e.target.value) : "")} className={inp}>
                   <option value="">—</option>
@@ -766,7 +766,7 @@ export function LoadDispatchEditor({ id }: { id: number }) {
       </div>
 
       <AccountingPostingDetails
-        taxableValue={itemTotals.taxable} taxTotal={itemTotals.tax} vehicleRent={vehicleRentVal} transitPassAmount={transitPassAmountVal}
+        taxableValue={itemTotals.taxable} taxTotal={itemTotals.tax} itemDiscount={itemTotals.discount} vehicleRent={vehicleRentVal} transitPassAmount={transitPassAmountVal}
         driverBattaAmount={driverBattaAmountVal} driverBattaMode={x.driverBattaMode}
         roundOff={invoiceRoundOff}
       />
