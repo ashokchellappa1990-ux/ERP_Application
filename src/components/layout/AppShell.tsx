@@ -5,7 +5,6 @@ import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { ScopeBar } from "@/components/scope/ScopeBar";
 import { useScope } from "@/components/scope/ScopeProvider";
-import { FloatingAssistant } from "@/components/ai/FloatingAssistant";
 import { CommandPalette } from "@/components/ai/CommandPalette";
 
 /**
@@ -46,8 +45,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div key={scopeVersion} className="mx-auto max-w-[1600px] p-4 md:p-6">{children}</div>
         </main>
       </div>
-      {/* Global AI Copilot (floating) + Command Center palette (Ctrl/⌘+K) — every page. */}
-      <FloatingAssistant />
+      {/* Command Center palette (Ctrl/⌘+K) — every page. AI Copilot lives in the Topbar now. */}
       <CommandPalette />
     </div>
   );

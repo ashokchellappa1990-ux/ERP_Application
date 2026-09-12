@@ -7,8 +7,10 @@ import { cn } from "@/lib/cn";
 import { useGeneralConfig } from "@/components/settings/GeneralConfigProvider";
 import { AiChat } from "./AiChat";
 
-/** Global floating AI assistant — available on every ERP page (mounted in AppShell),
- *  unless turned off via General Settings > System Behaviour > Show AI Copilot Bubble. */
+/** Global AI assistant — its trigger sits inline in the Topbar next to the
+ *  notification bell (rendered there via <FloatingAssistant />), unless
+ *  turned off via General Settings > System Behaviour > Show AI Copilot
+ *  Bubble. The chat panel itself still floats (fixed) below the header. */
 export function FloatingAssistant() {
   const [open, setOpen] = useState(false);
   const [convId, setConvId] = useState<number | null>(null);
@@ -18,14 +20,17 @@ export function FloatingAssistant() {
 
   return (
     <>
-      {!open && (
-        <button onClick={() => setOpen(true)} title="AI Copilot" className="group fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-brand-gradient text-white shadow-xl shadow-primary/30 transition hover:scale-105">
-          <Sparkles className="h-6 w-6" />
-          <span className="pointer-events-none absolute right-16 whitespace-nowrap rounded-lg bg-foreground px-2.5 py-1 text-2xs font-semibold text-background opacity-0 transition group-hover:opacity-100">Ask AI Copilot</span>
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        title="AI Copilot"
+        aria-label="AI Copilot"
+        className="touch-target grid place-items-center rounded-md border border-border bg-surface text-muted transition hover:bg-surface-2 hover:text-foreground"
+      >
+        <Sparkles className="h-[18px] w-[18px]" />
+      </button>
       {open && (
-        <div className={cn("fixed bottom-5 right-5 z-40 flex w-[min(94vw,400px)] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl", "h-[min(78vh,620px)]")}>
+        <div className={cn("fixed right-5 top-[calc(var(--topbar-height)+0.75rem)] z-40 flex w-[min(94vw,400px)] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl", "h-[min(78vh,620px)]")}>
           <div className="flex items-center justify-between bg-brand-gradient px-3.5 py-2.5 text-white">
             <span className="flex items-center gap-2 text-sm font-bold"><Sparkles className="h-4.5 w-4.5" /> AI Copilot</span>
             <div className="flex items-center gap-0.5">

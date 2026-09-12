@@ -217,6 +217,8 @@ export const NAV_SECTIONS: NavSection[] = [
           { label: "POS Billing (B2C)", href: "/sales/pos", icon: ShoppingCartIcon },
           { label: "Sales History", href: "/sales/history", icon: ReceiptText },
           { label: "Sales Invoice (B2B)", href: "/sales/invoice", icon: ReceiptText },
+          { label: "Load & Dispatch", href: "/warehouse/transfer/load-dispatch", icon: Truck },
+          { label: "Sales (From DC)", href: "/sales/from-dc", icon: FileText },
           { label: "Gift Voucher Sales", href: "/sales/gift-voucher-sales", icon: Wallet },
           { label: "Credit Sales", href: "/sales/credit", icon: CreditCard },
           { label: "Sales Return", href: "/sales/return", icon: Undo2 },
@@ -283,7 +285,6 @@ export const NAV_SECTIONS: NavSection[] = [
           { label: "Stock Transfer Request", href: "/warehouse/transfer/request", icon: ArrowLeftRight },
           { label: "Stock Allocation", href: "/warehouse/transfer/allocation", icon: PackageCheck },
           { label: "Dispatch Planning", href: "/warehouse/transfer/dispatch-planning", icon: ClipboardList },
-          { label: "Load & Dispatch", href: "/warehouse/transfer/load-dispatch", icon: Truck },
           { label: "Stock Transfer Receipt", href: "/warehouse/transfer/receipt", icon: PackageOpen },
           // Hidden per request.
           // { label: "Operations", href: "/warehouse/operations", icon: SlidersHorizontal },

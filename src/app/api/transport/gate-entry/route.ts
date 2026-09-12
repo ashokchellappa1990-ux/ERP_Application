@@ -188,7 +188,7 @@ export async function GET(req: Request) {
     // submitted — its own status (Draft→Ready→Loading→Dispatched→Delivery
     // Challan Generated→Sales Invoice Posted) takes over the list's displayed
     // status/action for that row instead of the raw physical gate status.
-    gateEntryIds.length ? prisma.loadDispatch.findMany({ where: { vehicleGateEntryId: { in: gateEntryIds }, deletedAt: null }, orderBy: { id: "desc" }, select: { id: true, vehicleGateEntryId: true, status: true, totalQty: true, saleId: true, dispatchDate: true } }) : Promise.resolve([]),
+    gateEntryIds.length ? prisma.loadDispatch.findMany({ where: { vehicleGateEntryId: { in: gateEntryIds }, deletedAt: null }, orderBy: { id: "desc" }, select: { id: true, vehicleGateEntryId: true, status: true, totalQty: true, saleId: true, dispatchDate: true, paymentMode: true } }) : Promise.resolve([]),
   ]);
   // Display-only "Loading" / "Loading Completed" overlay from the public QR
   // Start/Complete Loading page — deliberately NOT the same thing as
@@ -226,8 +226,8 @@ export async function GET(req: Request) {
   const cMap = new Map(companies.map((c) => [c.id, c.name]));
   // Most recent dispatch per gate entry (a gate entry could in principle be
   // referenced by more than one, though that's not the normal flow).
-  const dispatchMap = new Map<number, { id: number; status: string; totalQty: Prisma.Decimal; saleId: number | null; dispatchDate: string }>();
-  for (const d of dispatches) if (d.vehicleGateEntryId != null && !dispatchMap.has(d.vehicleGateEntryId)) dispatchMap.set(d.vehicleGateEntryId, { id: d.id, status: d.status, totalQty: d.totalQty, saleId: d.saleId, dispatchDate: d.dispatchDate });
+  const dispatchMap = new Map<number, { id: number; status: string; totalQty: Prisma.Decimal; saleId: number | null; dispatchDate: string; paymentMode: string | null }>();
+  for (const d of dispatches) if (d.vehicleGateEntryId != null && !dispatchMap.has(d.vehicleGateEntryId)) dispatchMap.set(d.vehicleGateEntryId, { id: d.id, status: d.status, totalQty: d.totalQty, saleId: d.saleId, dispatchDate: d.dispatchDate, paymentMode: d.paymentMode });
 
   const dispatchIds = dispatches.map((d) => d.id);
   const saleIds = Array.from(new Set(dispatches.map((d) => d.saleId).filter((v): v is number => !!v)));
@@ -268,7 +268,15 @@ export async function GET(req: Request) {
       dispatchDate: dispatch?.dispatchDate ?? null,
       totalQty: dispatch ? Number(dispatch.totalQty) : null,
       totalValue: dispatch ? (totalValueByDispatch.get(dispatch.id) ?? 0) : null,
-      invoiceNo: sale?.invoiceNo ?? null, paymentStatus: sale?.paymentStatus ?? null,
+      invoiceNo: sale?.invoiceNo ?? null,
+      // Once invoiced, the posted Sale's own paymentStatus (Paid/Partial/Credit)
+      // is authoritative. Before that — Dispatched or Delivery Challan
+      // Generated, no Sale yet — fall back to the dispatch's own payment
+      // intent (Full/Partial/Credit, captured/updated on the Load & Dispatch
+      // view screen) so the column isn't just blank the whole time the
+      // vehicle is out; "Pending" means the dispatch has gone out but
+      // payment collection hasn't been captured/updated yet.
+      paymentStatus: sale?.paymentStatus ?? (dispatch && ["Dispatched", "Delivery Challan Generated"].includes(dispatch.status) ? (dispatch.paymentMode ?? "Pending") : null),
       // Lazily fetched on hover/expand — see /[id]/hover-detail — not eager-loaded here anymore.
       productName: null as string | null,
       preLoadWeight: null as number | null, postLoadWeight: null as number | null, netWeight: null as number | null,

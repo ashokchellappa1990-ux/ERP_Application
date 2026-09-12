@@ -8,6 +8,7 @@ import { useScope } from "@/components/scope/ScopeProvider";
 import { useSession } from "@/components/auth/SessionProvider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { AppLoader } from "@/components/ui/AppLoader";
+import { FloatingAssistant } from "@/components/ai/FloatingAssistant";
 import {
   getCompanyProfile,
   subscribeCompanyProfile,
@@ -114,6 +115,8 @@ export function Topbar({ onMenu }: TopbarProps) {
 
       <div className="ml-auto flex items-center gap-1.5 md:ml-0">
         <ThemeSwitcher />
+
+        <FloatingAssistant />
 
         <button
           type="button"

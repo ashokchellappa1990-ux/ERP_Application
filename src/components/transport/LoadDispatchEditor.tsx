@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft, Truck, FileText, Boxes, ScanLine, CheckCircle2, XCircle, PlayCircle,
   MessageSquare, PackageCheck, Wallet, Save, ClipboardList, Layers, Receipt, Printer, Scale, Ticket, IndianRupee,
@@ -19,6 +19,7 @@ import type { LoadDispatchDetail, LoadDispatchItemDto } from "@/lib/contracts/lo
 import type { TransportConfigData } from "@/lib/settings/transportConfigDefaults";
 import { fieldOn, fieldMust } from "@/lib/settings/docFieldsConfig";
 import { AccountingPostingDetails } from "@/components/transport/AccountingPostingDetails";
+import { BankPicker, emptyBank, type BankValue } from "@/components/finance/BankPicker";
 
 const SCREEN = "load_dispatch";
 const req = (key: string) => (fieldMust(SCREEN, key) ? " *" : "");
@@ -53,6 +54,11 @@ export function LoadDispatchEditor({ id }: { id: number }) {
   const fmt = useFmt();
   const router = useRouter();
   const toast = useToast();
+  // Opened from Sales (From DC)'s own work-queue list (?from=sales-from-dc)
+  // should return there, not to the general Load & Dispatch list — same
+  // "remember where I came from" pattern as the print preview's `next` param.
+  const searchParams = useSearchParams();
+  const backHref = searchParams.get("from") === "sales-from-dc" ? "/sales/from-dc" : "/warehouse/transfer/load-dispatch";
   const [data, setData] = useState<LoadDispatchDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<TransportConfigData | null>(null);
@@ -105,6 +111,17 @@ export function LoadDispatchEditor({ id }: { id: number }) {
   const [editingPassNo, setEditingPassNo] = useState(false);
   const [passNoDraft, setPassNoDraft] = useState("");
   const [savingPassNo, setSavingPassNo] = useState(false);
+  // Payment Collection — real-world collection is often only known once the
+  // vehicle has actually left, so this stays editable via its own endpoint
+  // right up to the moment the Sales Invoice posts (Dispatched / Delivery
+  // Challan Generated), the same "editable past the general lock" pattern as
+  // Transit Pass Number above.
+  const [editingPayment, setEditingPayment] = useState(false);
+  const [payCatDraft, setPayCatDraft] = useState<"full" | "partial" | "credit">("full");
+  const [amtPaidDraft, setAmtPaidDraft] = useState("");
+  const [payModeDraft, setPayModeDraft] = useState("Bank Transfer");
+  const [bankDraft, setBankDraft] = useState<BankValue>(emptyBank);
+  const [savingPayment, setSavingPayment] = useState(false);
 
   const [items, setItems] = useState<EditableItem[]>([]);
   const [scanCode, setScanCode] = useState("");
@@ -172,6 +189,32 @@ export function LoadDispatchEditor({ id }: { id: number }) {
     const j = await fetch(`/api/warehouse/load-dispatch/${id}/transit-pass-no`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ transitPassRefNo: passNoDraft }) }).then((r) => r.json()).catch(() => ({}));
     setSavingPassNo(false);
     if (j.ok) { toast.success(j.message || "Saved."); setEditingPassNo(false); load(); } else toast.error(j.message || "Could not save.");
+  }
+
+  function openPaymentEdit() {
+    setPayCatDraft(data?.paymentMode === "Partial" ? "partial" : data?.paymentMode === "Credit" ? "credit" : "full");
+    setAmtPaidDraft(data?.paymentAmount != null ? String(data.paymentAmount) : "");
+    setPayModeDraft(data?.paymentMethod || "Bank Transfer");
+    setBankDraft({ bankId: data?.bankId ?? null, bankName: data?.bankName ?? "", bankAccount: data?.bankAccount ?? "" });
+    setEditingPayment(true);
+  }
+  async function savePayment() {
+    const amt = payCatDraft === "credit" ? 0 : payCatDraft === "full" ? totalAmountToCollect : Number(amtPaidDraft) || 0;
+    if (payCatDraft === "partial" && (amt <= 0 || amt >= totalAmountToCollect)) { toast.error("Enter a partial amount greater than 0 and less than the total amount to be collected."); return; }
+    setSavingPayment(true);
+    const j = await fetch(`/api/warehouse/load-dispatch/${id}/payment`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paymentMode: payCatDraft === "full" ? "Full" : payCatDraft === "partial" ? "Partial" : "Credit",
+        paymentAmount: payCatDraft === "credit" ? 0 : amt,
+        paymentMethod: payCatDraft === "credit" ? null : payModeDraft,
+        bankId: payCatDraft !== "credit" ? bankDraft.bankId : null,
+        bankName: payCatDraft !== "credit" ? bankDraft.bankName || null : null,
+        bankAccount: payCatDraft !== "credit" ? bankDraft.bankAccount || null : null,
+      }),
+    }).then((r) => r.json()).catch(() => ({}));
+    setSavingPayment(false);
+    if (j.ok) { toast.success(j.message || "Payment Collection updated."); setEditingPayment(false); load(); } else toast.error(j.message || "Could not save.");
   }
 
   useEffect(() => {
@@ -303,6 +346,10 @@ export function LoadDispatchEditor({ id }: { id: number }) {
   }
 
   async function doDeliveryChallan() {
+    if (config?.fields.salesInvoicePostingMethod === "Automatic" && !data?.paymentMode) {
+      toast.error("Update Payment Collection first — generating the Delivery Challan posts the Sales Invoice automatically in Automatic mode.");
+      return;
+    }
     setActionBusy("delivery-challan");
     const j = await fetch(`/api/warehouse/load-dispatch/${id}/delivery-challan`, { method: "POST" }).then((r) => r.json()).catch(() => ({}));
     setActionBusy(null);
@@ -313,6 +360,7 @@ export function LoadDispatchEditor({ id }: { id: number }) {
   }
 
   async function doPostInvoice() {
+    if (!data?.paymentMode) { toast.error("Update Payment Collection before posting the Sales Invoice."); return; }
     setActionBusy("post-invoice");
     const j = await fetch(`/api/warehouse/load-dispatch/${id}/post-invoice`, { method: "POST" }).then((r) => r.json()).catch(() => ({}));
     setActionBusy(null);
@@ -415,7 +463,7 @@ export function LoadDispatchEditor({ id }: { id: number }) {
           <Button variant="primary" size="md" onClick={() => printPreview("invoice")} disabled={!x.saleId} title={x.saleId ? "Preview & print the Tax Invoice" : "Available once a Sales Invoice has been posted"}>
             <Printer className="h-4 w-4" /> Print Invoice
           </Button>
-          <Link href="/warehouse/transfer/load-dispatch"><Button variant="outline" size="md"><ArrowLeft className="h-4 w-4" /> Back</Button></Link>
+          <Link href={backHref}><Button variant="outline" size="md"><ArrowLeft className="h-4 w-4" /> Back</Button></Link>
         </div>
       </div>
 
@@ -736,27 +784,60 @@ export function LoadDispatchEditor({ id }: { id: number }) {
           </div>
         </SectionCard>
 
-        <SectionCard icon={IndianRupee} title="Payment Collection" allowOverflow>
-          <div className="space-y-2">
-            <Row k="Payment Type" v={x.paymentMode ?? "—"} />
-            <Row k="Amount Collected" v={amountCollected.toFixed(2)} money />
-            {Array.isArray(x.paymentSplits) && x.paymentSplits.length > 0 ? (
-              <div className="space-y-1.5 rounded-md border border-border p-2">
-                <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Split Payment</p>
-                {x.paymentSplits.map((l, i) => (
-                  <div key={i} className="flex items-center justify-between text-xs">
-                    <span className="text-muted">{l.mode}{l.reference ? ` · ${l.reference}` : ""}</span>
-                    <span className="font-semibold tabular-nums text-foreground">₹{Number(l.amount).toFixed(2)}</span>
-                  </div>
-                ))}
+        <SectionCard
+          icon={IndianRupee} title="Payment Collection" allowOverflow
+          action={!editingPayment && x.status !== "Cancelled" && !x.saleId ? <button type="button" onClick={openPaymentEdit} className="text-2xs font-semibold text-primary hover:underline">Modify</button> : undefined}
+        >
+          {editingPayment ? (
+            <div className="grid gap-3">
+              <div>
+                <label className="mb-1 block text-2xs font-semibold text-muted">Payment</label>
+                <div className="inline-flex w-full overflow-hidden rounded-md border border-border text-2xs">
+                  {([["full", "Full Collection"], ["partial", "Partial Collection"], ["credit", "Credit Due"]] as const).map(([m, lbl]) => (
+                    <button key={m} type="button" onClick={() => setPayCatDraft(m)} className={cn("flex-1 px-2 py-1.5 font-semibold transition", payCatDraft === m ? "bg-primary text-white" : "bg-surface text-muted hover:text-foreground")}>{lbl}</button>
+                  ))}
+                </div>
               </div>
-            ) : (
-              <>
-                <Row k="Payment Mode" v={x.paymentMethod ?? "—"} />
-                {x.bankName && <Row k="Bank" v={`${x.bankName}${x.bankAccount ? ` · ${x.bankAccount}` : ""}`} />}
-              </>
-            )}
-          </div>
+              {payCatDraft !== "credit" && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-2xs font-semibold text-muted">Amount Received</label>
+                    <input type="number" value={payCatDraft === "full" ? String(totalAmountToCollect) : amtPaidDraft} readOnly={payCatDraft === "full"} onChange={(e) => setAmtPaidDraft(e.target.value)} placeholder="0.00" className={cn(inp, payCatDraft === "full" && "bg-surface-2")} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-2xs font-semibold text-muted">Payment Mode</label>
+                    <select value={payModeDraft} onChange={(e) => setPayModeDraft(e.target.value)} className={inp}>{["Bank Transfer", "Cash", "UPI", "Cheque", "Card"].map((m) => <option key={m}>{m}</option>)}</select>
+                  </div>
+                  <div className="sm:col-span-2"><BankPicker mode={payModeDraft} value={bankDraft} onChange={setBankDraft} required /></div>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={savePayment} disabled={savingPayment}>{savingPayment ? "Saving…" : "Save"}</Button>
+                <button type="button" onClick={() => setEditingPayment(false)} className="text-2xs font-semibold text-muted hover:text-foreground">Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Row k="Payment Type" v={x.paymentMode ?? "—"} />
+              <Row k="Amount Collected" v={amountCollected.toFixed(2)} money />
+              {Array.isArray(x.paymentSplits) && x.paymentSplits.length > 0 ? (
+                <div className="space-y-1.5 rounded-md border border-border p-2">
+                  <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Split Payment</p>
+                  {x.paymentSplits.map((l, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs">
+                      <span className="text-muted">{l.mode}{l.reference ? ` · ${l.reference}` : ""}</span>
+                      <span className="font-semibold tabular-nums text-foreground">₹{Number(l.amount).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <Row k="Payment Mode" v={x.paymentMethod ?? "—"} />
+                  {x.bankName && <Row k="Bank" v={`${x.bankName}${x.bankAccount ? ` · ${x.bankAccount}` : ""}`} />}
+                </>
+              )}
+            </div>
+          )}
           <div className="mt-2 space-y-1.5 rounded-lg bg-surface-2 px-3 py-2 text-xs">
             <div className="flex items-center justify-between"><span className="text-muted">Total Amount to be Collected</span><span className="font-semibold tabular-nums text-foreground">₹{totalAmountToCollect.toFixed(2)}</span></div>
             <div className="flex items-center justify-between"><span className="text-muted">Balance Amount to be Collected</span><span className="font-semibold tabular-nums text-foreground">₹{balanceToCollect.toFixed(2)}</span></div>

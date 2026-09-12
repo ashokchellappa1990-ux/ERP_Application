@@ -48,7 +48,7 @@ interface HoverDetail {
 }
 interface Stats { total: number; waiting: number; inside: number; completed: number; dcGenerated: number; invoicePosted: number; grnPosted: number; grnInvoicePosted: number }
 const EMPTY: Stats = { total: 0, waiting: 0, inside: 0, completed: 0, dcGenerated: 0, invoicePosted: 0, grnPosted: 0, grnInvoicePosted: 0 };
-const PAYMENT_STATUS_TONE: Record<string, "success" | "warning" | "danger"> = { Paid: "success", Partial: "warning", Credit: "danger" };
+const PAYMENT_STATUS_TONE: Record<string, "success" | "warning" | "danger" | "neutral"> = { Paid: "success", Full: "success", Partial: "warning", Credit: "danger", Pending: "neutral" };
 const STATUS_TONE: Record<GateEntryStatus, "neutral" | "info" | "warning" | "success" | "primary"> = {
   Waiting: "neutral", "Inside Factory": "info", Loading: "warning", Completed: "success", Exited: "primary",
 };
@@ -527,7 +527,10 @@ function NewEntryTypeModal({ onClose, onPick }: { onClose: () => void; onPick: (
   );
 }
 
-export function GateExitModal({ row, onClose, onSaved }: { row: Row; onClose: () => void; onSaved: (warning: string | null) => void }) {
+// Row type kept minimal (not the full list Row) so this modal is reusable
+// from other lists that show the same gate entries in a trimmed shape (e.g.
+// the Load & Dispatch list under Sales).
+export function GateExitModal({ row, onClose, onSaved }: { row: { id: number; gateEntryNo: string; vehicleNo: string }; onClose: () => void; onSaved: (warning: string | null) => void }) {
   const toast = useToast();
   const [securityOfficer, setSecurityOfficer] = useState("");
   const [sealVerified, setSealVerified] = useState(false);

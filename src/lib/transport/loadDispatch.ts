@@ -618,6 +618,13 @@ export async function generateDeliveryChallanForLoadDispatch(scope: ActiveScope,
   if (doc.deliveryChallanId) throw new Error("A Delivery Challan has already been generated for this dispatch.");
 
   const cfg = await getDispatchConfig(user);
+  // In Automatic mode this call posts the Sales Invoice immediately, right
+  // after the DC — so Payment Collection must be resolved first (via the
+  // dedicated payment PATCH endpoint) or buildPreparedSale below would post
+  // against whatever payment intent happens to be sitting on the row.
+  if (cfg.fields.salesInvoicePostingMethod === "Automatic" && !doc.paymentMode) {
+    throw new Error("Update Payment Collection before generating the Delivery Challan — it posts the Sales Invoice automatically in Automatic mode.");
+  }
   let invoiceNo: string | null = null;
 
   // maxWait/timeout: createSaleTx posts a full sales journal + inventory
@@ -666,6 +673,7 @@ export async function postSalesInvoiceForLoadDispatch(scope: ActiveScope, user: 
   if (!doc) throw new Error("Load & Dispatch not found.");
   if (!doc.deliveryChallanId) throw new Error("Generate the Delivery Challan first.");
   if (doc.saleId) throw new Error("A Sales Invoice has already been posted for this dispatch.");
+  if (!doc.paymentMode) throw new Error("Update Payment Collection before posting the Sales Invoice.");
 
   let invoiceNo = "";
   // maxWait/timeout: same P2028 risk as generateDeliveryChallanForLoadDispatch —

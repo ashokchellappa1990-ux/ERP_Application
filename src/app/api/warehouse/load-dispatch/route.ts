@@ -48,13 +48,36 @@ export async function GET(req: Request) {
   ]);
 
   const vehicleIds = Array.from(new Set(rows.map((r) => r.vehicleId).filter((v): v is number => !!v)));
-  const vehicles = vehicleIds.length ? await prisma.vehicleMaster.findMany({ where: { id: { in: vehicleIds } }, select: { id: true, vehicleNo: true } }) : [];
+  const gateEntryIds = Array.from(new Set(rows.map((r) => r.vehicleGateEntryId).filter((v): v is number => !!v)));
+  const saleIds = Array.from(new Set(rows.map((r) => r.saleId).filter((v): v is number => !!v)));
+  const dispatchIds = rows.map((r) => r.id);
+  const [vehicles, gateEntries, sales, itemAgg] = await Promise.all([
+    vehicleIds.length ? prisma.vehicleMaster.findMany({ where: { id: { in: vehicleIds } }, select: { id: true, vehicleNo: true } }) : Promise.resolve([]),
+    gateEntryIds.length ? prisma.vehicleGateEntry.findMany({ where: { id: { in: gateEntryIds } }, select: { id: true, gateEntryNo: true } }) : Promise.resolve([]),
+    saleIds.length ? prisma.sale.findMany({ where: { id: { in: saleIds } }, select: { id: true, paymentStatus: true } }) : Promise.resolve([]),
+    dispatchIds.length ? prisma.loadDispatchItem.groupBy({ by: ["loadDispatchId"], where: { loadDispatchId: { in: dispatchIds }, deletedAt: null }, _sum: { taxableValue: true, taxAmount: true } }) : Promise.resolve([]),
+  ]);
   const vMap = new Map(vehicles.map((v) => [v.id, v.vehicleNo]));
+  const gateMap = new Map(gateEntries.map((g) => [g.id, g.gateEntryNo]));
+  const saleMap = new Map(sales.map((s) => [s.id, s.paymentStatus]));
+  const valueMap = new Map(itemAgg.map((a) => [a.loadDispatchId, Number(a._sum.taxableValue ?? 0) + Number(a._sum.taxAmount ?? 0)]));
 
   const shaped: LoadDispatchRow[] = rows.map((r) => ({
     id: r.id, dispatchNo: r.dispatchNo, docType: r.docType as LoadDispatchRow["docType"], sourceRefNo: r.sourceRefNo,
     partyName: r.partyName, warehouse: r.warehouse, vehicleNo: r.vehicleId ? (vMap.get(r.vehicleId) ?? null) : null,
     dispatchDate: r.dispatchDate, status: r.status as LoadDispatchRow["status"], createdByName: r.createdByName, createdAt: r.createdAt.toISOString(),
+    gateEntryNo: r.vehicleGateEntryId ? (gateMap.get(r.vehicleGateEntryId) ?? null) : null,
+    totalQty: Number(r.totalQty ?? 0), totalValue: valueMap.get(r.id) ?? 0,
+    dcStatus: r.deliveryChallanId ? "Generated" : null,
+    invoiceStatus: r.deliveryChallanId ? (r.saleId ? "Posted" : "Not Posted") : null,
+    // Same vocabulary as the Vehicle Gate Entry list: once invoiced, the
+    // posted Sale's own paymentStatus is authoritative; before that, fall
+    // back to this dispatch's own payment intent once it's actually out
+    // (Dispatched/DC Generated), or "Pending" if payment hasn't been
+    // captured/updated yet.
+    paymentStatus: r.saleId
+      ? ((saleMap.get(r.saleId) as LoadDispatchRow["paymentStatus"]) ?? null)
+      : (["Dispatched", "Delivery Challan Generated"].includes(r.status) ? ((r.paymentMode as LoadDispatchRow["paymentStatus"]) ?? "Pending") : null),
   }));
 
   return NextResponse.json({ ok: true, rows: shaped, stats: { total, draft, dispatched, cancelled } });

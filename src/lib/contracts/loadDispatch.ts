@@ -216,6 +216,9 @@ export interface LoadDispatchRow {
   id: number; dispatchNo: string; docType: LoadDispatchDocType; sourceRefNo: string | null;
   partyName: string | null; warehouse: string | null; vehicleNo: string | null;
   dispatchDate: string; status: LoadDispatchStatus; createdByName: string | null; createdAt: string;
+  gateEntryNo: string | null; totalQty: number; totalValue: number;
+  dcStatus: "Generated" | null; invoiceStatus: "Posted" | "Not Posted" | null;
+  paymentStatus: "Full" | "Partial" | "Credit" | "Pending" | "Paid" | null;
 }
 export interface LoadDispatchItemDto {
   id: number; productId: number; productName: string; sku: string | null; uom: string | null;

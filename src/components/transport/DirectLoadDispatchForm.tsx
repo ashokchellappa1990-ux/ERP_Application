@@ -952,6 +952,11 @@ export function DirectLoadDispatchForm() {
               {lines.map((l) => {
                 const c = calcLine(l);
                 const needsBatch = l.batchTracked && !l.batchNo;
+                // Matches the auto-fill effect above exactly (single-line bulk
+                // material load, weighed now) — Qty must come from the
+                // weighbridge net weight there, so lock it here too instead of
+                // letting it be typed over and silently disagree with weight.
+                const qtyFromWeight = postWeightTiming === "now" && lines.length === 1 && !!l.productId;
                 return (
                 <tr key={l.id} className="border-b border-border last:border-0 align-middle">
                   <td className="px-2 py-1.5" title={l.productName || undefined}>
@@ -966,7 +971,14 @@ export function DirectLoadDispatchForm() {
                       <td className="px-2 py-1.5"><input type="date" value={l.expiryDate} onChange={(e) => updLine(l.id, { expiryDate: e.target.value })} className={cn(inpSm, "w-full")} /></td>
                     </>
                   )}
-                  <td className="px-2 py-1.5"><input type="number" value={l.qty} onChange={(e) => updLine(l.id, { qty: e.target.value.slice(0, 10) })} className={cn(inpSm, "w-full text-right")} /></td>
+                  <td className="px-2 py-1.5">
+                    <input
+                      type="number" value={l.qty} readOnly={qtyFromWeight}
+                      onChange={(e) => { if (!qtyFromWeight) updLine(l.id, { qty: e.target.value.slice(0, 10) }); }}
+                      title={qtyFromWeight ? "Comes from the Post-Loading net weight above — not manually editable." : undefined}
+                      className={cn(inpSm, "w-full text-right", qtyFromWeight && "cursor-not-allowed bg-surface-2 text-muted")}
+                    />
+                  </td>
                   <td className="px-2 py-1.5 text-2xs text-muted">{l.uom || "—"}</td>
                   <td className="px-2 py-1.5"><input type="number" value={l.rate} onChange={(e) => updLine(l.id, { rate: e.target.value })} className={cn(inpSm, "w-full text-right")} /></td>
                   <td className="px-2 py-1.5 text-right tabular-nums text-muted">{c.gross.toFixed(2)}</td>
