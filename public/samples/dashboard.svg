@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" width="640" height="400" role="img" aria-label="Dashboard sample">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#a855f7"/></linearGradient>
+    <linearGradient id="g2" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#7c3aed" stop-opacity="0"/><stop offset="1" stop-color="#7c3aed" stop-opacity="0.25"/></linearGradient>
+  </defs>
+  <rect width="640" height="400" rx="20" fill="#ffffff"/>
+  <rect x="0.5" y="0.5" width="639" height="399" rx="20" fill="none" stroke="#e5e7eb"/>
+  <rect width="640" height="46" rx="20" fill="#f8fafc"/>
+  <rect y="24" width="640" height="22" fill="#f8fafc"/>
+  <circle cx="26" cy="23" r="5" fill="#ef4444"/><circle cx="44" cy="23" r="5" fill="#f59e0b"/><circle cx="62" cy="23" r="5" fill="#22c55e"/>
+  <rect x="90" y="16" width="180" height="14" rx="7" fill="#eef2ff"/>
+  <circle cx="612" cy="23" r="11" fill="url(#g1)"/>
+  <!-- KPI cards -->
+  <g>
+    <rect x="24" y="66" width="140" height="66" rx="12" fill="#faf5ff" stroke="#eee7fb"/>
+    <text x="38" y="90" font-family="Inter,Arial" font-size="11" fill="#8b8ba7">Total Revenue</text>
+    <text x="38" y="112" font-family="Inter,Arial" font-size="18" font-weight="700" fill="#1e1b39">₹12,45,000</text>
+    <rect x="180" y="66" width="140" height="66" rx="12" fill="#eff6ff" stroke="#e0ecff"/>
+    <text x="194" y="90" font-family="Inter,Arial" font-size="11" fill="#8b8ba7">Total Orders</text>
+    <text x="194" y="112" font-family="Inter,Arial" font-size="18" font-weight="700" fill="#1e1b39">8,753</text>
+    <rect x="336" y="66" width="140" height="66" rx="12" fill="#ecfdf5" stroke="#d7f5e6"/>
+    <text x="350" y="90" font-family="Inter,Arial" font-size="11" fill="#8b8ba7">Total Profit</text>
+    <text x="350" y="112" font-family="Inter,Arial" font-size="18" font-weight="700" fill="#1e1b39">₹2,45,000</text>
+    <rect x="492" y="66" width="124" height="66" rx="12" fill="#fff7ed" stroke="#ffe9d3"/>
+    <text x="506" y="90" font-family="Inter,Arial" font-size="11" fill="#8b8ba7">Customers</text>
+    <text x="506" y="112" font-family="Inter,Arial" font-size="18" font-weight="700" fill="#1e1b39">24,753</text>
+  </g>
+  <!-- line chart -->
+  <rect x="24" y="150" width="380" height="220" rx="14" fill="#ffffff" stroke="#eef0f4"/>
+  <text x="42" y="178" font-family="Inter,Arial" font-size="12" font-weight="600" fill="#1e1b39">Sales Overview</text>
+  <polygon points="42,340 92,320 142,300 192,250 242,270 292,210 342,230 386,190 386,352 42,352" fill="url(#g2)"/>
+  <polyline points="42,340 92,320 142,300 192,250 242,270 292,210 342,230 386,190" fill="none" stroke="url(#g1)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#7c3aed"><circle cx="192" cy="250" r="4"/><circle cx="292" cy="210" r="4"/><circle cx="386" cy="190" r="4"/></g>
+  <!-- donut -->
+  <rect x="420" y="150" width="196" height="220" rx="14" fill="#ffffff" stroke="#eef0f4"/>
+  <text x="438" y="178" font-family="Inter,Arial" font-size="12" font-weight="600" fill="#1e1b39">Top Categories</text>
+  <g transform="translate(518,265)">
+    <circle r="52" fill="none" stroke="#7c3aed" stroke-width="20" stroke-dasharray="130 197" transform="rotate(-90)"/>
+    <circle r="52" fill="none" stroke="#a855f7" stroke-width="20" stroke-dasharray="80 247" stroke-dashoffset="-130" transform="rotate(-90)"/>
+    <circle r="52" fill="none" stroke="#22c55e" stroke-width="20" stroke-dasharray="55 272" stroke-dashoffset="-210" transform="rotate(-90)"/>
+    <circle r="52" fill="none" stroke="#f59e0b" stroke-width="20" stroke-dasharray="62 265" stroke-dashoffset="-265" transform="rotate(-90)"/>
+    <circle r="30" fill="#fff"/>
+  </g>
+</svg>

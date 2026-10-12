@@ -1,0 +1,27 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+    build:
+      commands:
+        # Amplify's console-configured environment variables are exposed as
+        # shell vars during THIS build phase, but are NOT automatically
+        # forwarded into the deployed Next.js SSR compute (Lambda) runtime —
+        # confirmed via a diagnostic log showing DB_SERVER/DB_PORT/DB_NAME/
+        # DB_USER/DB_PASSWORD all "(unset)" at Lambda cold start despite being
+        # set correctly in the console. Writing them into .env.production here
+        # bundles them into the build output, which Next.js's server runtime
+        # loads again at cold start — the standard workaround for this Amplify
+        # Hosting + Next.js SSR gap.
+        - env | grep -E '^(DB_SERVER|DB_PORT|DB_NAME|DB_USER|DB_PASSWORD)=' >> .env.production
+        - npm run build
+  artifacts:
+    baseDirectory: .next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+      - .next/cache/**/*

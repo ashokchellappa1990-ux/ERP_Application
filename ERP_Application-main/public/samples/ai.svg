@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 130" width="160" height="130" role="img" aria-label="AI sample">
+  <defs>
+    <linearGradient id="ai" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f0abfc"/><stop offset="1" stop-color="#a78bfa"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <g stroke="#c4b5fd" stroke-width="1.4" opacity="0.7" fill="none">
+    <path d="M80 65 H20 M20 65 V30 M20 30 H8"/><path d="M80 65 H140 M140 65 V95 M140 95 H152"/>
+    <path d="M80 65 V22 M80 22 H50 M50 22 V10"/><path d="M80 65 V108 M80 108 H108 M108 108 V120"/>
+  </g>
+  <g fill="#a78bfa"><circle cx="8" cy="30" r="3"/><circle cx="152" cy="95" r="3"/><circle cx="50" cy="10" r="3"/><circle cx="108" cy="120" r="3"/></g>
+  <rect x="52" y="42" width="56" height="46" rx="12" fill="url(#ai)" filter="url(#glow)"/>
+  <text x="80" y="74" text-anchor="middle" font-family="Inter,Arial" font-size="24" font-weight="800" fill="#3b0764">AI</text>
+</svg>

@@ -1,0 +1,272 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { UserRound, Plus, Pencil, Trash2, Search, X, Truck as TruckIcon } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { AppLoader } from "@/components/ui/AppLoader";
+import { useToast } from "@/components/ui/Toast";
+import { driverInput, DRIVER_STATUS_OPTS, DRIVER_EMPLOYMENT_TYPE_OPTS, DRIVER_GENDER_OPTS, type DriverInput } from "@/lib/contracts/transport";
+import { VehicleDriverAssignmentList } from "@/components/transport/masters/VehicleDriverAssignmentList";
+
+interface Row extends DriverInput { id: number }
+interface CompanyOption { id: number; name: string }
+const DRIVER_STATUS_TONE: Record<string, "success" | "neutral" | "warning" | "danger"> = {
+  Active: "success", "On Leave": "warning", Inactive: "neutral", Suspended: "danger", Blacklisted: "danger", Resigned: "neutral",
+};
+const BLANK: DriverInput = {
+  name: "", licenseNo: "", licenseExpiry: "", phone: "", transportCompanyId: null, status: "Active", remarks: "",
+  driverCode: "", alternateContact: "", address: "", dob: "", gender: "", joiningDate: "",
+  licenseType: "", licenseIssuingAuthority: "", licenseIssueDate: "", permittedVehicleClass: "",
+  employmentType: "Company Employee",
+  emergencyContactName: "", emergencyContactNumber: "", emergencyContactRelationship: "",
+  idProofType: "", idProofNo: "", medicalFitnessNo: "", medicalFitnessValidUpto: "", otherDocumentsNote: "",
+};
+
+export function DriverMasterList() {
+  const toast = useToast();
+  const [rows, setRows] = useState<Row[]>([]);
+  const [companies, setCompanies] = useState<CompanyOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [q, setQ] = useState("");
+  const [modal, setModal] = useState<{ mode: "add" | "edit"; id?: number } | null>(null);
+  const [assignedFor, setAssignedFor] = useState<{ id: number; label: string } | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const url = q ? `/api/transport/masters/driver?q=${encodeURIComponent(q)}` : "/api/transport/masters/driver";
+    const [j, c] = await Promise.all([
+      fetch(url, { cache: "no-store" }).then((r) => r.json()).catch(() => null),
+      fetch("/api/transport/masters/transport-company", { cache: "no-store" }).then((r) => r.json()).catch(() => null),
+    ]);
+    if (j?.ok) setRows(j.rows);
+    if (c?.ok) setCompanies(c.rows.map((r: { id: number; name: string }) => ({ id: r.id, name: r.name })));
+    setLoading(false);
+  }, [q]);
+  useEffect(() => { load(); }, [load]);
+
+  const companyName = (id: number | null | undefined) => companies.find((c) => c.id === id)?.name ?? "—";
+
+  async function remove(r: Row) {
+    if (!window.confirm(`Delete driver ${r.name}?`)) return;
+    const j = await fetch(`/api/transport/masters/driver/${r.id}`, { method: "DELETE" }).then((x) => x.json());
+    toast.result(j, "Deleted.", "Could not delete.");
+    if (j.ok) load();
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="mb-1 flex items-center gap-2 text-xs text-muted"><span>Masters</span><span className="text-subtle">/</span><span>Transport</span><span className="text-subtle">/</span><span className="font-medium text-foreground">Driver</span></div>
+          <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><UserRound className="h-5 w-5 text-primary" /> Driver Master</h1>
+          <p className="mt-0.5 text-sm text-muted">Drivers assigned to vehicles for dispatch & gate operations.</p>
+        </div>
+        <Button size="md" onClick={() => setModal({ mode: "add" })}><Plus className="h-4 w-4" /> Add Driver</Button>
+      </div>
+
+      <div className="relative max-w-xs">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, license, phone…" className="h-9 w-full rounded-md border border-border bg-surface-2 pl-9 pr-3 text-sm text-foreground placeholder:text-subtle focus:border-primary focus:bg-surface focus:outline-none" />
+      </div>
+
+      {loading ? <div className="rounded-2xl border border-border bg-card p-10 shadow-sm"><AppLoader label="Loading…" size="sm" /></div>
+        : rows.length === 0 ? <div className="rounded-2xl border border-dashed border-border-strong bg-card p-10 text-center text-sm text-muted">No drivers yet. <button onClick={() => setModal({ mode: "add" })} className="font-semibold text-primary hover:underline">Add one →</button></div>
+        : (
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"><div className="overflow-x-auto">
+          <table className="w-full min-w-[820px] text-sm">
+            <thead><tr className="border-b border-border bg-surface-2/40 text-2xs uppercase tracking-wide text-muted"><th className="px-3 py-2.5 text-left">Name</th><th className="px-3 py-2.5 text-left">License No</th><th className="px-3 py-2.5 text-left">Expiry</th><th className="px-3 py-2.5 text-left">Phone</th><th className="px-3 py-2.5 text-left">Company</th><th className="px-3 py-2.5 text-center">Status</th><th className="px-3 py-2.5 text-right">Actions</th></tr></thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id} className="border-b border-border/60 last:border-0 hover:bg-surface-2/20">
+                  <td className="px-3 py-2 font-medium text-foreground">{r.name}</td>
+                  <td className="px-3 py-2 text-2xs text-muted">{r.licenseNo || "—"}</td>
+                  <td className="px-3 py-2 text-2xs text-muted">{r.licenseExpiry || "—"}</td>
+                  <td className="px-3 py-2 text-2xs text-muted">{r.phone || "—"}</td>
+                  <td className="px-3 py-2 text-2xs text-muted">{companyName(r.transportCompanyId)}</td>
+                  <td className="px-3 py-2 text-center"><Badge tone={DRIVER_STATUS_TONE[r.status] ?? "neutral"}>{r.status}</Badge></td>
+                  <td className="px-3 py-2"><div className="flex items-center justify-end gap-1">
+                    <button onClick={() => setAssignedFor({ id: r.id, label: r.name })} title="View Assigned Vehicles" className="grid h-8 w-8 place-items-center rounded-md border border-transparent text-muted transition hover:border-info/30 hover:bg-info-subtle hover:text-info"><TruckIcon className="h-4 w-4" /></button>
+                    <button onClick={() => setModal({ mode: "edit", id: r.id })} title="Edit" className="grid h-8 w-8 place-items-center rounded-md border border-primary/30 bg-primary-subtle text-primary transition hover:bg-primary hover:text-white"><Pencil className="h-4 w-4" /></button>
+                    <button onClick={() => remove(r)} title="Delete" className="grid h-8 w-8 place-items-center rounded-md border border-transparent text-muted transition hover:border-danger/30 hover:bg-danger-subtle hover:text-danger"><Trash2 className="h-4 w-4" /></button>
+                  </div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div></div>
+      )}
+
+      {modal && <DriverModal mode={modal.mode} id={modal.id} companies={companies} onClose={() => setModal(null)} onSaved={() => { setModal(null); load(); }} />}
+      {assignedFor && (
+        <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/40 p-4" onClick={() => setAssignedFor(null)}>
+          <div className="max-h-[85vh] w-full max-w-4xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-border bg-surface-2 px-5 py-3.5">
+              <h2 className="text-sm font-bold text-foreground">Assigned Vehicles · {assignedFor.label}</h2>
+              <button onClick={() => setAssignedFor(null)} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-surface hover:text-foreground"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="max-h-[70vh] overflow-y-auto p-5">
+              <VehicleDriverAssignmentList embedded driverFilter={assignedFor.id} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DriverModal({ mode, id, companies, onClose, onSaved }: { mode: "add" | "edit"; id?: number; companies: CompanyOption[]; onClose: () => void; onSaved: () => void }) {
+  const toast = useToast();
+  const [f, setF] = useState<DriverInput>(BLANK);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(!!id);
+  const [busy, setBusy] = useState(false);
+  const [companyList, setCompanyList] = useState<CompanyOption[]>(companies);
+  const [addCompanyOpen, setAddCompanyOpen] = useState(false);
+  const set = <K extends keyof DriverInput>(k: K, v: DriverInput[K]) => setF((s) => ({ ...s, [k]: v }));
+
+  useEffect(() => {
+    if (!id) return;
+    fetch(`/api/transport/masters/driver/${id}`, { cache: "no-store" }).then((r) => r.json()).then((j) => { if (j.ok) setF({ ...BLANK, ...j.row }); setLoading(false); }).catch(() => setLoading(false));
+  }, [id]);
+
+  async function save() {
+    const parsed = driverInput.safeParse(f);
+    if (!parsed.success) {
+      const fieldErrors: Record<string, string> = {};
+      for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0])] = issue.message;
+      setErrors(fieldErrors);
+      toast.error(parsed.error.issues[0]?.message ?? "Please check the form.");
+      return;
+    }
+    setErrors({});
+    setBusy(true);
+    const j = await fetch(id ? `/api/transport/masters/driver/${id}` : "/api/transport/masters/driver", { method: id ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(parsed.data) }).then((r) => r.json());
+    setBusy(false);
+    if (j.ok) { toast.success(j.message || "Saved."); onSaved(); } else { toast.error(j.message || "Could not save."); if (j.errors) setErrors(j.errors); }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="max-h-[92vh] w-full max-w-4xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-border px-5 py-3"><h3 className="text-base font-bold text-foreground">{mode === "add" ? "Add" : "Edit"} Driver</h3><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-surface-2"><X className="h-4 w-4" /></button></div>
+        <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
+          {loading ? <AppLoader label="Loading…" size="sm" /> : (
+            <div className="space-y-5">
+              <Section title="Basic Details">
+                <div><label className={lbl}>Driver Code</label><input value={f.driverCode ?? ""} onChange={(e) => set("driverCode", e.target.value)} className={inp} /></div>
+                <div className="sm:col-span-2"><label className={lbl}>Driver Name *</label><input value={f.name} onChange={(e) => set("name", e.target.value)} className={inp} />{errors.name && <p className={errTxt}>{errors.name}</p>}</div>
+                <div><label className={lbl}>Mobile Number</label><input value={f.phone ?? ""} onChange={(e) => set("phone", e.target.value)} className={inp} /></div>
+                <div><label className={lbl}>Alternate Contact</label><input value={f.alternateContact ?? ""} onChange={(e) => set("alternateContact", e.target.value)} className={inp} /></div>
+                <div><label className={lbl}>Date of Birth</label><input type="date" value={f.dob ?? ""} onChange={(e) => set("dob", e.target.value)} className={inp} /></div>
+                <div><label className={lbl}>Gender</label><select value={f.gender ?? ""} onChange={(e) => set("gender", e.target.value)} className={inp}><option value="">— Select —</option>{DRIVER_GENDER_OPTS.map((g) => <option key={g} value={g}>{g}</option>)}</select></div>
+                <div><label className={lbl}>Joining Date</label><input type="date" value={f.joiningDate ?? ""} onChange={(e) => set("joiningDate", e.target.value)} className={inp} /></div>
+                <div><label className={lbl}>Status</label><select value={f.status} onChange={(e) => set("status", e.target.value as DriverInput["status"])} className={inp}>{DRIVER_STATUS_OPTS.map((s) => <option key={s} value={s}>{s}</option>)}</select></div>
+                <div className="sm:col-span-3"><label className={lbl}>Address</label><input value={f.address ?? ""} onChange={(e) => set("address", e.target.value)} className={inp} /></div>
+              </Section>
+
+              <Section title="Driving Licence">
+                <div><label className={lbl}>Licence Number</label><input value={f.licenseNo ?? ""} onChange={(e) => set("licenseNo", e.target.value)} className={inp} /></div>
+                <div><label className={lbl}>Licence Type</label><input value={f.licenseType ?? ""} onChange={(e) => set("licenseType", e.target.value)} placeholder="e.g. LMV, HMV" className={inp} /></div>
+                <div><label className={lbl}>Issuing Authority</label><input value={f.licenseIssuingAuthority ?? ""} onChange={(e) => set("licenseIssuingAuthority", e.target.value)} className={inp} /></div>
+                <div><label className={lbl}>Issue Date</label><input type="date" value={f.licenseIssueDate ?? ""} onChange={(e) => set("licenseIssueDate", e.target.value)} className={inp} /></div>
+                <div><label className={lbl}>Expiry Date</label><input type="date" value={f.licenseExpiry ?? ""} onChange={(e) => set("licenseExpiry", e.target.value)} className={inp} /></div>
+                <div><label className={lbl}>Permitted Vehicle Class</label><input value={f.permittedVehicleClass ?? ""} onChange={(e) => set("permittedVehicleClass", e.target.value)} className={inp} /></div>
+              </Section>
+
+              <Section title="Employment / Relationship">
+                <div><label className={lbl}>Employment Type</label><select value={f.employmentType} onChange={(e) => set("employmentType", e.target.value as DriverInput["employmentType"])} className={inp}>{DRIVER_EMPLOYMENT_TYPE_OPTS.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
+                <div className="sm:col-span-2">
+                  <label className={lbl}>Transport Company</label>
+                  <div className="flex gap-1.5">
+                    <select value={f.transportCompanyId ?? ""} onChange={(e) => set("transportCompanyId", Number(e.target.value) || null)} className={inp}><option value="">— None —</option>{companyList.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+                    <button type="button" title="Add new transport company" onClick={() => setAddCompanyOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-border-strong bg-surface text-muted hover:border-primary hover:text-primary"><Plus className="h-4 w-4" /></button>
+                  </div>
+                </div>
+              </Section>
+
+              <Section title="Emergency Details">
+                <div><label className={lbl}>Emergency Contact</label><input value={f.emergencyContactName ?? ""} onChange={(e) => set("emergencyContactName", e.target.value)} className={inp} /></div>
+                <div><label className={lbl}>Contact Number</label><input value={f.emergencyContactNumber ?? ""} onChange={(e) => set("emergencyContactNumber", e.target.value)} className={inp} /></div>
+                <div><label className={lbl}>Relationship</label><input value={f.emergencyContactRelationship ?? ""} onChange={(e) => set("emergencyContactRelationship", e.target.value)} className={inp} /></div>
+              </Section>
+
+              <Section title="Documents">
+                <div><label className={lbl}>ID Proof Type</label><input value={f.idProofType ?? ""} onChange={(e) => set("idProofType", e.target.value)} placeholder="e.g. Aadhaar, Voter ID" className={inp} /></div>
+                <div><label className={lbl}>ID Proof No</label><input value={f.idProofNo ?? ""} onChange={(e) => set("idProofNo", e.target.value)} className={inp} /></div>
+                <div />
+                <div><label className={lbl}>Medical / Fitness No</label><input value={f.medicalFitnessNo ?? ""} onChange={(e) => set("medicalFitnessNo", e.target.value)} className={inp} /></div>
+                <div><label className={lbl}>Medical / Fitness Valid Upto</label><input type="date" value={f.medicalFitnessValidUpto ?? ""} onChange={(e) => set("medicalFitnessValidUpto", e.target.value)} className={inp} /></div>
+                <div />
+                <div className="sm:col-span-3"><label className={lbl}>Other Documents</label><input value={f.otherDocumentsNote ?? ""} onChange={(e) => set("otherDocumentsNote", e.target.value)} placeholder="Notes on any other documents held" className={inp} /></div>
+              </Section>
+
+              <Section title="Notes">
+                <div className="sm:col-span-3"><label className={lbl}>Remarks</label><input value={f.remarks ?? ""} onChange={(e) => set("remarks", e.target.value)} className={inp} /></div>
+              </Section>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3"><Button size="sm" variant="ghost" onClick={onClose}>Close</Button><Button size="sm" onClick={save} disabled={busy || loading}>{busy ? "Saving…" : "Save"}</Button></div>
+      </div>
+      {addCompanyOpen && (
+        <AddTransportCompanyModal
+          onClose={() => setAddCompanyOpen(false)}
+          onAdded={(row) => { setCompanyList((p) => [{ id: row.id, name: row.name }, ...p]); set("transportCompanyId", row.id); setAddCompanyOpen(false); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function AddTransportCompanyModal({ onClose, onAdded }: { onClose: () => void; onAdded: (row: { id: number; name: string }) => void }) {
+  const toast = useToast();
+  const [code, setCode] = useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    if (!code.trim() || !name.trim()) { toast.error("Code and name are required."); return; }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/transport/masters/transport-company", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, name, phone: phone || null, status: "Active" }) });
+      const j = await res.json().catch(() => ({}));
+      if (res.ok && j.ok) { toast.success("Transport company added."); onAdded(j.row); }
+      else { toast.error(j.message || "Could not add the transport company."); setSaving(false); }
+    } catch { toast.error("Network error."); setSaving(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-border bg-surface-2 px-5 py-3.5">
+          <h2 className="text-sm font-bold text-foreground">Add Transport Company</h2>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-surface hover:text-foreground"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="space-y-3 p-5">
+          <div><label className={lbl}>Code *</label><input value={code} onChange={(e) => setCode(e.target.value)} className={inp} /></div>
+          <div><label className={lbl}>Name *</label><input value={name} onChange={(e) => setName(e.target.value)} className={inp} /></div>
+          <div><label className={lbl}>Phone</label><input value={phone} onChange={(e) => setPhone(e.target.value)} className={inp} /></div>
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t border-border bg-surface-2 px-5 py-3">
+          <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+          <Button size="sm" onClick={save} disabled={saving}>{saving ? "Saving…" : "Add"}</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-3 border-t border-border pt-4 first:border-t-0 first:pt-0">
+      <p className="text-xs font-bold uppercase tracking-wide text-primary">{title}</p>
+      <div className="grid gap-3 sm:grid-cols-3">{children}</div>
+    </div>
+  );
+}
+
+const inp = "h-9 w-full rounded-md border border-border-strong bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none disabled:bg-surface-2/40 disabled:text-muted";
+const lbl = "mb-1 block text-2xs font-semibold text-muted";
+const errTxt = "mt-1 text-2xs font-medium text-danger";

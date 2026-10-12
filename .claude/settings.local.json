@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(cd \"d:/Old_LapTop_Backup_2/Retail_POS\" && npx tsc --noEmit 2>&1 | grep -c \"error TS\"; echo \"--- dev log errors ---\"; grep -iE \"error|failed to compile\" /tmp/devbank.log 2>/dev/null | grep -ivE \"401|403\" | tail -3; echo \"\\(clean if empty\\)\")",
+      "Read(//tmp/**)"
+    ]
+  }
+}
