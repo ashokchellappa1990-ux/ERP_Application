@@ -10118,26 +10118,20 @@ model VehicleGateEntryItem {
   @@map("vehicle_gate_entry_items")
 }
 
-<<<<<<< HEAD
+
 /// First Weighment — common to both flows, keyed off the gate entry's entryType:
-///   Sales    (Dispatch)    → vehicle arrives empty, first weight = tareWeight
-///   Purchase (RawMaterial) → vehicle arrives loaded, first weight = grossWeight
-/// (the model/table keep their original "pre loading" names for compatibility).
-=======
->>>>>>> origin/main
+/// Sales (Dispatch) -> vehicle arrives empty, first weight = tareWeight
+/// Purchase (RawMaterial) -> vehicle arrives loaded, first weight = grossWeight
+/// The model/table retain their original names for compatibility.
 model PreLoadingWeighment {
   id            Int      @id @default(autoincrement())
   tenantId      Int
   weighmentNo   String   @db.VarChar(40)
   gateEntryId   Int
   vehicleId     Int
-<<<<<<< HEAD
-  weighmentType String   @default("Sales") @db.VarChar(16) // Sales | Purchase
-  tareWeight    Decimal  @default(0) @db.Decimal(18, 3) // Sales only (0 for Purchase)
-  grossWeight   Decimal? @db.Decimal(18, 3) // Purchase only
-=======
+  weighmentType String   @default("Sales") @db.VarChar(16)
   tareWeight    Decimal  @default(0) @db.Decimal(18, 3)
->>>>>>> origin/main
+  grossWeight   Decimal? @db.Decimal(18, 3)
   weighDate     String?  @db.VarChar(20)
   weighTime     String?  @db.VarChar(10)
   operator      String?  @db.VarChar(160)
@@ -10178,27 +10172,21 @@ model LoadingConfirmation {
   @@map("loading_confirmation")
 }
 
-<<<<<<< HEAD
-/// Second Weighment — Sales captures grossWeight (after loading, tare comes from
-/// the first weighment); Purchase captures tareWeight (after unloading, gross
-/// comes from the first weighment). netWeight = gross − tare either way.
-=======
->>>>>>> origin/main
+/// Second Weighment — Sales captures grossWeight after loading.
+/// Purchase captures tareWeight after unloading.
+/// netWeight = grossWeight - tareWeight.
 model PostLoadingWeighment {
   id                Int       @id @default(autoincrement())
   tenantId          Int
   gateEntryId       Int
-<<<<<<< HEAD
-  weighmentType     String    @default("Sales") @db.VarChar(16) // Sales | Purchase
-=======
->>>>>>> origin/main
+  weighmentType     String    @default("Sales") @db.VarChar(16)
   grossWeight       Decimal   @default(0) @db.Decimal(18, 3)
   tareWeight        Decimal   @default(0) @db.Decimal(18, 3)
   netWeight         Decimal   @default(0) @db.Decimal(18, 3)
   weighDate         String?   @db.VarChar(20)
   operator          String?   @db.VarChar(160)
   toleranceExceeded Boolean   @default(false)
-  approvalStatus    String    @default("NotRequired") @db.VarChar(16) // NotRequired | Pending | Approved
+  approvalStatus    String    @default("NotRequired") @db.VarChar(16)
   approvedBy        Int?
   approvedByName    String?   @db.VarChar(160)
   approvedAt        DateTime?

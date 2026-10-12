@@ -680,20 +680,12 @@ export function GateEntryEditor() {
             <div className="flex flex-col items-center gap-2 px-6 py-6 text-center">
               <span className="grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success"><CheckCircle2 className="h-6 w-6" /></span>
               <h2 className="text-sm font-bold text-foreground">Gate Entry Recorded</h2>
-<<<<<<< HEAD
               <p className="text-sm text-muted">{isRawMaterial ? "Would you like to update the weighment now, or do it later from the gate entry list?" : "Would you like to continue with the Entry Weighment now, or do it later?"}</p>
-=======
-              <p className="text-sm text-muted">{isRawMaterial ? "Would you like to update the weighment now, or do it later from the gate entry list?" : "Would you like to continue with the Pre Loading Weighment now, or do it later?"}</p>
->>>>>>> origin/main
             </div>
             <div className="flex flex-col gap-2 border-t border-border bg-surface-2 px-5 py-4">
               {isRawMaterial ? (
                 <>
-<<<<<<< HEAD
                   <Button size="md" disabled={navigating} onClick={() => { setNavigating(true); router.push(`/transport/pre-weighment/new?gateEntryId=${savedId}`); }}>
-=======
-                  <Button size="md" disabled={navigating} onClick={() => { setNavigating(true); router.push(`/transport/gate-entry/${savedId}/weighment`); }}>
->>>>>>> origin/main
                     {navigating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Scale className="h-4 w-4" />} Update Weight
                   </Button>
                   <Button variant="outline" size="md" disabled={navigating} onClick={() => { setNavigating(true); router.push("/transport/gate-entry?entryType=RawMaterial"); }}>
@@ -712,11 +704,7 @@ export function GateEntryEditor() {
           </div>
         </div>
       )}
-<<<<<<< HEAD
       {navigating && <AppLoader fullScreen label={isRawMaterial ? "Please wait…" : "Opening Entry Weighment"} />}
-=======
-      {navigating && <AppLoader fullScreen label={isRawMaterial ? "Please wait…" : "Opening Pre Loading Weighment"} />}
->>>>>>> origin/main
       {/* Covers the whole gap between clicking "Record Gate Entry" and either
           the success popup (savedId set) or an error toast — same fullScreen
           treatment as the post-save "navigating" loader above, so there's

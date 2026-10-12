@@ -213,19 +213,11 @@ export default function GrnViewPage() {
                     <KV k={`Difference (${grn.weightUom})`} v={fmtWt(+(Number(grn.netWeight) - Number(grn.billNetWeight)).toFixed(3))} tone={Number(grn.netWeight) === Number(grn.billNetWeight) ? "success" : "warning"} />
                   )}
                 </>
-<<<<<<< HEAD
               ) : grn.status !== "Cancelled" ? (
                 // Tare for a gate-entry GRN is the Purchase Exit Weighment
                 // (empty vehicle after unloading), which writes it back here.
                 <div className="flex justify-end"><Button variant="secondary" size="sm" onClick={() => router.push(`/transport/post-weighment/new?gateEntryId=${grn.gateEntryId}&next=${encodeURIComponent(`/purchase/grn/${id}`)}`)}><Scale className="h-3.5 w-3.5" /> Update Tare Weight</Button></div>
               ) : null
-=======
-              ) : grn.status === "Posted" ? (
-                <div className="flex justify-end"><Button variant="secondary" size="sm" onClick={() => setEmptyWeightOpen(true)}><Scale className="h-3.5 w-3.5" /> Update Tare Weight</Button></div>
-              ) : (
-                <p className="text-2xs text-subtle">Available once this GRN is Posted.</p>
-              )
->>>>>>> origin/main
             ) : (
               <>
                 <KV k={`Tare Weight (${grn.weightUom})`} v={fmtWt(grn.tareWeight)} />
@@ -260,17 +252,9 @@ export default function GrnViewPage() {
         </SectionCard>
       </div>
 
-<<<<<<< HEAD
       {emptyWeightOpen && !grn.gateEntryId && (
         <EmptyWeightModal id={id} weightUom={grn.weightUom} onClose={() => setEmptyWeightOpen(false)} onSaved={async () => { setEmptyWeightOpen(false); await load(); }} />
       )}
-=======
-      {emptyWeightOpen && (grn.gateEntryId ? (
-        <TareWeightModal id={id} weightUom={grn.weightUom} grossWeight={grn.grossWeight} billNetWeight={grn.billNetWeight} onClose={() => setEmptyWeightOpen(false)} onSaved={async () => { setEmptyWeightOpen(false); await load(); }} />
-      ) : (
-        <EmptyWeightModal id={id} weightUom={grn.weightUom} onClose={() => setEmptyWeightOpen(false)} onSaved={async () => { setEmptyWeightOpen(false); await load(); }} />
-      ))}
->>>>>>> origin/main
       {piConfirmOpen && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4" onClick={() => setPiConfirmOpen(false)}>
           <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
@@ -374,63 +358,6 @@ function EmptyWeightModal({ id, weightUom, onClose, onSaved }: { id: number; wei
   );
 }
 
-<<<<<<< HEAD
-=======
-function TareWeightModal({ id, weightUom, grossWeight, billNetWeight, onClose, onSaved }: { id: number; weightUom: string; grossWeight: number | string; billNetWeight: number | string; onClose: () => void; onSaved: () => void }) {
-  const [tareWeight, setTareWeight] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [enableWeighbridgeFetch, setEnableWeighbridgeFetch] = useState(false);
-  const wb = useWeighbridgeContext();
-  useEffect(() => {
-    (async () => {
-      const j = await fetch("/api/settings/purchase", { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
-      if (j.ok && j.config) setEnableWeighbridgeFetch(!!j.config.flags?.enableWeighbridgeFetch);
-    })();
-  }, []);
-  const netCalc = tareWeight.trim() !== "" && Number.isFinite(Number(tareWeight)) ? +(Number(grossWeight || 0) - Number(tareWeight)).toFixed(3) : null;
-  async function submit() {
-    setError("");
-    const n = Number(tareWeight);
-    if (!Number.isFinite(n) || n < 0) { setError("Enter a valid tare weight."); return; }
-    setSaving(true);
-    const j = await fetch(`/api/purchase/grn/${id}/empty-weight`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tareWeight: n }) }).then((r) => r.json()).catch(() => ({}));
-    setSaving(false);
-    if (!j.ok) { setError(j.message || "Could not save."); return; }
-    onSaved();
-  }
-  return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-border bg-surface-2 px-5 py-3.5">
-          <div className="flex items-center gap-2.5"><span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-gradient text-white"><Scale className="h-4 w-4" /></span><div><h2 className="text-sm font-bold text-foreground">Update Tare Weight</h2><p className="text-2xs text-muted">After the vehicle is unloaded and weighed empty</p></div></div>
-          <div className="flex items-center gap-2">
-            {enableWeighbridgeFetch && <WeighbridgeReadout state={wb.state} liveWeight={wb.liveWeight} />}
-            <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-surface hover:text-foreground"><X className="h-4 w-4" /></button>
-          </div>
-        </div>
-        <div className="space-y-3 p-5">
-          <div className="grid grid-cols-2 gap-3 rounded-lg bg-surface-2 p-3 text-sm">
-            <div><p className="text-2xs text-subtle">Gross Weight</p><p className="font-semibold text-foreground">{fmtWt(grossWeight)} {weightUom}</p></div>
-            <div><p className="text-2xs text-subtle">Net Weight as per Bill</p><p className="font-semibold text-foreground">{hasVal(billNetWeight) ? `${fmtWt(billNetWeight)} ${weightUom}` : "—"}</p></div>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-foreground">{`Tare Weight (${weightUom})`}</label>
-            <div className="flex items-center gap-2">
-              <input type="number" min={0} autoFocus value={tareWeight} onChange={(e) => setTareWeight(e.target.value)} placeholder="0" className="h-10 w-full rounded-md border border-border-strong bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:shadow-focus" />
-              {enableWeighbridgeFetch && <FetchWeightButton connected={wb.state === "connected"} liveWeight={wb.liveWeight} onFetch={(kg) => setTareWeight(String(kg))} />}
-            </div>
-          </div>
-          {netCalc != null && <p className="text-2xs text-muted">Net Weight (calculated): <span className="font-semibold text-primary">{netCalc} {weightUom}</span></p>}
-          {error && <p className="text-2xs font-medium text-danger">{error}</p>}
-        </div>
-        <div className="flex items-center justify-end gap-2 border-t border-border bg-surface-2 px-5 py-3"><Button variant="ghost" size="md" onClick={onClose}>Cancel</Button><Button size="md" onClick={submit} disabled={saving}><Scale className="h-4 w-4" /> {saving ? "Saving…" : "Save"}</Button></div>
-      </div>
-    </div>
-  );
-}
-
->>>>>>> origin/main
 function Meta({ icon: Icon, label, value }: { icon: typeof Boxes; label: string; value: string }) {
   return <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-sm"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary-subtle text-primary"><Icon className="h-4 w-4" /></span><div className="min-w-0"><div className="truncate text-sm font-bold text-foreground">{value}</div><div className="text-2xs text-subtle">{label}</div></div></div>;
 }

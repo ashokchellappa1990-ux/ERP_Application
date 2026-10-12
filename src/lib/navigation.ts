@@ -297,13 +297,8 @@ export const NAV_SECTIONS: NavSection[] = [
         children: [
           { label: "Dashboard", href: "/transport", icon: LayoutDashboardIcon },
           { label: "Vehicle Gate Entry", href: "/transport/gate-entry", icon: LogIn },
-<<<<<<< HEAD
           { label: "Entry Weighment", href: "/transport/pre-weighment", icon: Scale },
           { label: "Exit Weighment", href: "/transport/post-weighment", icon: Scale },
-=======
-          { label: "Pre Loading Weighment", href: "/transport/pre-weighment", icon: Scale },
-          { label: "Post Loading Weighment", href: "/transport/post-weighment", icon: Scale },
->>>>>>> origin/main
           { label: "Vehicle-Driver Assignment", href: "/masters/transport/vehicle-assignment", icon: Link2 },
           { label: "Vehicle Trip Management", href: "/masters/transport/vehicle-trip", icon: Waypoints },
           { label: "Vehicle Maintenance", href: "/masters/transport/vehicle-maintenance", icon: Wrench },

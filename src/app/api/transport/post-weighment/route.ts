@@ -5,11 +5,7 @@ import { getActiveScope, scopeWhere } from "@/lib/auth/scope";
 import { requirePermission } from "@/lib/auth/guard";
 import { writeAudit } from "@/lib/audit/log";
 import { getDispatchConfig } from "@/lib/settings/dispatchConfig";
-<<<<<<< HEAD
 import { postLoadingWeighmentInput, weighmentTypeOf } from "@/lib/contracts/transport";
-=======
-import { postLoadingWeighmentInput } from "@/lib/contracts/transport";
->>>>>>> origin/main
 
 const PERM = "transport.post-weighment";
 const num = (v: unknown) => (v == null ? 0 : Number(v));
@@ -23,39 +19,26 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const gateEntryId = url.searchParams.get("gateEntryId");
-<<<<<<< HEAD
   const type = url.searchParams.get("type");
   const where: { tenantId: number; gateEntryId?: number; weighmentType?: string } = { tenantId: user.tenantId };
   if (gateEntryId) where.gateEntryId = Number(gateEntryId);
   if (type === "Sales" || type === "Purchase") where.weighmentType = type;
-=======
-  const where: { tenantId: number; gateEntryId?: number } = { tenantId: user.tenantId };
-  if (gateEntryId) where.gateEntryId = Number(gateEntryId);
->>>>>>> origin/main
 
   const rows = await prisma.postLoadingWeighment.findMany({ where, orderBy: { createdAt: "desc" }, take: 100 });
   return NextResponse.json({
     ok: true,
     rows: rows.map((r) => ({
-<<<<<<< HEAD
       id: r.id, gateEntryId: r.gateEntryId, weighmentType: r.weighmentType, grossWeight: num(r.grossWeight), tareWeight: num(r.tareWeight), netWeight: num(r.netWeight),
-=======
-      id: r.id, gateEntryId: r.gateEntryId, grossWeight: num(r.grossWeight), tareWeight: num(r.tareWeight), netWeight: num(r.netWeight),
->>>>>>> origin/main
       weighDate: r.weighDate, operator: r.operator, toleranceExceeded: r.toleranceExceeded, approvalStatus: r.approvalStatus,
       remarks: r.remarks, createdAt: r.createdAt.toISOString(),
     })),
   });
 }
 
-<<<<<<< HEAD
 // POST /api/transport/post-weighment — one Exit Weighment per gate entry (unique).
 // Purchase (RawMaterial gate entry) is handled by postPurchase() below: the
 // input is the tare (empty vehicle after unloading), gross comes from the First
 // Weighment, and the result is synced onto the GRN. Everything else is Sales:
-=======
-// POST /api/transport/post-weighment — one gross-weight record per gate entry (unique).
->>>>>>> origin/main
 //
 // Tolerance-comparison logic (documented per the module spec):
 //   1. tareWeight is ALWAYS copied from that gate entry's PreLoadingWeighment row
@@ -95,7 +78,6 @@ export async function POST(req: Request) {
   if (!entry) return NextResponse.json({ ok: false, message: "Gate entry not found." }, { status: 404 });
 
   const existing = await prisma.postLoadingWeighment.findFirst({ where: { gateEntryId: input.gateEntryId }, select: { id: true } });
-<<<<<<< HEAD
   if (existing) return NextResponse.json({ ok: false, message: "An exit weighment already exists for this gate entry." }, { status: 422 });
 
   const preWeighment = await prisma.preLoadingWeighment.findFirst({ where: { gateEntryId: input.gateEntryId, tenantId: user.tenantId } });
@@ -104,12 +86,6 @@ export async function POST(req: Request) {
 
   if (!preWeighment) return NextResponse.json({ ok: false, message: "No first (tare) weighment exists for this gate entry yet." }, { status: 422 });
   if (input.grossWeight == null || input.grossWeight <= 0) return NextResponse.json({ ok: false, message: "Enter a valid gross (loaded vehicle) weight." }, { status: 422 });
-=======
-  if (existing) return NextResponse.json({ ok: false, message: "A post-loading weighment already exists for this gate entry." }, { status: 422 });
-
-  const preWeighment = await prisma.preLoadingWeighment.findFirst({ where: { gateEntryId: input.gateEntryId, tenantId: user.tenantId } });
-  if (!preWeighment) return NextResponse.json({ ok: false, message: "No pre-loading (tare) weighment exists for this gate entry yet." }, { status: 422 });
->>>>>>> origin/main
 
   const tareWeight = num(preWeighment.tareWeight);
   const grossWeight = input.grossWeight;
@@ -149,7 +125,6 @@ export async function POST(req: Request) {
       return row.id;
     });
     await writeAudit(prisma, user, { action: "post_loading_weighment.create", entity: "PostLoadingWeighment", entityId: id, summary: `Post-loading weighment recorded for gate entry ${entry.gateEntryNo} — net ${netWeight}`, meta: { toleranceExceeded, approvalStatus }, businessId: entry.businessId ?? null, branchId: entry.branchId ?? null, ip: requestMeta(req).ip });
-<<<<<<< HEAD
     return NextResponse.json({ ok: true, message: toleranceExceeded ? "Exit weighment recorded — weight tolerance exceeded, flagged for review." : "Exit weighment recorded.", id, netWeight, toleranceExceeded, approvalStatus }, { status: 201 });
   } catch (err) {
     console.error("[transport/post-weighment] create error", err);
@@ -209,11 +184,5 @@ async function postPurchase(req: Request, user: SessionUser, entry: GateEntry, p
   } catch (err) {
     console.error("[transport/post-weighment] purchase create error", err);
     return NextResponse.json({ ok: false, message: "Could not save the exit weighment." }, { status: 500 });
-=======
-    return NextResponse.json({ ok: true, message: toleranceExceeded ? "Post-loading weighment recorded — weight tolerance exceeded, flagged for review." : "Post-loading weighment recorded.", id, netWeight, toleranceExceeded, approvalStatus }, { status: 201 });
-  } catch (err) {
-    console.error("[transport/post-weighment] create error", err);
-    return NextResponse.json({ ok: false, message: "Could not save the post-loading weighment." }, { status: 500 });
->>>>>>> origin/main
   }
 }

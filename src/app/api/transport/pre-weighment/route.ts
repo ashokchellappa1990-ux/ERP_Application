@@ -4,19 +4,11 @@ import { getSessionUser, requestMeta } from "@/lib/auth/session";
 import { getActiveScope, scopeWhere } from "@/lib/auth/scope";
 import { requirePermission } from "@/lib/auth/guard";
 import { writeAudit } from "@/lib/audit/log";
-<<<<<<< HEAD
 import { preLoadingWeighmentInput, weighmentTypeOf } from "@/lib/contracts/transport";
 
 const PERM = "transport.pre-weighment";
 
 // GET /api/transport/pre-weighment?gateEntryId=123&type=Sales|Purchase — Entry Weighment list.
-=======
-import { preLoadingWeighmentInput } from "@/lib/contracts/transport";
-
-const PERM = "transport.pre-weighment";
-
-// GET /api/transport/pre-weighment?gateEntryId=123 — list (usually a single row).
->>>>>>> origin/main
 export async function GET(req: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ ok: false, message: "Not signed in." }, { status: 401 });
@@ -25,43 +17,29 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const gateEntryId = url.searchParams.get("gateEntryId");
-<<<<<<< HEAD
   const type = url.searchParams.get("type");
   const where: { tenantId: number; gateEntryId?: number; weighmentType?: string } = { tenantId: user.tenantId };
   if (gateEntryId) where.gateEntryId = Number(gateEntryId);
   if (type === "Sales" || type === "Purchase") where.weighmentType = type;
-=======
-  const where: { tenantId: number; gateEntryId?: number } = { tenantId: user.tenantId };
-  if (gateEntryId) where.gateEntryId = Number(gateEntryId);
->>>>>>> origin/main
 
   const rows = await prisma.preLoadingWeighment.findMany({ where, orderBy: { createdAt: "desc" }, take: 100 });
   return NextResponse.json({
     ok: true,
     rows: rows.map((r) => ({
-<<<<<<< HEAD
       id: r.id, weighmentNo: r.weighmentNo, gateEntryId: r.gateEntryId, vehicleId: r.vehicleId, weighmentType: r.weighmentType,
       tareWeight: Number(r.tareWeight), grossWeight: r.grossWeight != null ? Number(r.grossWeight) : null,
       weighDate: r.weighDate, weighTime: r.weighTime, operator: r.operator,
-=======
-      id: r.id, weighmentNo: r.weighmentNo, gateEntryId: r.gateEntryId, vehicleId: r.vehicleId,
-      tareWeight: Number(r.tareWeight), weighDate: r.weighDate, weighTime: r.weighTime, operator: r.operator,
->>>>>>> origin/main
       weighbridgeId: r.weighbridgeId, photoUrl: r.photoUrl, remarks: r.remarks, createdAt: r.createdAt.toISOString(),
     })),
   });
 }
 
-<<<<<<< HEAD
 // POST /api/transport/pre-weighment — one Entry Weighment per gate entry.
 //   Sales    (Dispatch gate entry):    { tareWeight } — empty vehicle before loading.
 //   Purchase (RawMaterial gate entry): { grossWeight } — loaded vehicle before
 //     unloading, plus the GRN-prefill details (bill net weight, weight slip ref,
 //     inventory area, product) which are also written onto the gate entry, where
 //     the GRN's "Create from Gate Entry" flow reads them.
-=======
-// POST /api/transport/pre-weighment — one tare-weight record per gate entry.
->>>>>>> origin/main
 export async function POST(req: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ ok: false, message: "Not signed in." }, { status: 401 });
@@ -79,7 +57,6 @@ export async function POST(req: Request) {
   if (!entry) return NextResponse.json({ ok: false, message: "Gate entry not found." }, { status: 404 });
   if (entry.status === "Exited") return NextResponse.json({ ok: false, message: "This vehicle has already exited." }, { status: 422 });
 
-<<<<<<< HEAD
   const weighmentType = weighmentTypeOf(entry.entryType);
   const isPurchase = weighmentType === "Purchase";
   if (isPurchase) {
@@ -111,30 +88,14 @@ export async function POST(req: Request) {
   // manual "Move Inside" click for what's really the same physical event.
   const autoMovedInside = entry.status === "Waiting";
   const weightLabel = isPurchase ? `gross ${input.grossWeight}` : `tare ${input.tareWeight}`;
-=======
-  // No DB-level unique constraint on gateEntryId — enforce "one pre-weighment
-  // per gate entry" here so a vehicle can't be weighed-in twice.
-  const existing = await prisma.preLoadingWeighment.findFirst({ where: { gateEntryId: input.gateEntryId, tenantId: user.tenantId }, select: { id: true } });
-  if (existing) return NextResponse.json({ ok: false, message: "A pre-loading weighment already exists for this gate entry." }, { status: 422 });
-
-  // Completing the pre-loading weighment is the vehicle's cue to move inside —
-  // auto-advance Waiting -> Inside Factory instead of requiring a separate
-  // manual "Move Inside" click for what's really the same physical event.
-  const autoMovedInside = entry.status === "Waiting";
->>>>>>> origin/main
 
   try {
     const id = await prisma.$transaction(async (tx) => {
       const row = await tx.preLoadingWeighment.create({
         data: {
-<<<<<<< HEAD
           tenantId: user.tenantId, weighmentNo: "TMP", gateEntryId: input.gateEntryId, vehicleId: entry.vehicleId, weighmentType,
           tareWeight: isPurchase ? 0 : (input.tareWeight ?? 0), grossWeight: isPurchase ? input.grossWeight : null,
           weighDate: input.weighDate ?? undefined, weighTime: input.weighTime ?? undefined,
-=======
-          tenantId: user.tenantId, weighmentNo: "TMP", gateEntryId: input.gateEntryId, vehicleId: entry.vehicleId,
-          tareWeight: input.tareWeight, weighDate: input.weighDate ?? undefined, weighTime: input.weighTime ?? undefined,
->>>>>>> origin/main
           operator: input.operator ?? undefined, weighbridgeId: input.weighbridgeId ?? undefined,
           photoUrl: input.photoUrl ?? undefined, remarks: input.remarks ?? undefined, createdBy: user.id,
         },
@@ -147,7 +108,6 @@ export async function POST(req: Request) {
           tenantId: user.tenantId, businessId: entry.businessId ?? undefined, branchId: entry.branchId ?? undefined,
           vehicleId: entry.vehicleId, dispatchExecutionId: entry.dispatchExecutionId ?? undefined, gateEntryId: entry.id,
           eventType: "PreWeighment", eventAt: new Date(), actorUserId: user.id, actorName: user.fullName ?? null,
-<<<<<<< HEAD
           remarks: `Entry weighment ${weighmentNo} (${weighmentType}) — ${weightLabel}`,
         },
       });
@@ -166,17 +126,10 @@ export async function POST(req: Request) {
           await tx.vehicleGateEntryItem.create({ data: { tenantId: user.tenantId, gateEntryId: entry.id, productId: product.id, productName: product.name, sku: product.sku ?? undefined, uom: product.uom ?? undefined, qty: 1 } });
         }
       } else if (autoMovedInside) {
-=======
-          remarks: `Pre-loading weighment ${weighmentNo} — tare ${input.tareWeight}`,
-        },
-      });
-      if (autoMovedInside) {
->>>>>>> origin/main
         await tx.vehicleGateEntry.update({ where: { id: entry.id }, data: { status: "Inside Factory", updatedBy: user.id } });
       }
       return row.id;
     });
-<<<<<<< HEAD
     await writeAudit(prisma, user, { action: "pre_loading_weighment.create", entity: "PreLoadingWeighment", entityId: id, summary: `Entry weighment (${weighmentType}, ${weightLabel}) recorded for gate entry ${entry.gateEntryNo}`, businessId: entry.businessId ?? null, branchId: entry.branchId ?? null, ip: requestMeta(req).ip });
     if (autoMovedInside) {
       await writeAudit(prisma, user, { action: "vehicle_gate_entry.move-inside", entity: "VehicleGateEntry", entityId: entry.id, summary: `Gate entry ${entry.gateEntryNo} Waiting → Inside Factory (auto, on entry weighment)`, businessId: entry.businessId ?? null, branchId: entry.branchId ?? null, ip: requestMeta(req).ip });
@@ -185,24 +138,10 @@ export async function POST(req: Request) {
       ok: true,
       message: autoMovedInside ? "Entry weighment recorded — vehicle moved inside." : "Entry weighment recorded.",
       id, weighmentType,
-=======
-    await writeAudit(prisma, user, { action: "pre_loading_weighment.create", entity: "PreLoadingWeighment", entityId: id, summary: `Pre-loading weighment recorded for gate entry ${entry.gateEntryNo}`, businessId: entry.businessId ?? null, branchId: entry.branchId ?? null, ip: requestMeta(req).ip });
-    if (autoMovedInside) {
-      await writeAudit(prisma, user, { action: "vehicle_gate_entry.move-inside", entity: "VehicleGateEntry", entityId: entry.id, summary: `Gate entry ${entry.gateEntryNo} Waiting → Inside Factory (auto, on pre-loading weighment)`, businessId: entry.businessId ?? null, branchId: entry.branchId ?? null, ip: requestMeta(req).ip });
-    }
-    return NextResponse.json({
-      ok: true,
-      message: autoMovedInside ? "Pre-loading weighment recorded — vehicle moved inside." : "Pre-loading weighment recorded.",
-      id,
->>>>>>> origin/main
       gateEntryStatus: autoMovedInside ? "Inside Factory" : entry.status,
     }, { status: 201 });
   } catch (err) {
     console.error("[transport/pre-weighment] create error", err);
-<<<<<<< HEAD
     return NextResponse.json({ ok: false, message: "Could not save the entry weighment." }, { status: 500 });
-=======
-    return NextResponse.json({ ok: false, message: "Could not save the pre-loading weighment." }, { status: 500 });
->>>>>>> origin/main
   }
 }

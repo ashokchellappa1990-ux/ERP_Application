@@ -3,11 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-<<<<<<< HEAD
 import { Scale, ArrowLeft, Truck, Users, Save, Loader2, Plus, X, CheckCircle2, Printer, Search, FileText, Package } from "lucide-react";
-=======
-import { Scale, ArrowLeft, Truck, Users, Save, Loader2, Plus, X, CheckCircle2, Printer } from "lucide-react";
->>>>>>> origin/main
 import { Button } from "@/components/ui/Button";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { AppLoader } from "@/components/ui/AppLoader";
@@ -16,7 +12,6 @@ import { cn } from "@/lib/cn";
 import { FetchWeightButton } from "@/components/shared/FetchWeightButton";
 import { WeighbridgeReadout } from "@/components/shared/WeighbridgeReadout";
 import { useWeighbridgeContext } from "@/components/shared/WeighbridgeProvider";
-<<<<<<< HEAD
 import { WEIGHMENT_COPY, WeighmentTypeToggle, typeOfEntry, type WeighmentType } from "@/components/transport/weighmentType";
 
 interface GateRow {
@@ -33,18 +28,6 @@ interface ProductHit { id: number; name: string; sku?: string; uom?: string }
 // Entry Weighment — Sales: empty (tare) weight before loading. Purchase: loaded
 // (gross) weight before unloading, plus the GRN-prefill details (product,
 // supplier slip net weight, weight slip ref, inventory area).
-=======
-
-interface GateRow {
-  id: number; gateEntryNo: string; vehicleId: number; vehicleNo: string; status: string;
-  driverName: string | null; driverMobile: string | null; driverLicenseNo: string | null;
-  transportCompanyId: number | null; transportCompanyName: string | null; vehicleType: string | null;
-  customerName: string | null; dispatchType: string | null; referenceNo: string | null;
-}
-interface Opt { id: number; label: string }
-interface CustomerHit { id: number; name: string; phone: string }
-
->>>>>>> origin/main
 export function PreLoadingWeighmentEditor() {
   const router = useRouter();
   const toast = useToast();
@@ -55,7 +38,6 @@ export function PreLoadingWeighmentEditor() {
   // former case should Back / after-save return to the gate entry list
   // instead of this screen's own list.
   const fromGateEntry = !!preselectId;
-<<<<<<< HEAD
 
   const [type, setType] = useState<WeighmentType>(searchParams.get("type") === "Purchase" ? "Purchase" : "Sales");
   const isPurchase = type === "Purchase";
@@ -63,24 +45,15 @@ export function PreLoadingWeighmentEditor() {
   const backHref = fromGateEntry
     ? (isPurchase ? "/transport/gate-entry?entryType=RawMaterial" : "/transport/gate-entry")
     : `/transport/pre-weighment${isPurchase ? "?type=Purchase" : ""}`;
-=======
-  const backHref = fromGateEntry ? "/transport/gate-entry" : "/transport/pre-weighment";
->>>>>>> origin/main
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedId, setSavedId] = useState<number | null>(null);
-<<<<<<< HEAD
   const [eligibleByType, setEligibleByType] = useState<Record<WeighmentType, GateRow[]>>({ Sales: [], Purchase: [] });
   const eligible = eligibleByType[type];
   const [companies, setCompanies] = useState<Opt[]>([]);
   const [weighbridges, setWeighbridges] = useState<Opt[]>([]);
   const [areas, setAreas] = useState<{ id: number; name: string; code: string }[]>([]);
-=======
-  const [eligible, setEligible] = useState<GateRow[]>([]);
-  const [companies, setCompanies] = useState<Opt[]>([]);
-  const [weighbridges, setWeighbridges] = useState<Opt[]>([]);
->>>>>>> origin/main
   const [addCompanyOpen, setAddCompanyOpen] = useState(false);
 
   const [gateEntryId, setGateEntryId] = useState<number | "">("");
@@ -94,7 +67,6 @@ export function PreLoadingWeighmentEditor() {
   const [driverMobile, setDriverMobile] = useState("");
   const [driverLicenseNo, setDriverLicenseNo] = useState("");
 
-<<<<<<< HEAD
   // The one weight this weighment captures — tare for Sales, gross for Purchase.
   const [weight, setWeight] = useState("");
   const [operator, setOperator] = useState("");
@@ -109,12 +81,6 @@ export function PreLoadingWeighmentEditor() {
   const [productHits, setProductHits] = useState<ProductHit[] | null>(null);
   const [searchingProduct, setSearchingProduct] = useState(false);
 
-=======
-  const [tareWeight, setTareWeight] = useState("");
-  const [operator, setOperator] = useState("");
-  const [weighbridgeId, setWeighbridgeId] = useState<number | "">("");
-  const [remarks, setRemarks] = useState("");
->>>>>>> origin/main
   const [enableWeighbridgeFetch, setEnableWeighbridgeFetch] = useState(false);
   const wb2 = useWeighbridgeContext();
 
@@ -127,7 +93,6 @@ export function PreLoadingWeighmentEditor() {
 
   useEffect(() => {
     (async () => {
-<<<<<<< HEAD
       const [wt, geSales, gePurchase, wb, co, ar] = await Promise.all([
         fetch("/api/transport/pre-weighment", { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
         fetch("/api/transport/gate-entry?entryType=Dispatch", { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
@@ -152,21 +117,6 @@ export function PreLoadingWeighmentEditor() {
       const initialType = pre ? typeOfEntry(pre.entryType) : type;
       if (pre) setType(initialType);
       const initial = pre ?? (initialType === "Purchase" ? purchase : sales)[0];
-=======
-      const [wt, ge, wb, co] = await Promise.all([
-        fetch("/api/transport/pre-weighment", { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
-        fetch("/api/transport/gate-entry", { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
-        fetch("/api/transport/masters/weighbridge?status=Active", { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
-        fetch("/api/transport/masters/transport-company?status=Active", { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
-      ]);
-      const weighedGateIds = new Set((wt.ok ? wt.rows : []).map((r: { gateEntryId: number }) => r.gateEntryId));
-      const rows: GateRow[] = (ge.ok ? ge.rows : []).filter((g: { status: string; id: number }) => (g.status === "Waiting" || g.status === "Inside Factory") && !weighedGateIds.has(g.id));
-      setEligible(rows);
-      if (wb.ok) setWeighbridges(wb.rows.map((x: { id: number; name: string }) => ({ id: x.id, label: x.name })));
-      if (co.ok) setCompanies(co.rows.map((x: { id: number; name: string }) => ({ id: x.id, label: x.name })));
-
-      const initial = preselectId ? rows.find((r) => r.id === Number(preselectId)) : rows[0];
->>>>>>> origin/main
       if (initial) applyGateEntry(initial);
       setLoading(false);
     })();
@@ -185,7 +135,6 @@ export function PreLoadingWeighmentEditor() {
     setEditingDetails(!g.transportCompanyId || !g.driverName);
   }
 
-<<<<<<< HEAD
   function clearSelection() {
     setGateEntryId(""); setTransportCompanyId(""); setVehicleType(""); setCustomerName(""); setCustomerQuery(""); setDriverName(""); setDriverMobile(""); setDriverLicenseNo("");
   }
@@ -201,12 +150,6 @@ export function PreLoadingWeighmentEditor() {
     setWeight(""); setBillNetWeight(""); setWeightSlipRefNo(""); setAreaId(""); setProduct(null);
     const first = eligibleByType[t][0];
     if (first) applyGateEntry(first); else clearSelection();
-=======
-  function onSelectVehicle(id: number | "") {
-    const g = eligible.find((x) => x.id === id);
-    if (g) applyGateEntry(g);
-    else { setGateEntryId(""); setTransportCompanyId(""); setVehicleType(""); setCustomerName(""); setCustomerQuery(""); setDriverName(""); setDriverMobile(""); setDriverLicenseNo(""); }
->>>>>>> origin/main
   }
 
   const custTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -224,7 +167,6 @@ export function PreLoadingWeighmentEditor() {
   };
   const pickCustomer = (hit: CustomerHit) => { setCustomerName(hit.name); setCustomerQuery(hit.name); setCustomerHits(null); };
 
-<<<<<<< HEAD
   const prodTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchProducts = async (q: string) => {
     try {
@@ -245,30 +187,20 @@ export function PreLoadingWeighmentEditor() {
     if (!gateEntryId) { toast.error("Select a vehicle."); return; }
     const w = Number(weight);
     if (!weight || !Number.isFinite(w) || w < 0 || (isPurchase && w <= 0)) { toast.error(`Enter a valid ${copy.first.weight.toLowerCase()} weight.`); return; }
-=======
-  async function save() {
-    if (!gateEntryId) { toast.error("Select a vehicle."); return; }
-    if (!tareWeight || Number(tareWeight) < 0) { toast.error("Enter a valid tare (empty vehicle) weight."); return; }
->>>>>>> origin/main
     setSaving(true);
     try {
       if (editingDetails) {
         await fetch(`/api/transport/gate-entry/${gateEntryId}`, {
           method: "PUT", headers: { "Content-Type": "application/json" },
-<<<<<<< HEAD
           body: JSON.stringify({
             transportCompanyId: transportCompanyId || null, driverName: driverName || null, driverMobile: driverMobile || null, driverLicenseNo: driverLicenseNo || null,
             ...(isPurchase ? {} : { customerName: customerName || null }),
           }),
-=======
-          body: JSON.stringify({ transportCompanyId: transportCompanyId || null, customerName: customerName || null, driverName: driverName || null, driverMobile: driverMobile || null, driverLicenseNo: driverLicenseNo || null }),
->>>>>>> origin/main
         }).catch(() => {});
       }
       const res = await fetch("/api/transport/pre-weighment", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-<<<<<<< HEAD
           gateEntryId, operator: operator || null,
           weighbridgeId: weighbridgeId || null, weighDate: new Date().toISOString().slice(0, 10),
           weighTime: new Date().toTimeString().slice(0, 5), remarks: remarks || null,
@@ -279,20 +211,10 @@ export function PreLoadingWeighmentEditor() {
       });
       const j = await res.json().catch(() => ({}));
       if (res.ok && j.ok) { toast.success(j.message || "Entry weighment recorded."); setSavedId(j.id); }
-=======
-          gateEntryId, tareWeight: Number(tareWeight), operator: operator || null,
-          weighbridgeId: weighbridgeId || null, weighDate: new Date().toISOString().slice(0, 10),
-          weighTime: new Date().toTimeString().slice(0, 5), remarks: remarks || null,
-        }),
-      });
-      const j = await res.json().catch(() => ({}));
-      if (res.ok && j.ok) { toast.success(j.message || "Pre-loading weighment recorded."); setSavedId(j.id); }
->>>>>>> origin/main
       else { toast.error(j.message || "Could not save the weighment."); setSaving(false); }
     } catch { toast.error("Network error — could not save."); setSaving(false); }
   }
 
-<<<<<<< HEAD
   function createGrnNow() {
     const g = eligible.find((x) => x.id === gateEntryId);
     if (!g) return;
@@ -304,46 +226,30 @@ export function PreLoadingWeighmentEditor() {
 
   const selected = gateEntryId !== "" ? eligible.find((x) => x.id === gateEntryId) : undefined;
 
-=======
->>>>>>> origin/main
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-<<<<<<< HEAD
           <div className="mb-1 flex items-center gap-2 text-xs text-muted"><Link href={backHref} className="hover:text-foreground">{fromGateEntry ? "Vehicle Gate Entry" : "Entry Weighment"}</Link><span className="text-subtle">/</span><span className="font-medium text-foreground">New</span></div>
           <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Scale className="h-5 w-5 text-primary" /> New Entry Weighment</h1>
           <p className="mt-0.5 text-sm text-muted">{copy.first.hint}</p>
-=======
-          <div className="mb-1 flex items-center gap-2 text-xs text-muted"><Link href={backHref} className="hover:text-foreground">{fromGateEntry ? "Vehicle Gate Entry" : "Pre Loading Weighment"}</Link><span className="text-subtle">/</span><span className="font-medium text-foreground">New</span></div>
-          <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Scale className="h-5 w-5 text-primary" /> New Pre Loading Weighment</h1>
-          <p className="mt-0.5 text-sm text-muted">Records the empty (tare) weight of a vehicle before loading begins.</p>
->>>>>>> origin/main
         </div>
         <Link href={backHref}><Button variant="outline" size="md"><ArrowLeft className="h-4 w-4" /> Back</Button></Link>
       </div>
 
-<<<<<<< HEAD
       <WeighmentTypeToggle value={type} onChange={switchType} disabled={loading || fromGateEntry} />
 
-=======
->>>>>>> origin/main
       {loading && <AppLoader label="Loading vehicle & weighment details…" />}
 
       {!loading && eligible.length === 0 && (
         <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
           <Scale className="mx-auto h-8 w-8 text-subtle" />
-<<<<<<< HEAD
           <p className="mt-3 text-sm font-semibold text-foreground">No {type.toLowerCase()} vehicles are ready for entry weighment.</p>
           <p className="mt-1 text-sm text-muted">
             {isPurchase
               ? "A vehicle needs a Raw Material Gate Entry (Waiting or Inside Factory) that hasn't been weighed or turned into a GRN yet."
               : "A vehicle needs a Stock Dispatch Gate Entry (Waiting or Inside Factory) that hasn't been weighed yet."}
           </p>
-=======
-          <p className="mt-3 text-sm font-semibold text-foreground">No vehicles are ready for weighment.</p>
-          <p className="mt-1 text-sm text-muted">A vehicle must have a Gate Entry (Waiting or Inside Factory) that hasn&apos;t been weighed yet. Record a Gate Entry first.</p>
->>>>>>> origin/main
           <Link href="/transport/gate-entry/new"><Button size="md" className="mt-4">Go to New Gate Entry</Button></Link>
         </div>
       )}
@@ -358,7 +264,6 @@ export function PreLoadingWeighmentEditor() {
                   {eligible.map((g) => <option key={g.id} value={g.id}>{g.vehicleNo} — {g.gateEntryNo} ({g.status})</option>)}
                 </select>
               </Fld>
-<<<<<<< HEAD
               {selected && (isPurchase ? (
                 <>
                   <Fld label="Supplier"><input value={selected.supplierName ?? "—"} disabled className={cn(inp, "text-subtle")} /></Fld>
@@ -374,27 +279,11 @@ export function PreLoadingWeighmentEditor() {
           </SectionCard>
 
           <SectionCard icon={Users} title={isPurchase ? "Transport & Driver Details" : "Customer, Transport & Driver Details"} allowOverflow>
-=======
-              {gateEntryId !== "" && (() => {
-                const g = eligible.find((x) => x.id === gateEntryId);
-                return g ? (
-                  <>
-                    <Fld label="Dispatch Type"><input value={g.dispatchType ?? "—"} disabled className={cn(inp, "text-subtle")} /></Fld>
-                    <Fld label="Reference No"><input value={g.referenceNo ?? "—"} disabled className={cn(inp, "text-subtle")} /></Fld>
-                  </>
-                ) : null;
-              })()}
-            </div>
-          </SectionCard>
-
-          <SectionCard icon={Users} title="Customer, Transport &amp; Driver Details" allowOverflow>
->>>>>>> origin/main
             <div className="mb-3 flex items-center justify-between">
               <p className="text-2xs text-subtle">Loaded automatically from the vehicle&apos;s Gate Entry. Anything missing can be added here.</p>
               {!editingDetails && <button type="button" onClick={() => setEditingDetails(true)} className="text-2xs font-semibold text-primary hover:underline">Modify</button>}
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-<<<<<<< HEAD
               {!isPurchase && (
                 <div className="relative">
                   <label className="mb-1 block text-2xs font-semibold text-muted">Customer</label>
@@ -414,25 +303,6 @@ export function PreLoadingWeighmentEditor() {
                   )}
                 </div>
               )}
-=======
-              <div className="relative">
-                <label className="mb-1 block text-2xs font-semibold text-muted">Customer</label>
-                <input
-                  value={customerQuery} disabled={!editingDetails} placeholder="Search customer master…"
-                  onChange={(e) => onCustomerQuery(e.target.value)}
-                  className={cn(inp, !editingDetails && "text-subtle")}
-                />
-                {editingDetails && customerHits !== null && (
-                  <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border bg-card shadow-lg">
-                    {customerHits.length ? customerHits.map((h) => (
-                      <button key={h.id} type="button" onClick={() => pickCustomer(h)} className="block w-full border-b border-border px-3 py-2 text-left text-sm last:border-0 hover:bg-primary-subtle/40">
-                        <span className="font-medium text-foreground">{h.name}</span>{h.phone ? <span className="text-2xs text-subtle"> — {h.phone}</span> : null}
-                      </button>
-                    )) : <div className="px-3 py-2 text-sm text-muted">No matching customers — will be saved as free text.</div>}
-                  </div>
-                )}
-              </div>
->>>>>>> origin/main
               <div>
                 <label className="mb-1 block text-2xs font-semibold text-muted">Transport Company</label>
                 <div className="flex gap-1.5">
@@ -450,7 +320,6 @@ export function PreLoadingWeighmentEditor() {
             </div>
           </SectionCard>
 
-<<<<<<< HEAD
           {isPurchase && (
             <SectionCard icon={Package} title="Material" allowOverflow>
               {!product ? (
@@ -479,13 +348,10 @@ export function PreLoadingWeighmentEditor() {
             </SectionCard>
           )}
 
-=======
->>>>>>> origin/main
           <SectionCard icon={Scale} title="Weighment Details" allowOverflow action={enableWeighbridgeFetch ? <WeighbridgeReadout state={wb2.state} liveWeight={wb2.liveWeight} /> : undefined}>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <Fld label="Weighbridge"><select value={weighbridgeId} onChange={(e) => setWeighbridgeId(e.target.value ? Number(e.target.value) : "")} className={inp}><option value="">—</option>{weighbridges.map((w) => <option key={w.id} value={w.id}>{w.label}</option>)}</select></Fld>
               <div>
-<<<<<<< HEAD
                 <label className="mb-1 block text-2xs font-semibold text-muted">{copy.first.label} *</label>
                 <div className="flex gap-1.5">
                   <input type="number" min={0} step="0.001" value={weight} onChange={(e) => setWeight(e.target.value)} className={inp} />
@@ -508,17 +374,6 @@ export function PreLoadingWeighmentEditor() {
             </div>
             <div className="mt-3"><Fld label="Notes / Remarks"><textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} rows={2} className={cn(inp, "h-auto py-2")} /></Fld></div>
             {isPurchase && <p className="mt-2 text-2xs text-subtle">Tare and the calculated net weight are captured in the Exit Weighment, after the vehicle is unloaded and weighed empty.</p>}
-=======
-                <label className="mb-1 block text-2xs font-semibold text-muted">Tare Weight (Empty Vehicle, In Kgs) *</label>
-                <div className="flex gap-1.5">
-                  <input type="number" min={0} step="0.001" value={tareWeight} onChange={(e) => setTareWeight(e.target.value)} className={inp} />
-                  {enableWeighbridgeFetch && <FetchWeightButton connected={wb2.state === "connected"} liveWeight={wb2.liveWeight} onFetch={(kg) => setTareWeight(String(kg))} />}
-                </div>
-              </div>
-              <Fld label="Operator"><input value={operator} onChange={(e) => setOperator(e.target.value)} className={inp} /></Fld>
-            </div>
-            <div className="mt-3"><Fld label="Notes / Remarks"><textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} rows={2} className={cn(inp, "h-auto py-2")} /></Fld></div>
->>>>>>> origin/main
           </SectionCard>
 
           <div className="flex items-center justify-end gap-2">
@@ -535,18 +390,11 @@ export function PreLoadingWeighmentEditor() {
             <div className="flex flex-col items-center gap-2 px-6 py-6 text-center">
               <span className="grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success"><CheckCircle2 className="h-6 w-6" /></span>
               <h2 className="text-sm font-bold text-foreground">Weight Submitted Successfully</h2>
-<<<<<<< HEAD
               <p className="text-sm text-muted">{isPurchase ? "Print the weight slip, or create the GRN now?" : "Do you want to print the Pre Load Weight Slip?"}</p>
             </div>
             <div className="flex flex-col gap-2 border-t border-border bg-surface-2 px-5 py-4">
               <Button size="md" onClick={() => router.push(`/transport/pre-weighment/token?id=${savedId}&next=${encodeURIComponent(backHref)}`)}><Printer className="h-4 w-4" /> Preview &amp; Print</Button>
               {isPurchase && <Button variant="secondary" size="md" onClick={createGrnNow}><FileText className="h-4 w-4" /> Create GRN Now</Button>}
-=======
-              <p className="text-sm text-muted">Do you want to print the Pre Load Weight Slip?</p>
-            </div>
-            <div className="flex flex-col gap-2 border-t border-border bg-surface-2 px-5 py-4">
-              <Button size="md" onClick={() => router.push(`/transport/pre-weighment/token?id=${savedId}&next=${encodeURIComponent(backHref)}`)}><Printer className="h-4 w-4" /> Preview &amp; Print</Button>
->>>>>>> origin/main
               <Button variant="outline" size="md" onClick={() => router.push(backHref)}>Do It Later</Button>
             </div>
           </div>

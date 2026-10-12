@@ -452,11 +452,7 @@ export function VehicleGateEntryScreen() {
                       {r.status === "Inside Factory" && (
                         <>
                           {r.grossWeight == null ? (
-<<<<<<< HEAD
                             <Button size="sm" variant="primary" className="whitespace-nowrap" onClick={() => router.push(`/transport/pre-weighment/new?gateEntryId=${r.id}`)}><Scale className="h-3.5 w-3.5" /> Update Weight</Button>
-=======
-                            <Button size="sm" variant="primary" className="whitespace-nowrap" onClick={() => router.push(`/transport/gate-entry/${r.id}/weighment`)}><Scale className="h-3.5 w-3.5" /> Update Weight</Button>
->>>>>>> origin/main
                           ) : r.grnId ? (
                             <Button size="sm" variant="secondary" className="whitespace-nowrap" onClick={() => router.push(`/purchase/grn/${r.grnId}`)}><Eye className="h-3.5 w-3.5" /> {r.grnStatus === "Posted" ? "View Details" : "View GRN"}</Button>
                           ) : (
