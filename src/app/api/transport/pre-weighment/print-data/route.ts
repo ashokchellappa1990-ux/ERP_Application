@@ -69,7 +69,10 @@ export async function GET(req: Request) {
     prisma.vehicleGateEntryItem.findFirst({ where: { gateEntryId: gateEntry.id }, orderBy: { id: "asc" }, select: { productName: true } }),
   ]);
 
+<<<<<<< HEAD
   const isPurchase = wt.weighmentType === "Purchase";
+=======
+>>>>>>> origin/main
   const tokenSlip: TokenSlipData = {
     business: { name: setup?.companyName || tenant?.name || "My Store" },
     tokenNo: wt.weighmentNo,
@@ -82,10 +85,16 @@ export async function GET(req: Request) {
     // slip's own fixed DD-MMM-YYYY format.
     date: wt.weighDate || wt.createdAt.toISOString().slice(0, 10),
     inTime: gateEntry.arrivalTime ? fmtDateTime(gateEntry.arrivalTime) : null,
+<<<<<<< HEAD
     customerName: (isPurchase ? gateEntry.supplierName : gateEntry.customerName) || "",
     vehicleNumber: vehicle?.vehicleNo ?? null,
     emptyWeightKg: Number(wt.tareWeight),
     ...(isPurchase ? { isPurchase: true, loadWeightKg: Number(wt.grossWeight ?? 0) } : {}),
+=======
+    customerName: gateEntry.customerName || "",
+    vehicleNumber: vehicle?.vehicleNo ?? null,
+    emptyWeightKg: Number(wt.tareWeight),
+>>>>>>> origin/main
     // No Sale/Load & Dispatch payment intent usually exists yet at gate-token
     // time — use it if one's already linked, otherwise leave a plain dash
     // rather than fabricating a payment mode nothing has actually decided.

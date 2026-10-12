@@ -343,6 +343,7 @@ export const gateEntryActionInput = z.object({
   remarks: z.string().trim().max(300).optional(),
 });
 
+<<<<<<< HEAD
 // Sales vs Purchase is derived server-side from the gate entry's entryType
 // (Dispatch → Sales, RawMaterial → Purchase) — never client-trusted.
 export type WeighmentType = "Sales" | "Purchase";
@@ -360,6 +361,11 @@ export const preLoadingWeighmentInput = z.object({
   weightSlipRefNo: z.string().trim().max(60).optional().nullable(),
   areaId: z.coerce.number().int().positive().optional().nullable(),
   productId: z.coerce.number().int().positive().optional().nullable(),
+=======
+export const preLoadingWeighmentInput = z.object({
+  gateEntryId: z.coerce.number().int().positive(),
+  tareWeight: z.coerce.number().min(0),
+>>>>>>> origin/main
   weighDate: z.string().trim().max(20).optional().nullable(),
   weighTime: z.string().trim().max(10).optional().nullable(),
   operator: z.string().trim().max(160).optional().nullable(),
@@ -383,12 +389,18 @@ export const loadingConfirmationInput = z.object({
   remarks: z.string().trim().max(2000).optional().nullable(),
 });
 
+<<<<<<< HEAD
 // Exit Weighment. Sales sends grossWeight (after loading); Purchase sends
 // tareWeight (after unloading). The other side always comes from the Entry Weighment.
 export const postLoadingWeighmentInput = z.object({
   gateEntryId: z.coerce.number().int().positive(),
   grossWeight: z.coerce.number().min(0).optional().nullable(),
   tareWeight: z.coerce.number().min(0).optional().nullable(),
+=======
+export const postLoadingWeighmentInput = z.object({
+  gateEntryId: z.coerce.number().int().positive(),
+  grossWeight: z.coerce.number().min(0),
+>>>>>>> origin/main
   weighDate: z.string().trim().max(20).optional().nullable(),
   operator: z.string().trim().max(160).optional().nullable(),
   remarks: z.string().trim().max(2000).optional().nullable(),

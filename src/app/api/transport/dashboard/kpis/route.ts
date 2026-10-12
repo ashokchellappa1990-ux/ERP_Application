@@ -51,7 +51,11 @@ export async function GET(req: Request) {
     prisma.vehicleGateEntry.count({ where: { ...sw, status: "Waiting" } }),
     prisma.vehicleGateEntry.count({ where: { ...sw, status: "Loading" } }),
     prisma.vehicleGateEntry.count({ where: { ...sw, status: "Completed" } }),
+<<<<<<< HEAD
     prisma.postLoadingWeighment.aggregate({ where: { tenantId: scope.tenantId, weighmentType: "Sales", weighDate: today }, _sum: { netWeight: true } }),
+=======
+    prisma.postLoadingWeighment.aggregate({ where: { tenantId: scope.tenantId, weighDate: today }, _sum: { netWeight: true } }),
+>>>>>>> origin/main
     prisma.deliveryChallan.count({ where: { ...sw, dcDate: today } }),
     prisma.sale.count({ where: { ...sw, channel: "B2B", status: "Completed", saleDate: today } }),
     prisma.dispatchExecution.findMany({ where: { ...sw, docDate: today }, select: { id: true } }),

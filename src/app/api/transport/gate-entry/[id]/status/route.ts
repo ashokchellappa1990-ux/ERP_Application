@@ -49,7 +49,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   // precondition, not an unconditional bypass.
   if (action === "move-inside" && entry.entryType === "Dispatch") {
     const weighed = await prisma.preLoadingWeighment.findFirst({ where: { tenantId: user.tenantId, gateEntryId: entry.id }, select: { id: true } });
+<<<<<<< HEAD
     if (!weighed) return NextResponse.json({ ok: false, message: "Complete the Entry Weighment (Update Weight) before moving this vehicle inside." }, { status: 422 });
+=======
+    if (!weighed) return NextResponse.json({ ok: false, message: "Complete the Pre-Loading Weighment (Update Weight) before moving this vehicle inside." }, { status: 422 });
+>>>>>>> origin/main
   }
 
   await prisma.vehicleGateEntry.update({ where: { id: entry.id }, data: { status: to, updatedBy: user.id } });

@@ -12,11 +12,14 @@ export interface TokenSlipData {
   customerName: string; vehicleNumber: string | null;
   emptyWeightKg: number;
   payment: string; delivery: string | null;
+<<<<<<< HEAD
   // Purchase (Raw Material) entry weighment — the vehicle arrives loaded, so
   // the known figure is the Load (gross) weight and Empty is the blank one;
   // customerName then carries the supplier. Absent = Sales (original layout).
   loadWeightKg?: number;
   isPurchase?: boolean;
+=======
+>>>>>>> origin/main
   // Vehicle Gate Entry No (e.g. "VH-GT-ENT-0826-00087") — shown as "Token No"
   // in place of the weighment's own number when available. Optional so
   // TOKEN_SLIP_SAMPLE / older callers without it still render (falls back to
@@ -130,12 +133,21 @@ export function buildTokenSlipParts(
     ${row("RefNo", data.refNo || "—")}
     ${row("Date", fmtSlipDate(data.date))}
     ${data.inTime ? row("In Time", data.inTime) : ""}
+<<<<<<< HEAD
     ${row(data.isPurchase ? "Supplier" : "Customer", data.customerName)}
     ${data.vehicleNumber ? row("Vehicle", data.vehicleNumber) : ""}
     ${row("Empty", data.isPurchase ? "—" : `${kg(data.emptyWeightKg)} Kg`)}
     ${row("Payment", data.payment)}
     ${data.delivery ? row("Delivery", data.delivery) : ""}
     ${row("Load", data.isPurchase ? `${kg(data.loadWeightKg ?? 0)} Kg` : "—")}
+=======
+    ${row("Customer", data.customerName)}
+    ${data.vehicleNumber ? row("Vehicle", data.vehicleNumber) : ""}
+    ${row("Empty", `${kg(data.emptyWeightKg)} Kg`)}
+    ${row("Payment", data.payment)}
+    ${data.delivery ? row("Delivery", data.delivery) : ""}
+    ${row("Load", "—")}
+>>>>>>> origin/main
     ${row("Net Weight", "—")}
     <div class="rule"></div>
     <div class="notice">

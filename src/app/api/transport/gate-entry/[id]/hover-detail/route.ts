@@ -20,7 +20,11 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
   const sw = scopeWhere(await getActiveScope(user), { branch: true });
   const id = Number(params.id);
+<<<<<<< HEAD
   const entry = await prisma.vehicleGateEntry.findFirst({ where: { ...sw, id, deletedAt: null }, select: { id: true, entryType: true, grnId: true, grossWeight: true, tareWeight: true } });
+=======
+  const entry = await prisma.vehicleGateEntry.findFirst({ where: { ...sw, id, deletedAt: null }, select: { id: true, entryType: true, grnId: true } });
+>>>>>>> origin/main
   if (!entry) return NextResponse.json({ ok: false, message: "Gate entry not found." }, { status: 404 });
 
   if (entry.entryType === "RawMaterial") {
@@ -36,9 +40,14 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       data: {
         productName: items.map((i) => i.productName).join(", ") || null,
         preLoadWeight: null, postLoadWeight: null,
+<<<<<<< HEAD
         // Before a GRN exists, fall back to the Entry/Exit Weighment figures kept on the gate entry.
         grossWeight: (grn?.grossWeight ?? entry.grossWeight) != null ? Number(grn?.grossWeight ?? entry.grossWeight) : null,
         tareWeight: (grn?.tareWeight ?? entry.tareWeight) != null ? Number(grn?.tareWeight ?? entry.tareWeight) : null,
+=======
+        grossWeight: grn?.grossWeight != null ? Number(grn.grossWeight) : null,
+        tareWeight: grn?.tareWeight != null ? Number(grn.tareWeight) : null,
+>>>>>>> origin/main
         netWeight: grn?.netWeight != null ? Number(grn.netWeight) : null,
         invoiceNo: pi?.supplierInvoiceNo ?? null, invoiceDate: pi?.supplierInvoiceDate ?? null,
         poNo: pi?.poNo ?? null, docRefNo: pi?.supplierRef ?? null,
