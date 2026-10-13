@@ -25,7 +25,7 @@ interface Opt { id: number; label: string }
 interface CustomerHit { id: number; name: string; phone: string }
 interface ProductHit { id: number; name: string; sku?: string; uom?: string }
 
-// Entry Weighment — Sales: empty (tare) weight before loading. Purchase: loaded
+// First Weighment — Sales: empty (tare) weight before loading. Purchase: loaded
 // (gross) weight before unloading, plus the GRN-prefill details (product,
 // supplier slip net weight, weight slip ref, inventory area).
 export function PreLoadingWeighmentEditor() {
@@ -210,7 +210,7 @@ export function PreLoadingWeighmentEditor() {
         }),
       });
       const j = await res.json().catch(() => ({}));
-      if (res.ok && j.ok) { toast.success(j.message || "Entry weighment recorded."); setSavedId(j.id); }
+      if (res.ok && j.ok) { toast.success(j.message || "First weighment recorded."); setSavedId(j.id); }
       else { toast.error(j.message || "Could not save the weighment."); setSaving(false); }
     } catch { toast.error("Network error — could not save."); setSaving(false); }
   }
@@ -230,8 +230,8 @@ export function PreLoadingWeighmentEditor() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="mb-1 flex items-center gap-2 text-xs text-muted"><Link href={backHref} className="hover:text-foreground">{fromGateEntry ? "Vehicle Gate Entry" : "Entry Weighment"}</Link><span className="text-subtle">/</span><span className="font-medium text-foreground">New</span></div>
-          <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Scale className="h-5 w-5 text-primary" /> New Entry Weighment</h1>
+          <div className="mb-1 flex items-center gap-2 text-xs text-muted"><Link href={backHref} className="hover:text-foreground">{fromGateEntry ? "Vehicle Gate Entry" : "First Weighment"}</Link><span className="text-subtle">/</span><span className="font-medium text-foreground">New</span></div>
+          <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Scale className="h-5 w-5 text-primary" /> New First Weighment</h1>
           <p className="mt-0.5 text-sm text-muted">{copy.first.hint}</p>
         </div>
         <Link href={backHref}><Button variant="outline" size="md"><ArrowLeft className="h-4 w-4" /> Back</Button></Link>
@@ -244,7 +244,7 @@ export function PreLoadingWeighmentEditor() {
       {!loading && eligible.length === 0 && (
         <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
           <Scale className="mx-auto h-8 w-8 text-subtle" />
-          <p className="mt-3 text-sm font-semibold text-foreground">No {type.toLowerCase()} vehicles are ready for entry weighment.</p>
+          <p className="mt-3 text-sm font-semibold text-foreground">No {type.toLowerCase()} vehicles are ready for first weighment.</p>
           <p className="mt-1 text-sm text-muted">
             {isPurchase
               ? "A vehicle needs a Raw Material Gate Entry (Waiting or Inside Factory) that hasn't been weighed or turned into a GRN yet."
@@ -373,7 +373,7 @@ export function PreLoadingWeighmentEditor() {
               )}
             </div>
             <div className="mt-3"><Fld label="Notes / Remarks"><textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} rows={2} className={cn(inp, "h-auto py-2")} /></Fld></div>
-            {isPurchase && <p className="mt-2 text-2xs text-subtle">Tare and the calculated net weight are captured in the Exit Weighment, after the vehicle is unloaded and weighed empty.</p>}
+            {isPurchase && <p className="mt-2 text-2xs text-subtle">Tare and the calculated net weight are captured in the Second Weighment, after the vehicle is unloaded and weighed empty.</p>}
           </SectionCard>
 
           <div className="flex items-center justify-end gap-2">

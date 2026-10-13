@@ -214,7 +214,7 @@ export default function GrnViewPage() {
                   )}
                 </>
               ) : grn.status !== "Cancelled" ? (
-                // Tare for a gate-entry GRN is the Purchase Exit Weighment
+                // Tare for a gate-entry GRN is the Purchase Second Weighment
                 // (empty vehicle after unloading), which writes it back here.
                 <div className="flex justify-end"><Button variant="secondary" size="sm" onClick={() => router.push(`/transport/post-weighment/new?gateEntryId=${grn.gateEntryId}&next=${encodeURIComponent(`/purchase/grn/${id}`)}`)}><Scale className="h-3.5 w-3.5" /> Update Tare Weight</Button></div>
               ) : null

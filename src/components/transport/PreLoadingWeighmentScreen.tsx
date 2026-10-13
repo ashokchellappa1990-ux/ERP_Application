@@ -17,7 +17,7 @@ interface Row {
 }
 interface GateRow { id: number; gateEntryNo: string; vehicleNo: string; status: string; customerName: string | null; supplierName: string | null }
 
-// Entry Weighment list — Sales (tare, before loading) / Purchase (gross, before unloading).
+// First Weighment list — Sales (tare, before loading) / Purchase (gross, before unloading).
 export function PreLoadingWeighmentScreen() {
   const router = useRouter();
   // null until mounted — the ?type= param is only readable client-side, and
@@ -58,8 +58,8 @@ export function PreLoadingWeighmentScreen() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="mb-1 flex items-center gap-2 text-xs text-muted"><span>Transport &amp; Vehicle Operations</span><span className="text-subtle">/</span><span className="font-medium text-foreground">Entry Weighment</span></div>
-          <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Scale className="h-5 w-5 text-primary" /> Entry Weighment</h1>
+          <div className="mb-1 flex items-center gap-2 text-xs text-muted"><span>Transport &amp; Vehicle Operations</span><span className="text-subtle">/</span><span className="font-medium text-foreground">First Weighment</span></div>
+          <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Scale className="h-5 w-5 text-primary" /> First Weighment</h1>
           <p className="mt-0.5 text-sm text-muted">{isPurchase ? "Purchase: the loaded (gross) weight of a vehicle arriving with material, before unloading." : "Sales: the empty (tare) weight of a vehicle before loading begins."}</p>
         </div>
         <Button size="md" onClick={() => router.push(`/transport/pre-weighment/new?type=${type}`)}><Plus className="h-4 w-4" /> New Weighment</Button>
@@ -104,7 +104,7 @@ export function PreLoadingWeighmentScreen() {
                 );
               })}
               {loading && rows.length === 0 && <tr><td colSpan={8} className="px-4 py-8"><AppLoader label="Loading weighments…" size="sm" /></td></tr>}
-              {!loading && rows.length === 0 && <tr><td colSpan={8} className="px-4 py-10 text-center text-sm text-muted">{notAuthed ? <>Please <Link href="/login" className="font-semibold text-primary hover:underline">sign in</Link>.</> : `No ${type.toLowerCase()} entry weighments yet.`}</td></tr>}
+              {!loading && rows.length === 0 && <tr><td colSpan={8} className="px-4 py-10 text-center text-sm text-muted">{notAuthed ? <>Please <Link href="/login" className="font-semibold text-primary hover:underline">sign in</Link>.</> : `No ${type.toLowerCase()} first weighments yet.`}</td></tr>}
             </tbody>
           </table>
         </div>

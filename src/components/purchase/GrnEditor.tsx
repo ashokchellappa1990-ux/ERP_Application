@@ -340,7 +340,7 @@ export function GrnEditor() {
         if (d.vehicleOwnerType) setVehicleOwnerType(d.vehicleOwnerType);
         if (d.grossWeight != null) setGrossWeight(String(d.grossWeight));
         if (d.tareWeight != null) setTareWeight(String(d.tareWeight));
-        // The gate-entry weighment's manually-entered Net Weight maps onto the
+        // The gate-first weighment's manually-entered Net Weight maps onto the
         // GRN's "Net Weight as per Bill" — a manually-stated figure separate
         // from the GRN's own calculated Net Weight (Gross − Tare).
         if (d.netWeight != null) setBillNetWeight(String(d.netWeight));

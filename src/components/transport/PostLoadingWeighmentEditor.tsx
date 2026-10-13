@@ -20,9 +20,9 @@ interface GateRow {
 }
 interface PreRow { id: number; gateEntryId: number; tareWeight: number; grossWeight: number | null }
 
-// Exit Weighment — Sales: loaded (gross) weight after loading, tare from the
-// Entry Weighment. Purchase: empty (tare) weight after unloading, gross from the
-// Entry Weighment; the server also syncs it onto the GRN if one exists.
+// Second Weighment — Sales: loaded (gross) weight after loading, tare from the
+// First Weighment. Purchase: empty (tare) weight after unloading, gross from the
+// First Weighment; the server also syncs it onto the GRN if one exists.
 export function PostLoadingWeighmentEditor() {
   const router = useRouter();
   const toast = useToast();
@@ -42,7 +42,7 @@ export function PostLoadingWeighmentEditor() {
   const [saving, setSaving] = useState(false);
   const [eligibleByType, setEligibleByType] = useState<Record<WeighmentType, GateRow[]>>({ Sales: [], Purchase: [] });
   const eligible = eligibleByType[type];
-  // gateEntryId → the weight captured at the Entry Weighment (tare for Sales, gross for Purchase).
+  // gateEntryId → the weight captured at the First Weighment (tare for Sales, gross for Purchase).
   const [firstWeight, setFirstWeight] = useState<Map<number, number>>(new Map());
 
   const [gateEntryId, setGateEntryId] = useState<number | "">("");
@@ -86,7 +86,7 @@ export function PostLoadingWeighmentEditor() {
       else {
         const first = (type === "Purchase" ? purchase : sales)[0];
         if (first) setGateEntryId(first.id);
-        if (preselectId) toast.error("That gate entry isn't waiting for an exit weighment.");
+        if (preselectId) toast.error("That gate entry isn't waiting for a second weighment.");
       }
       setLoading(false);
     })();
@@ -117,7 +117,7 @@ export function PostLoadingWeighmentEditor() {
         body: JSON.stringify({ gateEntryId, ...(isPurchase ? { tareWeight: w } : { grossWeight: w }), operator: operator || null, weighDate: new Date().toISOString().slice(0, 10), remarks: remarks || null }),
       });
       const j = await res.json().catch(() => ({}));
-      if (res.ok && j.ok) { toast.success(j.message || "Exit weighment recorded."); router.push(backHref); }
+      if (res.ok && j.ok) { toast.success(j.message || "Second weighment recorded."); router.push(backHref); }
       else { toast.error(j.message || "Could not save the weighment."); setSaving(false); }
     } catch { toast.error("Network error — could not save."); setSaving(false); }
   }
@@ -126,8 +126,8 @@ export function PostLoadingWeighmentEditor() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="mb-1 flex items-center gap-2 text-xs text-muted"><Link href={listHref} className="hover:text-foreground">Exit Weighment</Link><span className="text-subtle">/</span><span className="font-medium text-foreground">New</span></div>
-          <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Weight className="h-5 w-5 text-primary" /> New Exit Weighment</h1>
+          <div className="mb-1 flex items-center gap-2 text-xs text-muted"><Link href={listHref} className="hover:text-foreground">Second Weighment</Link><span className="text-subtle">/</span><span className="font-medium text-foreground">New</span></div>
+          <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Weight className="h-5 w-5 text-primary" /> New Second Weighment</h1>
           <p className="mt-0.5 text-sm text-muted">{copy.second.hint}</p>
         </div>
         <Link href={backHref}><Button variant="outline" size="md"><ArrowLeft className="h-4 w-4" /> Back</Button></Link>
@@ -138,13 +138,13 @@ export function PostLoadingWeighmentEditor() {
       {!loading && eligible.length === 0 && (
         <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
           <Weight className="mx-auto h-8 w-8 text-subtle" />
-          <p className="mt-3 text-sm font-semibold text-foreground">No {type.toLowerCase()} vehicles are ready for exit weighment.</p>
+          <p className="mt-3 text-sm font-semibold text-foreground">No {type.toLowerCase()} vehicles are ready for second weighment.</p>
           <p className="mt-1 text-sm text-muted">
             {isPurchase
-              ? "A Raw Material vehicle needs its Entry Weighment (gross) recorded, and not yet weighed empty."
-              : "A vehicle must be Loading/Inside Factory with an Entry Weighment (tare) already recorded, and not yet weighed after loading."}
+              ? "A Raw Material vehicle needs its First Weighment (gross) recorded, and not yet weighed empty."
+              : "A vehicle must be Loading/Inside Factory with a First Weighment (tare) already recorded, and not yet weighed after loading."}
           </p>
-          <Link href={`/transport/pre-weighment/new?type=${type}`}><Button size="md" className="mt-4">Go to Entry Weighment</Button></Link>
+          <Link href={`/transport/pre-weighment/new?type=${type}`}><Button size="md" className="mt-4">Go to First Weighment</Button></Link>
         </div>
       )}
 
@@ -175,7 +175,7 @@ export function PostLoadingWeighmentEditor() {
               <Fld label="Operator"><input value={operator} onChange={(e) => setOperator(e.target.value)} className={inp} /></Fld>
             </div>
             <div className="mt-3 rounded-lg bg-surface-2 p-3">
-              <div className="flex items-center justify-between text-xs text-muted"><span>{copy.first.weight} Weight (from Entry Weighment, In Kgs)</span><span className="font-semibold tabular-nums text-foreground">{first.toLocaleString()}</span></div>
+              <div className="flex items-center justify-between text-xs text-muted"><span>{copy.first.weight} Weight (from First Weighment, In Kgs)</span><span className="font-semibold tabular-nums text-foreground">{first.toLocaleString()}</span></div>
               <div className="mt-1 flex items-center justify-between text-sm font-bold"><span className="text-foreground">Net Weight (In Kgs)</span><span className="tabular-nums text-primary">{gateEntryId && weight ? netWeight.toLocaleString() : "—"}</span></div>
             </div>
             {isPurchase && weight !== "" && w > first && (

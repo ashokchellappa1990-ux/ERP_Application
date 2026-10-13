@@ -680,7 +680,7 @@ export function GateEntryEditor() {
             <div className="flex flex-col items-center gap-2 px-6 py-6 text-center">
               <span className="grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success"><CheckCircle2 className="h-6 w-6" /></span>
               <h2 className="text-sm font-bold text-foreground">Gate Entry Recorded</h2>
-              <p className="text-sm text-muted">{isRawMaterial ? "Would you like to update the weighment now, or do it later from the gate entry list?" : "Would you like to continue with the Entry Weighment now, or do it later?"}</p>
+              <p className="text-sm text-muted">{isRawMaterial ? "Would you like to update the weighment now, or do it later from the gate entry list?" : "Would you like to continue with the First Weighment now, or do it later?"}</p>
             </div>
             <div className="flex flex-col gap-2 border-t border-border bg-surface-2 px-5 py-4">
               {isRawMaterial ? (
@@ -704,7 +704,7 @@ export function GateEntryEditor() {
           </div>
         </div>
       )}
-      {navigating && <AppLoader fullScreen label={isRawMaterial ? "Please wait…" : "Opening Entry Weighment"} />}
+      {navigating && <AppLoader fullScreen label={isRawMaterial ? "Please wait…" : "Opening First Weighment"} />}
       {/* Covers the whole gap between clicking "Record Gate Entry" and either
           the success popup (savedId set) or an error toast — same fullScreen
           treatment as the post-save "navigating" loader above, so there's

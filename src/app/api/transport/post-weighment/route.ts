@@ -35,7 +35,7 @@ export async function GET(req: Request) {
   });
 }
 
-// POST /api/transport/post-weighment — one Exit Weighment per gate entry (unique).
+// POST /api/transport/post-weighment — one Second Weighment per gate entry (unique).
 // Purchase (RawMaterial gate entry) is handled by postPurchase() below: the
 // input is the tare (empty vehicle after unloading), gross comes from the First
 // Weighment, and the result is synced onto the GRN. Everything else is Sales:
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
   if (!entry) return NextResponse.json({ ok: false, message: "Gate entry not found." }, { status: 404 });
 
   const existing = await prisma.postLoadingWeighment.findFirst({ where: { gateEntryId: input.gateEntryId }, select: { id: true } });
-  if (existing) return NextResponse.json({ ok: false, message: "An exit weighment already exists for this gate entry." }, { status: 422 });
+  if (existing) return NextResponse.json({ ok: false, message: "A second weighment already exists for this gate entry." }, { status: 422 });
 
   const preWeighment = await prisma.preLoadingWeighment.findFirst({ where: { gateEntryId: input.gateEntryId, tenantId: user.tenantId } });
 
@@ -125,10 +125,10 @@ export async function POST(req: Request) {
       return row.id;
     });
     await writeAudit(prisma, user, { action: "post_loading_weighment.create", entity: "PostLoadingWeighment", entityId: id, summary: `Post-loading weighment recorded for gate entry ${entry.gateEntryNo} — net ${netWeight}`, meta: { toleranceExceeded, approvalStatus }, businessId: entry.businessId ?? null, branchId: entry.branchId ?? null, ip: requestMeta(req).ip });
-    return NextResponse.json({ ok: true, message: toleranceExceeded ? "Exit weighment recorded — weight tolerance exceeded, flagged for review." : "Exit weighment recorded.", id, netWeight, toleranceExceeded, approvalStatus }, { status: 201 });
+    return NextResponse.json({ ok: true, message: toleranceExceeded ? "Second weighment recorded — weight tolerance exceeded, flagged for review." : "Second weighment recorded.", id, netWeight, toleranceExceeded, approvalStatus }, { status: 201 });
   } catch (err) {
     console.error("[transport/post-weighment] create error", err);
-    return NextResponse.json({ ok: false, message: "Could not save the exit weighment." }, { status: 500 });
+    return NextResponse.json({ ok: false, message: "Could not save the second weighment." }, { status: 500 });
   }
 }
 
@@ -136,8 +136,8 @@ type SessionUser = NonNullable<Awaited<ReturnType<typeof getSessionUser>>>;
 type GateEntry = NonNullable<Awaited<ReturnType<typeof prisma.vehicleGateEntry.findFirst>>>;
 type PreWeighment = Awaited<ReturnType<typeof prisma.preLoadingWeighment.findFirst>>;
 
-// Purchase Exit Weighment — the empty vehicle after unloading. Gross comes
-// from the Entry Weighment (or, for entries weighed before Entry Weighment
+// Purchase Second Weighment — the empty vehicle after unloading. Gross comes
+// from the First Weighment (or, for entries weighed before First Weighment
 // covered Purchase, the gate entry's own grossWeight). The tare is written to
 // the gate entry, where a GRN created later prefills it from; if the GRN
 // already exists (and isn't invoiced yet) its tare/net are updated directly —
@@ -173,16 +173,16 @@ async function postPurchase(req: Request, user: SessionUser, entry: GateEntry, p
           tenantId: user.tenantId, businessId: entry.businessId ?? undefined, branchId: entry.branchId ?? undefined,
           vehicleId: entry.vehicleId, dispatchExecutionId: entry.dispatchExecutionId ?? undefined, gateEntryId: entry.id,
           eventType: "PostWeighment", eventAt: new Date(), actorUserId: user.id, actorName: user.fullName ?? null,
-          remarks: `Exit weighment (Purchase) — tare ${tareWeight}, net ${netWeight}`,
+          remarks: `Second weighment (Purchase) — tare ${tareWeight}, net ${netWeight}`,
         },
       });
       return row.id;
     });
-    await writeAudit(prisma, user, { action: "post_loading_weighment.create", entity: "PostLoadingWeighment", entityId: id, summary: `Exit weighment (Purchase) recorded for gate entry ${entry.gateEntryNo} — net ${netWeight}`, meta: { grnSynced: syncGrn ? grn!.grnNo : null }, businessId: entry.businessId ?? null, branchId: entry.branchId ?? null, ip: requestMeta(req).ip });
+    await writeAudit(prisma, user, { action: "post_loading_weighment.create", entity: "PostLoadingWeighment", entityId: id, summary: `Second weighment (Purchase) recorded for gate entry ${entry.gateEntryNo} — net ${netWeight}`, meta: { grnSynced: syncGrn ? grn!.grnNo : null }, businessId: entry.businessId ?? null, branchId: entry.branchId ?? null, ip: requestMeta(req).ip });
     const grnNote = syncGrn ? ` GRN ${grn!.grnNo} tare updated.` : grn ? ` GRN ${grn.grnNo} was not changed (${grn.invoiceRecorded ? "invoice already recorded" : grn.status === "Cancelled" ? "cancelled" : "not a weight-based GRN"}).` : "";
-    return NextResponse.json({ ok: true, message: `Exit weighment recorded — net ${netWeight}.${grnNote}`, id, netWeight, grnId: grn?.id ?? null, grnSynced: syncGrn }, { status: 201 });
+    return NextResponse.json({ ok: true, message: `Second weighment recorded — net ${netWeight}.${grnNote}`, id, netWeight, grnId: grn?.id ?? null, grnSynced: syncGrn }, { status: 201 });
   } catch (err) {
     console.error("[transport/post-weighment] purchase create error", err);
-    return NextResponse.json({ ok: false, message: "Could not save the exit weighment." }, { status: 500 });
+    return NextResponse.json({ ok: false, message: "Could not save the second weighment." }, { status: 500 });
   }
 }

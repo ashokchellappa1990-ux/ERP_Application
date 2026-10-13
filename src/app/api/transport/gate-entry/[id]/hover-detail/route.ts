@@ -36,7 +36,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       data: {
         productName: items.map((i) => i.productName).join(", ") || null,
         preLoadWeight: null, postLoadWeight: null,
-        // Before a GRN exists, fall back to the Entry/Exit Weighment figures kept on the gate entry.
+        // Before a GRN exists, fall back to the First/Second Weighment figures kept on the gate entry.
         grossWeight: (grn?.grossWeight ?? entry.grossWeight) != null ? Number(grn?.grossWeight ?? entry.grossWeight) : null,
         tareWeight: (grn?.tareWeight ?? entry.tareWeight) != null ? Number(grn?.tareWeight ?? entry.tareWeight) : null,
         netWeight: grn?.netWeight != null ? Number(grn.netWeight) : null,

@@ -12,7 +12,7 @@ export interface TokenSlipData {
   customerName: string; vehicleNumber: string | null;
   emptyWeightKg: number;
   payment: string; delivery: string | null;
-  // Purchase (Raw Material) entry weighment — the vehicle arrives loaded, so
+  // Purchase (Raw Material) first weighment — the vehicle arrives loaded, so
   // the known figure is the Load (gross) weight and Empty is the blank one;
   // customerName then carries the supplier. Absent = Sales (original layout).
   loadWeightKg?: number;

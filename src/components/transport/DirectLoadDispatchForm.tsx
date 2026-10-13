@@ -111,6 +111,10 @@ export function DirectLoadDispatchForm() {
   const [gateMatching, setGateMatching] = useState(false);
   const [preWeighment, setPreWeighment] = useState<PreWeighmentRow[] | null>(null);
   const [preWeighmentLoading, setPreWeighmentLoading] = useState(false);
+  // Second Weighment already recorded for the linked gate entry (Transport →
+  // Second Weighment) — when present it IS the post-loading gross weight, so it's
+  // shown read-only and never re-posted from here.
+  const [exitWeighment, setExitWeighment] = useState<{ grossWeight: number; operator: string | null; weighDate: string | null } | null>(null);
 
   // ---- Transport & Driver details ----
   const [companies, setCompanies] = useState<Opt[]>([]);
@@ -151,7 +155,10 @@ export function DirectLoadDispatchForm() {
     }).catch(() => {});
   }, []);
   const tareWeight = preWeighment && preWeighment.length ? preWeighment[0].tareWeight : null;
-  const postNetWeight = tareWeight != null ? r2(n(postGrossWeight) - tareWeight) : null;
+  const postNetWeight = tareWeight != null && n(postGrossWeight) > 0 ? r2(n(postGrossWeight) - tareWeight) : null;
+  // An existing Second Weighment always counts as "captured now", whatever the
+  // Capture Later/Now toggle or Dispatch Configuration says.
+  const weightTiming: "now" | "later" = exitWeighment ? "now" : postWeightTiming;
 
   useEffect(() => {
     (async () => {
@@ -175,8 +182,13 @@ export function DirectLoadDispatchForm() {
   // taxable/tax/net-amount totals below recalculate automatically. Only
   // applies to the common single-line case; multi-item dispatches are left
   // for manual entry since the net weight doesn't split across them.
+  // Also re-runs whenever the single item line is (re)loaded — the gate
+  // entry's items can arrive after the weighment, and may be set more than
+  // once (e.g. the prefill effect re-running) with qty reset to 0. Keying on
+  // qty too re-applies the weight then; the equality check below stops a loop.
+  const singleLineKey = lines.length === 1 ? `${lines[0].productId ?? ""}|${lines[0].uom}|${lines[0].qty}` : "";
   useEffect(() => {
-    if (postWeightTiming !== "now" || postNetWeight == null) return;
+    if (weightTiming !== "now" || postNetWeight == null) return;
     setLines((prev) => {
       if (prev.length !== 1 || !prev[0].productId) return prev;
       const isTon = (prev[0].uom || "").toLowerCase() === "ton";
@@ -184,7 +196,7 @@ export function DirectLoadDispatchForm() {
       if (prev[0].qty === qty) return prev;
       return [{ ...prev[0], qty }];
     });
-  }, [postNetWeight, postWeightTiming]);
+  }, [postNetWeight, weightTiming, singleLineKey]);
 
   // ---- Transport Cost (posted separately after create) ----
   const [freightCharge, setFreightCharge] = useState("");
@@ -486,15 +498,30 @@ export function DirectLoadDispatchForm() {
       }
     } catch { /* best effort */ }
     // Pre-Loading Weighment for Weighment Management (tare weight reference).
+    // Plus any Second Weighment already recorded — its gross weight is the
+    // post-loading weight, so the net weight / item qty follow from it.
     setPreWeighmentLoading(true);
     try {
-      const j = await fetch(`/api/transport/pre-weighment?gateEntryId=${hit.id}`, { cache: "no-store" }).then((r) => r.json());
-      setPreWeighment(j.ok ? j.rows : []);
-    } catch { setPreWeighment([]); }
+      const [pre, post] = await Promise.all([
+        fetch(`/api/transport/pre-weighment?gateEntryId=${hit.id}`, { cache: "no-store" }).then((r) => r.json()),
+        fetch(`/api/transport/post-weighment?gateEntryId=${hit.id}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
+      ]);
+      setPreWeighment(pre.ok ? pre.rows : []);
+      const exit = post.ok ? (post.rows as { grossWeight: number; operator: string | null; weighDate: string | null }[])[0] : undefined;
+      if (exit && exit.grossWeight > 0) {
+        setExitWeighment({ grossWeight: exit.grossWeight, operator: exit.operator, weighDate: exit.weighDate });
+        setPostGrossWeight(String(exit.grossWeight));
+        setPostOperator(exit.operator ?? "");
+      } else {
+        setExitWeighment(null);
+      }
+    } catch { setPreWeighment([]); setExitWeighment(null); }
     setPreWeighmentLoading(false);
   }
   function clearGateEntry() {
     setVehicleGateEntryId(null); setLinkedGateNo(""); setPreWeighment(null);
+    if (exitWeighment) { setPostGrossWeight(""); setPostOperator(""); }
+    setExitWeighment(null);
   }
 
   const prodTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -575,7 +602,7 @@ export function DirectLoadDispatchForm() {
     if (isSplit && payCat === "full" && Math.abs(splitTotal - totalAmountToCollect) > 0.01) { toast.error("Split payment lines must add up to the full total amount to be collected."); return; }
     if (isSplit && payCat === "partial" && splitTotal >= totalAmountToCollect) { toast.error("Split payment lines must add up to less than the total amount to be collected for a partial collection."); return; }
     if (transitPassQtyMode === "Manual" && n(transitPassQtyManual) < 0) { toast.error("Enter a valid Transit Pass quantity."); return; }
-    if (postWeightTiming === "now" && vehicleGateEntryId && n(postGrossWeight) <= 0) { toast.error("Enter a valid post-loading gross weight, or switch Weighment Management to “Later”."); return; }
+    if (weightTiming === "now" && vehicleGateEntryId && n(postGrossWeight) <= 0) { toast.error("Enter a valid post-loading gross weight, or switch Weighment Management to “Later”."); return; }
     if (requireWeighment && vehicleGateEntryId && tareWeight == null) { toast.error("Pre-Loading Weighment must be completed for the linked Vehicle Gate Entry before this dispatch can be created (per Dispatch Configuration)."); return; }
     setSubmitting(true);
     const payload = {
@@ -646,7 +673,8 @@ export function DirectLoadDispatchForm() {
       }
 
       // Post-Loading Weighment captured "now" — fire immediately against the matched gate entry.
-      if (postWeightTiming === "now" && vehicleGateEntryId && n(postGrossWeight) > 0) {
+      // Skipped when a Second Weighment already exists — it was recorded there.
+      if (weightTiming === "now" && !exitWeighment && vehicleGateEntryId && n(postGrossWeight) > 0) {
         try {
           await fetch("/api/transport/post-weighment", {
             method: "POST", headers: { "Content-Type": "application/json" },
@@ -819,7 +847,7 @@ export function DirectLoadDispatchForm() {
                   <input readOnly value={linkedGateNo} className={cn(inp, "cursor-not-allowed bg-surface-2 font-mono")} />
                 </Fld>
               </div>
-              {postWeightCaptureMode === "Both" && (
+              {postWeightCaptureMode === "Both" && !exitWeighment && (
                 <div className="mt-3">
                   <label className="mb-1 block text-2xs font-semibold text-muted">Post-Loading Weight</label>
                   <div className="inline-flex w-full overflow-hidden rounded-md border border-border text-2xs">
@@ -829,15 +857,27 @@ export function DirectLoadDispatchForm() {
                   </div>
                 </div>
               )}
-              {postWeightTiming === "now" && (
+              {weightTiming === "now" && (
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <Fld label="Post-Loading Gross Weight (In Kgs) *">
-                    <div className="flex gap-1.5">
-                      <input type="number" min={0} step="0.001" value={postGrossWeight} onChange={(e) => setPostGrossWeight(e.target.value)} className={inp} />
-                      {enableWeighbridgeFetch && <FetchWeightButton connected={wb.state === "connected"} liveWeight={wb.liveWeight} onFetch={(kg) => setPostGrossWeight(String(kg))} />}
-                    </div>
-                  </Fld>
-                  <Fld label="Operator"><input value={postOperator} onChange={(e) => setPostOperator(e.target.value)} className={inp} /></Fld>
+                  {exitWeighment ? (
+                    <>
+                      <Fld label="Post-Loading Gross Weight (In Kgs)">
+                        <input readOnly value={String(exitWeighment.grossWeight)} className={cn(inp, "cursor-not-allowed bg-surface-2 font-semibold text-foreground")} />
+                      </Fld>
+                      <Fld label="Operator"><input readOnly value={exitWeighment.operator ?? "—"} className={cn(inp, "cursor-not-allowed bg-surface-2")} /></Fld>
+                      <p className="sm:col-span-2 -mt-1 text-2xs text-success">Taken from the Second Weighment recorded{exitWeighment.weighDate ? ` on ${exitWeighment.weighDate}` : ""} for {linkedGateNo}.</p>
+                    </>
+                  ) : (
+                    <>
+                      <Fld label="Post-Loading Gross Weight (In Kgs) *">
+                        <div className="flex gap-1.5">
+                          <input type="number" min={0} step="0.001" value={postGrossWeight} onChange={(e) => setPostGrossWeight(e.target.value)} className={inp} />
+                          {enableWeighbridgeFetch && <FetchWeightButton connected={wb.state === "connected"} liveWeight={wb.liveWeight} onFetch={(kg) => setPostGrossWeight(String(kg))} />}
+                        </div>
+                      </Fld>
+                      <Fld label="Operator"><input value={postOperator} onChange={(e) => setPostOperator(e.target.value)} className={inp} /></Fld>
+                    </>
+                  )}
                   <div className="sm:col-span-2 flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-xs">
                     <span className="text-muted">Net Weight (In Kgs)</span>
                     <span className="font-bold tabular-nums text-primary">{postNetWeight != null ? postNetWeight.toLocaleString() : "—"}</span>
@@ -956,7 +996,7 @@ export function DirectLoadDispatchForm() {
                 // material load, weighed now) — Qty must come from the
                 // weighbridge net weight there, so lock it here too instead of
                 // letting it be typed over and silently disagree with weight.
-                const qtyFromWeight = postWeightTiming === "now" && lines.length === 1 && !!l.productId;
+                const qtyFromWeight = weightTiming === "now" && lines.length === 1 && !!l.productId;
                 return (
                 <tr key={l.id} className="border-b border-border last:border-0 align-middle">
                   <td className="px-2 py-1.5" title={l.productName || undefined}>

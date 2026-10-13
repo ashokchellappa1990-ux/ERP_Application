@@ -88,7 +88,7 @@ export function TokenSlipPreview() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between print:hidden">
         <div>
-          <div className="mb-1 flex items-center gap-2 text-xs text-muted"><span>Entry Weighment</span><span className="text-subtle">/</span><span className="font-medium text-foreground">Pre Load Weight Slip</span></div>
+          <div className="mb-1 flex items-center gap-2 text-xs text-muted"><span>First Weighment</span><span className="text-subtle">/</span><span className="font-medium text-foreground">Pre Load Weight Slip</span></div>
           <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Scale className="h-5 w-5 text-primary" /> Pre Load Weight Slip Preview</h1>
           <p className="mt-0.5 text-sm text-muted">Review the token below, then print it — you'll return to the list once printing is done.</p>
         </div>
@@ -104,7 +104,7 @@ export function TokenSlipPreview() {
         <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm print:hidden">
           <Scale className="mx-auto h-8 w-8 text-subtle" />
           <p className="mt-3 text-sm font-semibold text-foreground">{errorMsg}</p>
-          <p className="mt-1 text-sm text-muted">The Entry Weighment may not exist, or you don&apos;t have access to it.</p>
+          <p className="mt-1 text-sm text-muted">The First Weighment may not exist, or you don&apos;t have access to it.</p>
         </div>
       )}
 

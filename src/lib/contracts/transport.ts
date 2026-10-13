@@ -348,7 +348,7 @@ export const gateEntryActionInput = z.object({
 export type WeighmentType = "Sales" | "Purchase";
 export const weighmentTypeOf = (entryType: string | null | undefined): WeighmentType => (entryType === "RawMaterial" ? "Purchase" : "Sales");
 
-// Entry Weighment. Sales sends tareWeight (empty vehicle); Purchase sends
+// First Weighment. Sales sends tareWeight (empty vehicle); Purchase sends
 // grossWeight (loaded vehicle) plus the GRN-prefill details the Raw Material
 // "Update Weight" step used to capture. Which one is required is enforced by
 // the route once it knows the gate entry's type.
@@ -383,8 +383,8 @@ export const loadingConfirmationInput = z.object({
   remarks: z.string().trim().max(2000).optional().nullable(),
 });
 
-// Exit Weighment. Sales sends grossWeight (after loading); Purchase sends
-// tareWeight (after unloading). The other side always comes from the Entry Weighment.
+// Second Weighment. Sales sends grossWeight (after loading); Purchase sends
+// tareWeight (after unloading). The other side always comes from the First Weighment.
 export const postLoadingWeighmentInput = z.object({
   gateEntryId: z.coerce.number().int().positive(),
   grossWeight: z.coerce.number().min(0).optional().nullable(),

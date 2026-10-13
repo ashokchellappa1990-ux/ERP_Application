@@ -75,8 +75,8 @@ export async function POST(req: Request) {
         prisma.preLoadingWeighment.findFirst({ where: { gateEntryId: input.gateEntryId, tenantId: user.tenantId } }),
         prisma.postLoadingWeighment.findFirst({ where: { gateEntryId: input.gateEntryId } }),
       ]);
-      if (!pre) missing.push("Entry Weighment");
-      if (!post) missing.push("Exit Weighment");
+      if (!pre) missing.push("First Weighment");
+      if (!post) missing.push("Second Weighment");
     }
     if (missing.length) {
       return NextResponse.json({ ok: false, message: `Cannot exit — missing: ${missing.join(", ")}.` }, { status: 422 });

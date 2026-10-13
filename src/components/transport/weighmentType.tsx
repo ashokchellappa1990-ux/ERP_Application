@@ -5,7 +5,7 @@ import type { WeighmentType } from "@/lib/contracts/transport";
 
 export type { WeighmentType };
 
-// Entry / Exit Weighment serve both flows; which physical weight each one
+// Entry / Second Weighment serve both flows; which physical weight each one
 // captures flips with the type:
 //   Sales    — arrives empty:  1st = Tare  (empty)  → loading   → 2nd = Gross (loaded)
 //   Purchase — arrives loaded: 1st = Gross (loaded) → unloading → 2nd = Tare  (empty)

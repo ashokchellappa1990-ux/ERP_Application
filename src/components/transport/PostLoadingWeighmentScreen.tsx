@@ -16,7 +16,7 @@ interface Row {
 }
 interface GateRow { id: number; gateEntryNo: string; vehicleNo: string; status: string; customerName: string | null; supplierName: string | null; grnId: number | null }
 
-// Exit Weighment list — Sales (gross, after loading) / Purchase (tare, after unloading).
+// Second Weighment list — Sales (gross, after loading) / Purchase (tare, after unloading).
 export function PostLoadingWeighmentScreen() {
   const router = useRouter();
   // null until mounted — the ?type= param is only readable client-side, and
@@ -57,8 +57,8 @@ export function PostLoadingWeighmentScreen() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="mb-1 flex items-center gap-2 text-xs text-muted"><span>Transport &amp; Vehicle Operations</span><span className="text-subtle">/</span><span className="font-medium text-foreground">Exit Weighment</span></div>
-          <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Weight className="h-5 w-5 text-primary" /> Exit Weighment</h1>
+          <div className="mb-1 flex items-center gap-2 text-xs text-muted"><span>Transport &amp; Vehicle Operations</span><span className="text-subtle">/</span><span className="font-medium text-foreground">Second Weighment</span></div>
+          <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Weight className="h-5 w-5 text-primary" /> Second Weighment</h1>
           <p className="mt-0.5 text-sm text-muted">{isPurchase ? "Purchase: the empty (tare) weight after unloading — net weight is computed against the first-weighment gross." : "Sales: the loaded (gross) weight after loading — net weight is computed against the first-weighment tare."}</p>
         </div>
         <Button size="md" onClick={() => router.push(`/transport/post-weighment/new?type=${type}`)}><Plus className="h-4 w-4" /> New Weighment</Button>
@@ -102,7 +102,7 @@ export function PostLoadingWeighmentScreen() {
                 );
               })}
               {loading && rows.length === 0 && <tr><td colSpan={cols} className="px-4 py-8"><AppLoader label="Loading weighments…" size="sm" /></td></tr>}
-              {!loading && rows.length === 0 && <tr><td colSpan={cols} className="px-4 py-10 text-center text-sm text-muted">{notAuthed ? <>Please <Link href="/login" className="font-semibold text-primary hover:underline">sign in</Link>.</> : `No ${type.toLowerCase()} exit weighments yet.`}</td></tr>}
+              {!loading && rows.length === 0 && <tr><td colSpan={cols} className="px-4 py-10 text-center text-sm text-muted">{notAuthed ? <>Please <Link href="/login" className="font-semibold text-primary hover:underline">sign in</Link>.</> : `No ${type.toLowerCase()} second weighments yet.`}</td></tr>}
             </tbody>
           </table>
         </div>
