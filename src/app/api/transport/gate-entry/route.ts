@@ -115,15 +115,29 @@ export async function GET(req: Request) {
     }).map((c) => c.id);
     idRestrictions.push(matchIds);
   }
-  // Stats cards read scope-wide (ignoring the list's own search/status/date
-  // filters) — Load & Dispatch Completed / DC Generated / Invoice Posted are
-  // derived from each gate entry's most-recent linked Load & Dispatch status,
-  // same rule as the per-row Dispatch/DC/Invoice Status columns below.
+  // Stats cards follow ONLY the Vehicle Entry Date range (the list defaults it
+  // to today), ignoring the other search/status filters — they describe "the
+  // vehicles that came in during this period, and how far each has got".
+  // Load & Dispatch Completed / DC Generated / Invoice Posted are derived from
+  // each gate entry's most-recent linked Load & Dispatch status, same rule as
+  // the per-row Dispatch/DC/Invoice Status columns below.
+  const statsWhere: Prisma.VehicleGateEntryWhereInput = {
+    ...sw, deletedAt: null, ...(entryType ? { entryType } : {}),
+    ...(where.arrivalTime ? { arrivalTime: where.arrivalTime } : {}),
+  };
   const DISPATCHED_OR_LATER = ["Dispatched", "Delivery Challan Generated", "Sales Invoice Posted"];
   const DC_OR_LATER = ["Delivery Challan Generated", "Sales Invoice Posted"];
   async function computeStats() {
-    const allEntries = await prisma.vehicleGateEntry.findMany({ where: { ...sw, deletedAt: null, ...(entryType ? { entryType } : {}) }, select: { id: true } });
+    const allEntries = await prisma.vehicleGateEntry.findMany({ where: statsWhere, select: { id: true, status: true, grossWeight: true } });
     const allIds = allEntries.map((e) => e.id);
+    // "Moved to weighment" = First Weighment recorded (or, for Raw Material
+    // weighed through the old gate-entry step, a gross weight on the entry).
+    const weighedIds = new Set(allIds.length
+      ? (await prisma.preLoadingWeighment.findMany({ where: { tenantId: user!.tenantId, gateEntryId: { in: allIds } }, select: { gateEntryId: true } })).map((p) => p.gateEntryId)
+      : []);
+    for (const e of allEntries) if (e.grossWeight != null) weighedIds.add(e.id);
+    const exited = allEntries.filter((e) => e.status === "Exited").length;
+    const pendingWeighment = allEntries.filter((e) => e.status !== "Exited" && !weighedIds.has(e.id)).length;
     const allDispatchesForStats = allIds.length
       ? await prisma.loadDispatch.findMany({ where: { vehicleGateEntryId: { in: allIds }, deletedAt: null }, orderBy: { id: "desc" }, select: { vehicleGateEntryId: true, status: true } })
       : [];
@@ -135,7 +149,7 @@ export async function GET(req: Request) {
       if (DC_OR_LATER.includes(st)) dcGenerated++;
       if (st === "Sales Invoice Posted") invoicePosted++;
     }
-    return { total: allIds.length, allIds, latestStatusByGate, completed, dcGenerated, invoicePosted };
+    return { total: allIds.length, allIds, latestStatusByGate, completed, dcGenerated, invoicePosted, weighed: weighedIds.size, pendingWeighment, exited };
   }
 
   // DC Status / Invoice Status filters — combinable (both ANDed), so picking
@@ -172,8 +186,8 @@ export async function GET(req: Request) {
 
   const [rows, waiting, inside] = await Promise.all([
     prisma.vehicleGateEntry.findMany({ where, orderBy: { createdAt: "desc" }, take: 100 }),
-    prisma.vehicleGateEntry.count({ where: { ...sw, status: "Waiting", deletedAt: null, ...(entryType ? { entryType } : {}) } }),
-    prisma.vehicleGateEntry.count({ where: { ...sw, status: "Inside Factory", deletedAt: null, ...(entryType ? { entryType } : {}) } }),
+    prisma.vehicleGateEntry.count({ where: { ...statsWhere, status: "Waiting" } }),
+    prisma.vehicleGateEntry.count({ where: { ...statsWhere, status: "Inside Factory" } }),
   ]);
 
   const vehicleIds = Array.from(new Set(rows.map((r) => r.vehicleId)));
@@ -298,11 +312,11 @@ export async function GET(req: Request) {
   });
 
   const stats = await statsPromise!;
-  // Raw Material stat cards (GRN Posted / Invoice Posted) — scope-wide like
-  // waiting/inside above, ignoring the list's own search/date/status filters.
+  // Raw Material stat cards (GRN Posted / Invoice Posted) — same Vehicle Entry
+  // Date period as the other cards, ignoring the list's other filters.
   let grnPosted = 0, grnInvoicePosted = 0;
   if (entryType === "RawMaterial") {
-    const allRM = await prisma.vehicleGateEntry.findMany({ where: { ...sw, deletedAt: null, entryType: "RawMaterial" }, select: { grnId: true } });
+    const allRM = await prisma.vehicleGateEntry.findMany({ where: { ...statsWhere, entryType: "RawMaterial" }, select: { grnId: true } });
     const rmGrnIds = Array.from(new Set(allRM.map((e) => e.grnId).filter((v): v is number => !!v)));
     if (rmGrnIds.length) {
       const rmGrns = await prisma.goodsReceiptNote.findMany({ where: { id: { in: rmGrnIds } }, select: { status: true, invoiceRecorded: true } });
@@ -310,7 +324,7 @@ export async function GET(req: Request) {
       grnInvoicePosted = rmGrns.filter((g) => g.invoiceRecorded).length;
     }
   }
-  return NextResponse.json({ ok: true, rows: shaped, stats: { total: stats.total, waiting, inside, completed: stats.completed, dcGenerated: stats.dcGenerated, invoicePosted: stats.invoicePosted, grnPosted, grnInvoicePosted } });
+  return NextResponse.json({ ok: true, rows: shaped, stats: { total: stats.total, waiting, inside, completed: stats.completed, dcGenerated: stats.dcGenerated, invoicePosted: stats.invoicePosted, grnPosted, grnInvoicePosted, weighed: stats.weighed, pendingWeighment: stats.pendingWeighment, exited: stats.exited } });
   } catch (err) {
     console.error("[transport/gate-entry] list error", err);
     return NextResponse.json({ ok: false, message: "Could not load gate entries — please try again." }, { status: 500 });

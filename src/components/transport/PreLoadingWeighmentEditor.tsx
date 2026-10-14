@@ -38,13 +38,17 @@ export function PreLoadingWeighmentEditor() {
   // former case should Back / after-save return to the gate entry list
   // instead of this screen's own list.
   const fromGateEntry = !!preselectId;
+  // Explicit return path — the First Weighment list's Pending "Record" button
+  // passes itself, so Back / after-save land on that list instead.
+  const next = searchParams.get("next");
+  const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
 
   const [type, setType] = useState<WeighmentType>(searchParams.get("type") === "Purchase" ? "Purchase" : "Sales");
   const isPurchase = type === "Purchase";
   const copy = WEIGHMENT_COPY[type];
-  const backHref = fromGateEntry
+  const backHref = safeNext ?? (fromGateEntry
     ? (isPurchase ? "/transport/gate-entry?entryType=RawMaterial" : "/transport/gate-entry")
-    : `/transport/pre-weighment${isPurchase ? "?type=Purchase" : ""}`;
+    : `/transport/pre-weighment${isPurchase ? "?type=Purchase" : ""}`);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -230,7 +234,7 @@ export function PreLoadingWeighmentEditor() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="mb-1 flex items-center gap-2 text-xs text-muted"><Link href={backHref} className="hover:text-foreground">{fromGateEntry ? "Vehicle Gate Entry" : "First Weighment"}</Link><span className="text-subtle">/</span><span className="font-medium text-foreground">New</span></div>
+          <div className="mb-1 flex items-center gap-2 text-xs text-muted"><Link href={backHref} className="hover:text-foreground">{fromGateEntry && !safeNext ? "Vehicle Gate Entry" : "First Weighment"}</Link><span className="text-subtle">/</span><span className="font-medium text-foreground">New</span></div>
           <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground"><Scale className="h-5 w-5 text-primary" /> New First Weighment</h1>
           <p className="mt-0.5 text-sm text-muted">{copy.first.hint}</p>
         </div>

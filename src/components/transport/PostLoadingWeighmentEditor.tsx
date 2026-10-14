@@ -70,7 +70,8 @@ export function PostLoadingWeighmentEditor() {
       const postedGateIds = new Set((pw.ok ? pw.rows : []).map((r: { gateEntryId: number }) => r.gateEntryId));
       const preByGate = new Map<number, PreRow>((pre.ok ? pre.rows as PreRow[] : []).map((p) => [p.gateEntryId, p]));
 
-      const sales: GateRow[] = (geSales.ok ? geSales.rows : []).filter((g: GateRow) => (g.status === "Loading" || g.status === "Inside Factory") && preByGate.has(g.id) && !postedGateIds.has(g.id));
+      // "Completed" too: a "Capture Later" dispatch completes before the loaded truck is weighed.
+      const sales: GateRow[] = (geSales.ok ? geSales.rows : []).filter((g: GateRow) => (g.status === "Loading" || g.status === "Inside Factory" || g.status === "Completed") && preByGate.has(g.id) && !postedGateIds.has(g.id));
       // Purchase gross may also live only on the gate entry (weighed through the
       // old "Update Weight" step); skip GRNs whose tare was already captured there.
       const purchase: GateRow[] = (gePurchase.ok ? gePurchase.rows : []).filter((g: GateRow) => g.status !== "Exited" && !postedGateIds.has(g.id) && !(g.tareWeight && g.tareWeight > 0) && ((preByGate.get(g.id)?.grossWeight ?? g.grossWeight ?? 0) > 0));
@@ -142,7 +143,7 @@ export function PostLoadingWeighmentEditor() {
           <p className="mt-1 text-sm text-muted">
             {isPurchase
               ? "A Raw Material vehicle needs its First Weighment (gross) recorded, and not yet weighed empty."
-              : "A vehicle must be Loading/Inside Factory with a First Weighment (tare) already recorded, and not yet weighed after loading."}
+              : "A Stock Dispatch vehicle needs its First Weighment (tare) recorded, not yet weighed after loading, and not yet exited."}
           </p>
           <Link href={`/transport/pre-weighment/new?type=${type}`}><Button size="md" className="mt-4">Go to First Weighment</Button></Link>
         </div>

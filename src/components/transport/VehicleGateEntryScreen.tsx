@@ -46,8 +46,26 @@ interface HoverDetail {
   grossWeight: number | null; tareWeight: number | null;
   invoiceNo: string | null; invoiceDate: string | null; poNo: string | null; docRefNo: string | null;
 }
-interface Stats { total: number; waiting: number; inside: number; completed: number; dcGenerated: number; invoicePosted: number; grnPosted: number; grnInvoicePosted: number }
-const EMPTY: Stats = { total: 0, waiting: 0, inside: 0, completed: 0, dcGenerated: 0, invoicePosted: 0, grnPosted: 0, grnInvoicePosted: 0 };
+interface Stats { total: number; waiting: number; inside: number; completed: number; dcGenerated: number; invoicePosted: number; grnPosted: number; grnInvoicePosted: number; weighed: number; pendingWeighment: number; exited: number }
+const EMPTY: Stats = { total: 0, waiting: 0, inside: 0, completed: 0, dcGenerated: 0, invoicePosted: 0, grnPosted: 0, grnInvoicePosted: 0, weighed: 0, pendingWeighment: 0, exited: 0 };
+// Local-calendar YYYY-MM-DD (toISOString would shift to UTC and give yesterday before 05:30 IST).
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const daysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return ymd(d); };
+const PERIODS: { label: string; range: () => [string, string] }[] = [
+  { label: "Today", range: () => [ymd(new Date()), ymd(new Date())] },
+  { label: "Yesterday", range: () => [daysAgo(1), daysAgo(1)] },
+  { label: "Last 7 Days", range: () => [daysAgo(6), ymd(new Date())] },
+  { label: "This Month", range: () => { const d = new Date(); return [ymd(new Date(d.getFullYear(), d.getMonth(), 1)), ymd(d)]; } },
+  { label: "All Dates", range: () => ["", ""] },
+];
+const fmtDay = (s: string) => new Date(`${s}T00:00:00`).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+function periodCaption(from: string, to: string) {
+  if (!from && !to) return "All dates";
+  if (from && from === to) return from === ymd(new Date()) ? `Today, ${fmtDay(from)}` : fmtDay(from);
+  return `${from ? fmtDay(from) : "…"} – ${to ? fmtDay(to) : "…"}`;
+}
+/** "Today's " when the period is exactly today, so the first card reads "Today's Vehicle Entries". */
+const periodPrefix = (from: string, to: string) => (from && from === to && from === ymd(new Date()) ? "Today's " : "");
 const PAYMENT_STATUS_TONE: Record<string, "success" | "warning" | "danger" | "neutral"> = { Paid: "success", Full: "success", Partial: "warning", Credit: "danger", Pending: "neutral" };
 const STATUS_TONE: Record<GateEntryStatus, "neutral" | "info" | "warning" | "success" | "primary"> = {
   Waiting: "neutral", "Inside Factory": "info", Loading: "warning", Completed: "success", Exited: "primary",
@@ -113,8 +131,9 @@ export function VehicleGateEntryScreen() {
   const [newEntryOpen, setNewEntryOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<GateEntryStatus | "All">("All");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  // Vehicle Entry Date — defaults to today; the summary cards follow it too.
+  const [fromDate, setFromDate] = useState(() => ymd(new Date()));
+  const [toDate, setToDate] = useState(() => ymd(new Date()));
   const [dispatchFromDate, setDispatchFromDate] = useState("");
   const [dispatchToDate, setDispatchToDate] = useState("");
   const [product, setProduct] = useState("");
@@ -231,21 +250,38 @@ export function VehicleGateEntryScreen() {
         ))}
       </div>
 
+      {/* Summary period — the cards (and the list) cover vehicles that entered
+          in the Vehicle Entry Date range below; these chips just set it. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-semibold text-muted">Vehicle activity:</span>
+        {PERIODS.map((p) => {
+          const [f, t] = p.range();
+          const active = fromDate === f && toDate === t;
+          return (
+            <button key={p.label} type="button" onClick={() => { setFromDate(f); setToDate(t); }} className={cn("rounded-full border px-3 py-1 text-2xs font-semibold transition", active ? "border-primary bg-primary text-white" : "border-border bg-surface text-muted hover:border-primary/50 hover:text-foreground")}>{p.label}</button>
+          );
+        })}
+        <span className="text-2xs text-subtle">{periodCaption(fromDate, toDate)}</span>
+      </div>
+
       {entryTypeTab === "Dispatch" ? (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <Stat label="Total" value={stats.total} tone="primary" />
-        <Stat label="Waiting" value={stats.waiting} tone="neutral" />
-        <Stat label="Inside" value={stats.inside} tone="info" />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7">
+        <Stat label={`${periodPrefix(fromDate, toDate)}Vehicle Entries`} value={stats.total} tone="primary" />
+        <Stat label="Pending Weighment" value={stats.pendingWeighment} tone="neutral" />
+        <Stat label="Moved to Weighment" value={stats.weighed} tone="info" />
         <Stat label="Load & Dispatch Completed" value={stats.completed} tone="warning" />
         <Stat label="DC Generated" value={stats.dcGenerated} tone="info" />
         <Stat label="Invoice Posted" value={stats.invoicePosted} tone="success" />
+        <Stat label="Exited" value={stats.exited} tone="success" />
       </div>
       ) : (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="Total" value={stats.total} tone="primary" />
-        <Stat label="Inside" value={stats.inside} tone="info" />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+        <Stat label={`${periodPrefix(fromDate, toDate)}Vehicle Entries`} value={stats.total} tone="primary" />
+        <Stat label="Pending Weighment" value={stats.pendingWeighment} tone="neutral" />
+        <Stat label="Moved to Weighment" value={stats.weighed} tone="info" />
         <Stat label="GRN Posted" value={stats.grnPosted} tone="warning" />
         <Stat label="Invoice Posted" value={stats.grnInvoicePosted} tone="success" />
+        <Stat label="Exited" value={stats.exited} tone="success" />
       </div>
       )}
 
@@ -282,7 +318,7 @@ export function VehicleGateEntryScreen() {
               {INVOICE_STATUS_FILTERS.map((f) => <option key={f} value={f}>{INVOICE_STATUS_FILTER_LABEL[f]}</option>)}
             </select>
             <Button size="sm" variant="primary" onClick={load}><Search className="h-3.5 w-3.5" /> Search</Button>
-            <Button size="sm" variant="outline" onClick={() => { setQuery(""); setStatus("All"); setFromDate(""); setToDate(""); setDispatchFromDate(""); setDispatchToDate(""); setProduct(""); setDcStatusFilter("All"); setInvoiceStatusFilter("All"); }}><X className="h-3.5 w-3.5" /> Clear</Button>
+            <Button size="sm" variant="outline" onClick={() => { setQuery(""); setStatus("All"); setFromDate(ymd(new Date())); setToDate(ymd(new Date())); setDispatchFromDate(""); setDispatchToDate(""); setProduct(""); setDcStatusFilter("All"); setInvoiceStatusFilter("All"); }}><X className="h-3.5 w-3.5" /> Clear</Button>
           </div>
         </div>
         <div className="max-h-[560px] overflow-auto">
@@ -401,7 +437,7 @@ export function VehicleGateEntryScreen() {
               {PI_STATUS_FILTERS.map((f) => <option key={f} value={f}>{PI_STATUS_FILTER_LABEL[f]}</option>)}
             </select>
             <Button size="sm" variant="primary" onClick={load}><Search className="h-3.5 w-3.5" /> Search</Button>
-            <Button size="sm" variant="outline" onClick={() => { setQuery(""); setStatus("All"); setFromDate(""); setToDate(""); setProduct(""); setGrnStatusFilter("All"); setPiStatusFilter("All"); }}><X className="h-3.5 w-3.5" /> Clear</Button>
+            <Button size="sm" variant="outline" onClick={() => { setQuery(""); setStatus("All"); setFromDate(ymd(new Date())); setToDate(ymd(new Date())); setProduct(""); setGrnStatusFilter("All"); setPiStatusFilter("All"); }}><X className="h-3.5 w-3.5" /> Clear</Button>
           </div>
         </div>
         <div className="max-h-[560px] overflow-auto">
